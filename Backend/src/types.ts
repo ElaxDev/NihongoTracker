@@ -3,6 +3,8 @@ import { Types } from 'mongoose';
 
 export interface decodedJWT {
   id: Types.ObjectId;
+  iat: number;
+  exp: number;
 }
 
 export interface IStat {
