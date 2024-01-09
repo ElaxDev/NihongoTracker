@@ -7,7 +7,7 @@ import { createAccessToken, createRefreshToken } from '../libs/jwt';
 export async function auth(_req: Request, res: Response) {
   const { sub, picture, name, email } = res.locals.user;
 
-  const userFound = await User.findOne({ uid: sub });
+  const userFound = await User.findOne({ uuid: sub });
   if (userFound) {
     const accessToken = await createAccessToken({ id: userFound._id });
     const refreshToken = await createRefreshToken({ id: userFound._id });
