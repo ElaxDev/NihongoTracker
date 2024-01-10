@@ -10,6 +10,7 @@ const UserSchemaValidator = z
     avatar: z.string().url(),
     titles: z.string().array(),
     roles: z.string().array(),
+    refreshToken: z.string(),
   })
   .partial({
     avatar: true,

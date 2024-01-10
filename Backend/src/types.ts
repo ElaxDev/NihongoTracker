@@ -7,6 +7,10 @@ export interface decodedJWT {
   exp: number;
 }
 
+export interface tokenDataType {
+  id: Types.ObjectId;
+}
+
 export interface IStat {
   readingXp: number;
   readingLevel: number;
