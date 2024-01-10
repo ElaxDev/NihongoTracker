@@ -21,6 +21,8 @@ export async function auth(_req: Request, res: Response) {
     res.cookie('jwt', refreshToken, {
       httpOnly: true,
       maxAge: 60 * 60 * 24 * 1000,
+      sameSite: 'none',
+      secure: true,
     });
     return res.json({
       userData: {
@@ -54,6 +56,8 @@ export async function auth(_req: Request, res: Response) {
       res.cookie('jwt', refreshToken, {
         httpOnly: true,
         maxAge: 60 * 60 * 24 * 1000,
+        sameSite: 'none',
+        secure: true,
       });
       return res.json({
         userData: {
@@ -76,11 +80,29 @@ export async function auth(_req: Request, res: Response) {
   }
 }
 
-export function logout(_req: Request, res: Response) {
-  res.cookie('token', '', {
-    expires: new Date(0),
+export async function logout(req: Request, res: Response) {
+  const cookies = req.cookies;
+  if (!cookies?.jwt) return res.sendStatus(204); //No content
+  const refreshToken = cookies.jwt;
+
+  const userFound = await User.findOne({ refreshToken });
+  if (!userFound) {
+    res.clearCookie('jwt', {
+      httpOnly: true,
+      sameSite: 'none',
+      secure: true,
+    });
+    return res.sendStatus(204);
+  }
+
+  userFound.refreshToken = '';
+  userFound.save();
+  res.clearCookie('jwt', {
+    httpOnly: true,
+    sameSite: 'none',
+    secure: true,
   });
-  return res.sendStatus(200);
+  return res.sendStatus(204);
 }
 
 export async function refresh(req: Request, res: Response) {

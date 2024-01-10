@@ -8,6 +8,6 @@ router.post('/google', validateGToken, auth);
 
 router.get('/refresh', refresh);
 
-router.post('/logout', logout);
+router.get('/logout', logout);
 
 export default router;
