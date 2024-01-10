@@ -2,7 +2,9 @@ import mongoose from 'mongoose';
 
 export async function connectDB() {
   try {
-    await mongoose.connect('mongodb://localhost:27017/Immerse');
+    if (!process.env.DATABASE_URL)
+      throw new Error('Please specify the DATABASE_URL environment variable');
+    await mongoose.connect(process.env.DATABASE_URL);
     console.log('💾 Database is connected');
   } catch (error) {
     console.error(error);
