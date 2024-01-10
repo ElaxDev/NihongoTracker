@@ -1,6 +1,7 @@
 import jwt from 'jsonwebtoken';
+import { tokenDataType } from '../types';
 
-export async function createAccessToken(tokenData: Object) {
+export async function createAccessToken(tokenData: tokenDataType) {
   const privateKey = process.env.ACCESS_TOKEN_SECRET;
 
   if (!privateKey) {
@@ -16,7 +17,9 @@ export async function createAccessToken(tokenData: Object) {
   }
 }
 
-export async function createRefreshToken(tokenData: Object) {
+export async function createRefreshToken(
+  tokenData: tokenDataType
+): Promise<string | undefined> {
   const privateKey = process.env.REFRESH_TOKEN_SECRET;
 
   if (!privateKey) {
@@ -28,6 +31,7 @@ export async function createRefreshToken(tokenData: Object) {
     });
     return token;
   } catch (error) {
-    return console.error(error);
+    console.error(error);
+    return undefined;
   }
 }
