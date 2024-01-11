@@ -123,7 +123,7 @@ export default function AuthContextProvider({
           },
         }
       );
-      console.log(authUser.data);
+
       dispatch({
         type: REDUCER_ACTION_TYPE.LOGIN_SUCCESS,
         payload: authUser.data,
