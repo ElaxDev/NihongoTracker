@@ -1,5 +1,5 @@
 import { useEffect, useContext, createContext, useReducer } from 'react';
-import { authInterface, userInterface } from '../types';
+import { authInterface, userInterface, REDUCER_ACTION_TYPE } from '../types';
 import api from '../api/axios';
 
 type AuthContextProps = {
@@ -9,15 +9,6 @@ type AuthContextProps = {
 interface contextInterface extends authInterface {
   dispatch: React.Dispatch<any>;
   logoutUser: Function;
-}
-
-const enum REDUCER_ACTION_TYPE {
-  LOGIN_REQUEST,
-  LOGIN_SUCCESS,
-  LOGIN_FAILURE,
-  LOGOUT_REQUEST,
-  LOGOUT_SUCCESS,
-  LOGOUT_FAILURE,
 }
 
 type actionType = {

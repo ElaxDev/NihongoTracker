@@ -8,6 +8,17 @@ interface userDataInterface {
   createdAt: Date | undefined;
   updatedAt: Date | undefined;
 }
+
+export enum REDUCER_ACTION_TYPE {
+  LOGIN_REQUEST,
+  LOGIN_SUCCESS,
+  LOGIN_FAILURE,
+  LOGOUT_REQUEST,
+  LOGOUT_SUCCESS,
+  LOGOUT_FAILURE,
+  REFRESH_TOKEN_REQUEST,
+  REFRESH_TOKEN_SUCCESS,
+  REFRESH_TOKEN_FAILURE,
 }
 
 export interface userInterface {
