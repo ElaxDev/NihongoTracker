@@ -142,17 +142,13 @@ export default function AuthContextProvider({
   async function logoutUser(): Promise<void> {
     try {
       dispatch({ type: REDUCER_ACTION_TYPE.LOGOUT_REQUEST });
-      await api.post(
-        '/api/auth/google',
-        {},
-        {
-          withCredentials: true,
-          headers: {
-            'Content-Type': 'application/json',
-            Accept: 'application/json',
-          },
-        }
-      );
+      await api.get('/api/auth/google', {
+        withCredentials: true,
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+        },
+      });
       dispatch({ type: REDUCER_ACTION_TYPE.LOGOUT_SUCCESS });
       return;
     } catch (err) {
