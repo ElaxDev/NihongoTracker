@@ -63,6 +63,33 @@ export function authReducer(
         loggedIn: true,
         isLoading: false,
       };
+    case REDUCER_ACTION_TYPE.REFRESH_TOKEN_REQUEST:
+      return {
+        ...state,
+        isLoading: true,
+      };
+    case REDUCER_ACTION_TYPE.REFRESH_TOKEN_SUCCESS:
+      if (action.payload?.accessToken && state.user) {
+        return {
+          ...state,
+          user: {
+            ...state.user,
+            accessToken: action.payload.accessToken,
+          },
+          isLoading: false,
+        };
+      } else {
+        return {
+          ...state,
+          isLoading: false,
+        };
+      }
+    case REDUCER_ACTION_TYPE.REFRESH_TOKEN_FAILURE:
+      return {
+        ...state,
+        error: action.error,
+        isLoading: false,
+      };
     default:
       return state;
   }
