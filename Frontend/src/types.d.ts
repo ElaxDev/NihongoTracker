@@ -1,9 +1,9 @@
 interface userDataInterface {
-  id: Types.ObjectId;
+  id: string;
   uuid: string;
   avatar: string | undefined;
   username: string;
-  stats: Types.ObjectId | undefined;
+  stats: string | undefined;
   roles: string[];
   createdAt: Date | undefined;
   updatedAt: Date | undefined;
