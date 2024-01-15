@@ -1,5 +1,6 @@
 import { useEffect, useContext, createContext, useReducer } from 'react';
-import { authInterface, userInterface, REDUCER_ACTION_TYPE } from '../types';
+import { authInterface, userInterface } from '../types';
+import { REDUCER_ACTION_TYPE } from '../enumTypes';
 import api from '../api/axios';
 
 type AuthContextProps = {
