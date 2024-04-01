@@ -52,16 +52,20 @@ export interface ILog {
   date: Date;
 }
 
+export enum userRoles {
+  admin = 'admin',
+  user = 'user',
+  mod = 'mod',
+}
 export interface IUser {
   _id: Types.ObjectId;
   uuid: string;
   username: string;
-  email: string;
+  password: string;
   stats?: Types.ObjectId;
   avatar?: string;
-  refreshToken?: string;
   titles: string[];
-  roles: Array<'admin' | 'user' | 'mod'>;
+  roles: userRoles;
   createdAt?: Date;
   updatedAt?: Date;
 }
