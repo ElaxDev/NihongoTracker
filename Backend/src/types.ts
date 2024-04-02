@@ -59,17 +59,24 @@ export enum userRoles {
 }
 export interface IUser extends Document {
   _id: Types.ObjectId;
-  uuid: string;
+  avatar?: string;
   username: string;
   password: string;
   clubs?: Types.ObjectId[];
   statsId?: Types.ObjectId;
-  avatar?: string;
   titles: string[];
   roles: userRoles;
   createdAt?: Date;
   updatedAt?: Date;
   matchPassword: (enteredPassword: string) => Promise<boolean>;
+}
+
+export interface updateRequest {
+  username?: string;
+  password?: string;
+  avatar?: string;
+  newPassword?: string;
+  newPasswordConfirm?: string;
 }
 
 export interface IRegister {

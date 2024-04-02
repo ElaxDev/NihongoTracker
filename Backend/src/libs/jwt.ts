@@ -2,14 +2,14 @@ import jwt from 'jsonwebtoken';
 import { Response } from 'express';
 import { customError } from '../middlewares/errorMiddleware';
 
-export default function generateToken(res: Response, userId: string) {
+export default function generateToken(res: Response, id: string) {
   const privateKey = process.env.TOKEN_SECRET;
 
   if (!privateKey) {
     throw new customError('Private key is not set', 500);
   }
   try {
-    const token = jwt.sign({ userId }, privateKey, {
+    const token = jwt.sign({ id }, privateKey, {
       expiresIn: '30d',
     });
     res.cookie('jwt', token, {
