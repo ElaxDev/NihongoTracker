@@ -1,38 +1,24 @@
 import jwt from 'jsonwebtoken';
-import { tokenDataType } from '../types';
+import { Response } from 'express';
+import { customError } from '../middlewares/errorMiddleware';
 
-export async function createAccessToken(tokenData: tokenDataType) {
-  const privateKey = process.env.ACCESS_TOKEN_SECRET;
-
-  if (!privateKey) {
-    throw new Error('Private key is not set');
-  }
-  try {
-    const token = await jwt.sign(tokenData, privateKey, {
-      expiresIn: '2h',
-    });
-    return token;
-  } catch (error) {
-    console.error(error);
-    return Promise.reject(error);
-  }
-}
-
-export async function createRefreshToken(
-  tokenData: tokenDataType
-): Promise<string | undefined> {
-  const privateKey = process.env.REFRESH_TOKEN_SECRET;
+export default function generateToken(res: Response, userId: string) {
+  const privateKey = process.env.TOKEN_SECRET;
 
   if (!privateKey) {
-    throw new Error('Private key is not set');
+    throw new customError('Private key is not set', 500);
   }
   try {
-    const token = await jwt.sign(tokenData, privateKey, {
-      expiresIn: '7d',
+    const token = jwt.sign({ userId }, privateKey, {
+      expiresIn: '30d',
     });
-    return token;
+    res.cookie('jwt', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: 30 * 24 * 60 * 60 * 1000,
+    });
   } catch (error) {
-    console.error(error);
-    return undefined;
+    throw error as customError;
   }
 }

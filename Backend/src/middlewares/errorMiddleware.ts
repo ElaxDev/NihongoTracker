@@ -1,8 +1,14 @@
 import { Request, Response, NextFunction } from 'express';
 
-interface customError extends Error {
+export class customError extends Error {
   statusCode?: number;
   kind?: string;
+
+  constructor(message: string, statusCode?: number, kind?: string) {
+    super(message);
+    this.statusCode = statusCode;
+    this.kind = kind;
+  }
 }
 
 export function notFoundHandler(
@@ -10,7 +16,7 @@ export function notFoundHandler(
   res: Response,
   next: NextFunction
 ) {
-  const error: customError = new Error(
+  const error: customError = new customError(
     `Not Found - ${req.originalUrl.toString()}`
   );
   res.status(404);

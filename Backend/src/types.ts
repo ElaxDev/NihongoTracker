@@ -1,5 +1,5 @@
 import { Request } from 'express';
-import { Types } from 'mongoose';
+import { Types, Document } from 'mongoose';
 
 export interface decodedJWT {
   id: Types.ObjectId;
@@ -12,6 +12,7 @@ export interface tokenDataType {
 }
 
 export interface IStat {
+  userLevel: number;
   readingXp: number;
   readingLevel: number;
   listeningXp: number;
@@ -35,7 +36,6 @@ export interface IStat {
   watchedAnime: string[];
   playedVn: string[];
   readLn: string[];
-  knownWords: string[];
 }
 
 export interface ILog {
@@ -57,17 +57,30 @@ export enum userRoles {
   user = 'user',
   mod = 'mod',
 }
-export interface IUser {
+export interface IUser extends Document {
   _id: Types.ObjectId;
   uuid: string;
   username: string;
   password: string;
-  stats?: Types.ObjectId;
+  clubs?: Types.ObjectId[];
+  statsId?: Types.ObjectId;
   avatar?: string;
   titles: string[];
   roles: userRoles;
   createdAt?: Date;
   updatedAt?: Date;
+  matchPassword: (enteredPassword: string) => Promise<boolean>;
+}
+
+export interface IRegister {
+  username: string;
+  password: string;
+  passwordConfirmation: string;
+}
+
+export interface ILogin {
+  username: string;
+  password: string;
 }
 
 export interface IRequest<Type> extends Request {

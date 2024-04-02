@@ -16,6 +16,7 @@ app.use(
     credentials: true,
   })
 );
+app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 app.use(morgan('dev'));
 
@@ -33,5 +34,12 @@ app.use(
 
 app.use(errorHandler);
 app.use(notFoundHandler);
+
+const globalErrorHandler = function (err: Error): void {
+  console.error('Uncaught Exception', err);
+};
+
+process.on('unhandledRejection', globalErrorHandler);
+process.on('uncaughtException', globalErrorHandler);
 
 export default app;
