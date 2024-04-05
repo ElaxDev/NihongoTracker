@@ -1,15 +1,24 @@
 import { Request, Response, NextFunction } from 'express';
 import { ParamsDictionary } from 'express-serve-static-core';
-import { ILog } from '../types';
+import { ILog, IEditedFields } from '../types';
 import Log from '../models/log.model';
 import User from '../models/user.model';
 import { Types } from 'mongoose';
+import { customError } from '../middlewares/errorMiddleware';
 
-export async function getUserLogs(req: Request, res: Response) {
-  const user = await User.findOne({ username: req.params.username });
-  if (!user) return res.status(404).json({ message: 'User not found' });
-  const logs = await Log.find({ user: user.id }).populate('user');
-  return res.json(logs);
+export async function getUserLogs(
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
+  try {
+    const user = await User.findOne({ username: req.params.username });
+    if (!user) throw new customError('User not found', 404);
+    const logs = await Log.find({ user: user._id }).select('-user');
+    return res.json(logs);
+  } catch (error) {
+    return next(error as customError);
+  }
 }
 
 export async function createLog(
@@ -43,68 +52,92 @@ export async function createLog(
       chars,
     });
     const savedLog = await newLog.save();
-    res.locals.log = savedLog;
-    return next();
+    return res.status(200).json(savedLog);
   } catch (error) {
-    console.error(error);
-    return res.status(400).json({ message: 'Stat could not be created' });
+    return next(error as customError);
   }
 }
 
-export async function getLog(req: Request, res: Response) {
-  const foundLog = await Log.findById(req.params.id).populate('user');
-  if (!foundLog) return res.status(404).json({ message: 'Log not found' });
-  return res.json(foundLog);
+export async function getLog(req: Request, res: Response, next: NextFunction) {
+  try {
+    const foundLog = await Log.findById(req.params.id).populate('user');
+    if (!foundLog) throw new customError('Log not found', 404);
+    return res.status(200).json(foundLog);
+  } catch (error) {
+    return next(error as customError);
+  }
 }
 
-export async function deleteLog(req: Request, res: Response) {
-  const deletedLog = await Log.findByIdAndDelete(
-    new Types.ObjectId(req.params.id)
-  );
-  if (!deletedLog) return res.status(404).json({ message: 'Log not found' });
-  return res.sendStatus(204);
-}
-
-export async function updateLog(
+export async function deleteLog(
   req: Request,
   res: Response,
   next: NextFunction
 ) {
-  const {
-    type,
-    description,
-    time,
-    date,
-    xp,
-    contentId,
-    episodes,
-    pages,
-    chars,
-  } = req.body;
-  const user: ILog['user'] = res.locals.user.id;
+  try {
+    const deletedLog = await Log.findByIdAndDelete(
+      new Types.ObjectId(req.params.id)
+    );
+    if (!deletedLog) throw new customError('Log not found', 404);
+    return res.sendStatus(204);
+  } catch (error) {
+    return next(error as customError);
+  }
+}
 
-  const foundLog = await Log.findById(req.params.id);
-  if (!foundLog) return res.status(404).json({ message: 'Log not found' });
+export async function updateLog(
+  req: Request<ParamsDictionary, any, ILog>,
+  res: Response,
+  next: NextFunction
+) {
+  const { description, time, date, xp, contentId, episodes, pages, chars } =
+    req.body;
 
-  res.locals.prevXP = foundLog.xp;
-  res.locals.prevEps = foundLog.episodes;
-  res.locals.prevChars = foundLog.chars;
-  res.locals.prevPages = foundLog.pages;
-  res.locals.prevTime = foundLog.time;
+  try {
+    const updatedLog = await Log.findByIdAndUpdate(
+      req.params.id,
+      {
+        description,
+        time,
+        date,
+        xp,
+        contentId,
+        episodes,
+        pages,
+        chars,
+      },
+      { new: false }
+    );
+    if (!updatedLog) throw new customError('Log not found', 404);
 
-  await foundLog.set({
-    user,
-    type,
-    description,
-    time,
-    date,
-    xp,
-    contentId,
-    episodes,
-    pages,
-    chars,
-  });
+    // Define the valid keys of IEditedFields
+    const validKeys: (keyof IEditedFields)[] = [
+      'episodes',
+      'pages',
+      'chars',
+      'time',
+      'xp',
+    ];
 
-  res.locals.log = await foundLog.save();
-  return next();
+    const editedFields: IEditedFields = {};
+
+    // Iterate over the properties of req.body and check if they exist in validKeys
+    for (const key in req.body) {
+      if (
+        Object.prototype.hasOwnProperty.call(req.body, key) &&
+        validKeys.includes(key as keyof IEditedFields)
+      ) {
+        // Add the property to editedFields
+        editedFields[key as keyof IEditedFields] =
+          updatedLog[key as keyof IEditedFields];
+      }
+    }
+    // Assign editedFields to updatedLog
+    updatedLog.editedFields = editedFields;
+
+    await updatedLog.save();
+
+    return res.sendStatus(204);
+  } catch (error) {
+    return next(error as customError);
+  }
 }

@@ -1,11 +1,13 @@
-import { Request, Response } from 'express';
+import { NextFunction, Request, Response } from 'express';
 import { ParamsDictionary } from 'express-serve-static-core';
-import Stat from '../models/stat.model';
+import Stats from '../models/stats.model';
 import User from '../models/user.model';
-import { IStat } from '../types';
+import { IStats } from '../types';
+import { customError } from '../middlewares/errorMiddleware';
+import Log from '../models/log.model';
 
 export async function createStat(
-  req: Request<ParamsDictionary, any, IStat>,
+  req: Request<ParamsDictionary, any, IStats>,
   res: Response
 ) {
   const {
@@ -31,10 +33,9 @@ export async function createStat(
     readManga,
     watchedAnime,
     playedVn,
-    knownWords,
   } = req.body;
 
-  const newStats = new Stat({
+  const newStats = new Stats({
     readingXp,
     readingLevel,
     listeningXp,
@@ -57,32 +58,47 @@ export async function createStat(
     readManga,
     watchedAnime,
     playedVn,
-    knownWords,
   });
 
   const statsSaved = await newStats.save();
   res.json(statsSaved);
 }
 
-export async function getUserStats(req: Request, res: Response) {
-  const user = await User.findOne({ username: req.params.username });
-  if (!user) return res.status(404).json({ message: 'User not found' });
-  const stats = await Stat.findById(user.stats);
-  if (!stats)
-    return res
-      .status(404)
-      .json({ message: 'Stat document not found for specified user' });
-  return res.json(stats);
+export async function getUserStats(
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
+  try {
+    const user = await User.findOne({ username: req.params.username });
+    if (!user) throw new customError('User not found', 404);
+    const stats = await Stats.findById(user.statsId);
+    if (!stats) {
+      throw new customError('Stat document not found for specified user', 404);
+    }
+    const lastLogs = await Log.find({
+      $and: [{ user: user._id }, { updatedAt: { $gt: stats.lastUpdated } }],
+    }).sort({ updatedAt: -1 });
+    console.log(`${lastLogs}`);
+    if (lastLogs.length) {
+      res.locals.userStatsId = user.statsId;
+      res.locals.lastLogs = lastLogs;
+      return next();
+    }
+    return res.status(200).json(stats);
+  } catch (error) {
+    return next(error as customError);
+  }
 }
 
 export async function getStat(req: Request, res: Response) {
-  const foundStat = await Stat.findById(req.params.id);
+  const foundStat = await Stats.findById(req.params.id);
   if (!foundStat) return res.status(404).json({ message: 'Stat not found' });
   return res.json(foundStat);
 }
 
 export async function deleteStat(req: Request, res: Response) {
-  const deletedStat = await Stat.findByIdAndDelete(req.params.id);
+  const deletedStat = await Stats.findByIdAndDelete(req.params.id);
   if (!deletedStat) return res.status(404).json({ message: 'Stat not found' });
   return res.sendStatus(204);
 }
@@ -115,7 +131,7 @@ export async function updateStatAdmin(req: Request, res: Response) {
   } = req.body;
 
   try {
-    const updatedStat = await Stat.findByIdAndUpdate(
+    const updatedStat = await Stats.findByIdAndUpdate(
       req.params.id,
       {
         readingXp,

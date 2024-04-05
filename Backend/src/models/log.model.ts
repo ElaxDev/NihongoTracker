@@ -1,5 +1,5 @@
 import { Schema, model } from 'mongoose';
-import { ILog } from '../types';
+import { ILog, IEditedFields } from '../types';
 
 const LogSchema = new Schema<ILog>(
   {
@@ -8,6 +8,7 @@ const LogSchema = new Schema<ILog>(
     contentId: String,
     xp: { type: Number, required: true },
     description: { type: String, trim: true, required: true },
+    editedFields: { type: {} as IEditedFields, default: null },
     episodes: {
       type: Number,
       required: function (this: ILog) {
@@ -40,7 +41,7 @@ const LogSchema = new Schema<ILog>(
         );
       },
     },
-    date: { type: Date, default: Date.now },
+    date: { type: Date, default: new Date() },
   },
   { timestamps: true }
 );

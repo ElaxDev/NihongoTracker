@@ -11,7 +11,7 @@ export interface tokenDataType {
   id: Types.ObjectId;
 }
 
-export interface IStat {
+export interface IStats extends Document {
   userLevel: number;
   readingXp: number;
   readingLevel: number;
@@ -19,6 +19,7 @@ export interface IStat {
   listeningLevel: number;
   charCountVn: number;
   charCountLn: number;
+  readingTimeVn: number;
   charCountReading: number;
   pageCountLn: number;
   readingTimeLn: number;
@@ -36,20 +37,31 @@ export interface IStat {
   watchedAnime: string[];
   playedVn: string[];
   readLn: string[];
+  lastUpdated: Date;
+  createdAt: Date;
 }
 
-export interface ILog {
+export interface IEditedFields {
+  episodes?: number;
+  pages?: number;
+  chars?: number;
+  time?: number;
+  xp?: number;
+}
+
+export interface ILog extends Document {
   _id: Types.ObjectId;
   user: Types.ObjectId;
   type: 'reading' | 'anime' | 'vn' | 'video' | 'ln' | 'manga';
   contentId?: string;
   xp: number;
   description: string;
+  editedFields?: IEditedFields | null;
   episodes?: number;
   pages?: number;
   chars?: number;
   time?: number;
-  date: Date;
+  date?: Date;
 }
 
 export enum userRoles {

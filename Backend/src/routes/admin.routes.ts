@@ -5,7 +5,7 @@ import { ILog } from '../types';
 import {
   updateUserById,
   deleteUserById,
-} from '../controllers/users.controller';
+} from '../controllers/admin.controller';
 import { deleteLog, updateLog } from '../controllers/logs.controller';
 import {
   createStat,
@@ -14,14 +14,11 @@ import {
 } from '../controllers/stats.controller';
 import { validateJWT } from '../middlewares/validateJWT';
 import { checkPermission } from '../middlewares/checkPermission';
-import { IStat } from '../types';
+import { IStats } from '../types';
 import { calculateXp } from '../middlewares/calculateXp';
-import AddOrUpdateStats from '../services/addStats';
-import { validateSchema } from '../middlewares/validator.middleware';
+// import updateStats from '../services/updateStats';
+// import { validateSchema } from '../middlewares/validator.middleware';
 import Log from '../models/log.model';
-import LogSchemaValidator from '../schemas/log.schema';
-import StatSchemaValidator from '../schemas/stat.schema';
-import UserSchemaValidator from '../schemas/user.schema';
 
 const router = Router();
 
@@ -43,20 +40,12 @@ router.put(
     }
     return res.status(404).json({ message: 'Log not found' });
   },
-  validateSchema(LogSchemaValidator),
   calculateXp,
-  updateLog,
-  AddOrUpdateStats
-); //tested
+  updateLog
+);
 
 //User routes
-router.put(
-  '/users/:id',
-  validateJWT,
-  checkPermission('admin'),
-  validateSchema(UserSchemaValidator),
-  updateUserById
-); //tested
+router.put('/users/:id', validateJWT, checkPermission('admin'), updateUserById); //tested
 router.delete(
   '/users/:id',
   validateJWT,
@@ -65,25 +54,23 @@ router.delete(
 ); //tested
 
 //Stat routes
-router.post<ParamsDictionary, any, IStat>(
+router.post<ParamsDictionary, any, IStats>(
   '/stats',
   validateJWT,
   checkPermission('admin'),
-  validateSchema(StatSchemaValidator),
   createStat
-); //tested
-router.put<ParamsDictionary, any, IStat>(
+);
+router.put<ParamsDictionary, any, IStats>(
   '/stats/:id',
   validateJWT,
   checkPermission('admin'),
-  validateSchema(StatSchemaValidator),
   updateStatAdmin
-); //tested
-router.delete<ParamsDictionary, any, IStat>(
+);
+router.delete<ParamsDictionary, any, IStats>(
   '/stats/:id',
   validateJWT,
   checkPermission('admin'),
   deleteStat
-); //tested
+);
 
 export default router;
