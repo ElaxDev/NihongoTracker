@@ -34,6 +34,7 @@ UserSchema.pre(
   { document: true, query: false },
   async function (next) {
     await this.model('Stats').deleteOne({ _id: this.statsId });
+    await this.model('Log').deleteMany({ user: this._id });
     next();
   }
 );
