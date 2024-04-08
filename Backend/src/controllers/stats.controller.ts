@@ -8,60 +8,69 @@ import Log from '../models/log.model';
 
 export async function createStat(
   req: Request<ParamsDictionary, any, IStats>,
-  res: Response
+  res: Response,
+  next: NextFunction
 ) {
-  const {
-    readingXp,
-    readingLevel,
-    listeningXp,
-    listeningLevel,
-    charCountVn,
-    charCountLn,
-    charCountReading,
-    pageCountLn,
-    readingTimeLn,
-    pageCountManga,
-    charCountManga,
-    readingTimeManga,
-    mangaPages,
-    listeningTime,
-    readingTime,
-    animeEpisodes,
-    animeWatchingTime,
-    videoWatchingTime,
-    lnCount,
-    readManga,
-    watchedAnime,
-    playedVn,
-  } = req.body;
+  try {
+    const {
+      userLevel,
+      userXp,
+      readingXp,
+      readingLevel,
+      listeningXp,
+      listeningLevel,
+      charCountVn,
+      charCountLn,
+      charCountReading,
+      pageCountLn,
+      readingTimeLn,
+      pageCountManga,
+      charCountManga,
+      readingTimeManga,
+      mangaPages,
+      listeningTime,
+      readingTime,
+      animeEpisodes,
+      animeWatchingTime,
+      videoWatchingTime,
+      lnCount,
+      readManga,
+      watchedAnime,
+      playedVn,
+    } = req.body;
 
-  const newStats = new Stats({
-    readingXp,
-    readingLevel,
-    listeningXp,
-    listeningLevel,
-    charCountVn,
-    charCountLn,
-    charCountReading,
-    pageCountLn,
-    readingTimeLn,
-    pageCountManga,
-    charCountManga,
-    readingTimeManga,
-    mangaPages,
-    listeningTime,
-    readingTime,
-    animeEpisodes,
-    animeWatchingTime,
-    videoWatchingTime,
-    lnCount,
-    readManga,
-    watchedAnime,
-    playedVn,
-  });
+    const newStats = new Stats({
+      userLevel,
+      userXp,
+      readingXp,
+      readingLevel,
+      listeningXp,
+      listeningLevel,
+      charCountVn,
+      charCountLn,
+      charCountReading,
+      pageCountLn,
+      readingTimeLn,
+      pageCountManga,
+      charCountManga,
+      readingTimeManga,
+      mangaPages,
+      listeningTime,
+      readingTime,
+      animeEpisodes,
+      animeWatchingTime,
+      videoWatchingTime,
+      lnCount,
+      readManga,
+      watchedAnime,
+      playedVn,
+    });
 
-  const statsSaved = await newStats.save();
-  res.json(statsSaved);
+    const statsSaved = await newStats.save();
+    return res.status(200).json(statsSaved);
+  } catch (error) {
+    return next(error as customError);
+  }
 }
 
 export async function getUserStats(
@@ -79,7 +88,7 @@ export async function getUserStats(
     const lastLogs = await Log.find({
       $and: [{ user: user._id }, { updatedAt: { $gt: stats.lastUpdated } }],
     }).sort({ updatedAt: -1 });
-    console.log(`${lastLogs}`);
+
     if (lastLogs.length) {
       res.locals.userStatsId = user.statsId;
       res.locals.lastLogs = lastLogs;

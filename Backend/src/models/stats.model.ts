@@ -4,6 +4,7 @@ import { IStats } from '../types';
 const StatsSchema = new Schema<IStats>(
   {
     userLevel: { type: Number, required: true, default: 1 },
+    userXp: { type: Number, required: true, default: 0 },
     readingXp: { type: Number, required: true, default: 0 },
     readingLevel: { type: Number, required: true, default: 1 },
     listeningXp: { type: Number, required: true, default: 0 },

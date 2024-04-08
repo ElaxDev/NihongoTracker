@@ -13,6 +13,7 @@ export interface tokenDataType {
 
 export interface IStats extends Document {
   userLevel: number;
+  userXp: number;
   readingXp: number;
   readingLevel: number;
   listeningXp: number;
