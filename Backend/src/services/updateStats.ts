@@ -16,157 +16,74 @@ export default async function updateStats(
     if (!userStats) {
       throw new customError('User does not have a stat document', 404);
     }
-    for (const log of lastLogs) {
-      switch (log.type) {
-        case 'anime':
-          if (log.editedFields && log.editedFields.xp) {
-            userStats.listeningXp += log.xp - log.editedFields.xp;
-          } else if (log.xp) {
-            userStats.listeningXp += log.xp;
-          }
 
-          if (log.editedFields && log.editedFields.episodes) {
-            userStats.listeningTime +=
-              log.episodes! * 24 - log.editedFields.episodes * 24;
-            userStats.animeWatchingTime +=
-              log.episodes! * 24 - log.editedFields.episodes * 24;
-            userStats.animeEpisodes +=
-              log.episodes! - log.editedFields.episodes;
-          } else if (log.episodes) {
-            userStats.listeningTime += log.episodes * 24;
-            userStats.animeWatchingTime += log.episodes * 24;
-            userStats.animeEpisodes += log.episodes;
-          }
+    const promises = lastLogs.map(async (log) => {
+      const { type, xp, editedFields, episodes, time, chars, pages } = log;
+
+      switch (type) {
+        case 'anime':
+          userStats.listeningXp += (xp || 0) - (editedFields?.xp || 0);
+          userStats.userXp += (xp || 0) - (editedFields?.xp || 0);
+          userStats.listeningTime +=
+            (episodes || 0) * 24 - (editedFields?.episodes || 0) * 24 || 0;
+          userStats.animeWatchingTime +=
+            (episodes || 0) * 24 - (editedFields?.episodes || 0) * 24 || 0;
+          userStats.animeEpisodes +=
+            (episodes || 0) - (editedFields?.episodes || 0);
           break;
         case 'video':
-          if (log.editedFields && log.editedFields.xp) {
-            userStats.listeningXp += log.xp - log.editedFields.xp;
-          } else if (log.xp) {
-            userStats.listeningXp += log.xp;
-          }
-
-          if (log.editedFields && log.editedFields.time) {
-            userStats.listeningTime += log.time! - log.editedFields.time;
-            userStats.videoWatchingTime += log.time! - log.editedFields.time;
-          } else if (log.time) {
-            userStats.listeningTime += log.time;
-            userStats.videoWatchingTime += log.time;
-          }
+          userStats.listeningXp += (xp || 0) - (editedFields?.xp || 0);
+          userStats.userXp += (xp || 0) - (editedFields?.xp || 0);
+          userStats.listeningTime += (time || 0) - (editedFields?.time || 0);
+          userStats.videoWatchingTime +=
+            (time || 0) - (editedFields?.time || 0);
           break;
         case 'ln':
-          if (log.editedFields && log.editedFields.xp) {
-            userStats.readingXp += log.xp - log.editedFields.xp;
-          } else if (log.xp) {
-            userStats.readingXp += log.xp;
-          }
-
-          if (log.editedFields && log.editedFields.time) {
-            userStats.readingTime += log.time! - log.editedFields.time;
-            userStats.readingTimeLn += log.time! - log.editedFields.time;
-          } else if (log.time) {
-            userStats.readingTime += log.time;
-            userStats.readingTimeLn += log.time;
-          }
-
-          if (log.editedFields && log.editedFields.chars) {
-            userStats.charCountLn += log.chars! - log.editedFields.chars;
-          } else if (log.chars) {
-            userStats.charCountLn += log.chars;
-          }
-
-          if (log.editedFields && log.editedFields.pages) {
-            userStats.pageCountLn += log.pages! - log.editedFields.pages;
-          } else if (log.pages) {
-            userStats.pageCountLn += log.pages;
-          }
+          userStats.readingXp += (xp || 0) - (editedFields?.xp || 0);
+          userStats.userXp += (xp || 0) - (editedFields?.xp || 0);
+          userStats.readingTime += (time || 0) - (editedFields?.time || 0);
+          userStats.readingTimeLn += (time || 0) - (editedFields?.time || 0);
+          userStats.charCountLn += (chars || 0) - (editedFields?.chars || 0);
+          userStats.pageCountLn += (pages || 0) - (editedFields?.pages || 0);
           break;
         case 'manga':
-          if (log.editedFields && log.editedFields.xp) {
-            userStats.readingXp += log.xp - log.editedFields.xp;
-          } else if (log.xp) {
-            userStats.readingXp += log.xp;
-          }
-
-          if (log.editedFields && log.editedFields.pages) {
-            userStats.mangaPages += log.pages! - log.editedFields.pages;
-          } else if (log.pages) {
-            userStats.mangaPages += log.pages;
-          }
-
-          if (log.editedFields && log.editedFields.chars) {
-            userStats.charCountManga += log.chars! - log.editedFields.chars;
-          } else if (log.chars) {
-            userStats.charCountManga += log.chars;
-          }
-
-          if (log.editedFields && log.editedFields.time) {
-            userStats.readingTime += log.time! - log.editedFields.time;
-            userStats.readingTimeManga += log.time! - log.editedFields.time;
-          } else if (log.time) {
-            userStats.readingTime += log.time;
-            userStats.readingTimeManga += log.time;
-          }
+          userStats.readingXp += (xp || 0) - (editedFields?.xp || 0);
+          userStats.userXp += (xp || 0) - (editedFields?.xp || 0);
+          userStats.mangaPages += (pages || 0) - (editedFields?.pages || 0);
+          userStats.charCountManga += (chars || 0) - (editedFields?.chars || 0);
+          userStats.readingTime += (time || 0) - (editedFields?.time || 0);
+          userStats.readingTimeManga += (time || 0) - (editedFields?.time || 0);
           break;
         case 'reading':
-          if (log.editedFields && log.editedFields.xp) {
-            userStats.readingXp += log.xp - log.editedFields.xp;
-          } else if (log.xp) {
-            userStats.readingXp += log.xp;
-          }
-
-          if (log.editedFields && log.editedFields.time) {
-            userStats.readingTime += log.time! - log.editedFields.time;
-            userStats.readingTime += log.time! - log.editedFields.time;
-          } else if (log.time) {
-            userStats.readingTime += log.time;
-            userStats.readingTime += log.time;
-          }
-
-          if (log.editedFields && log.editedFields.chars) {
-            userStats.charCountReading += log.chars! - log.editedFields.chars;
-          } else if (log.chars) {
-            userStats.charCountReading += log.chars;
-          }
+          userStats.readingXp += (xp || 0) - (editedFields?.xp || 0);
+          userStats.userXp += (xp || 0) - (editedFields?.xp || 0);
+          userStats.readingTime += (time || 0) - (editedFields?.time || 0);
+          userStats.charCountReading +=
+            (chars || 0) - (editedFields?.chars || 0);
           break;
         case 'vn':
-        case 'vn':
-          if (log.editedFields && log.editedFields.xp) {
-            userStats.readingXp += log.xp - log.editedFields.xp;
-          } else if (log.xp) {
-            userStats.readingXp += log.xp;
-          }
-
-          if (log.editedFields && log.editedFields.time) {
-            userStats.readingTime += log.time! - log.editedFields.time;
-            userStats.readingTimeVn += log.time! - log.editedFields.time;
-          } else if (log.time) {
-            userStats.readingTime += log.time;
-            userStats.readingTimeVn += log.time;
-          }
-
-          if (log.editedFields && log.editedFields.chars) {
-            userStats.charCountVn += log.chars! - log.editedFields.chars;
-          } else if (log.chars) {
-            userStats.charCountVn += log.chars;
-          }
+          userStats.readingXp += (xp || 0) - (editedFields?.xp || 0);
+          userStats.userXp += (xp || 0) - (editedFields?.xp || 0);
+          userStats.readingTime += (time || 0) - (editedFields?.time || 0);
+          userStats.readingTimeVn += (time || 0) - (editedFields?.time || 0);
+          userStats.charCountVn += (chars || 0) - (editedFields?.chars || 0);
           break;
         default:
           return res.status(400).json({ message: 'Invalid content type' });
       }
 
-      while (userStats.listeningXp > calculateLevel(userStats.listeningLevel)) {
-        userStats.listeningLevel += 1;
-      }
-
-      while (userStats.readingXp > calculateLevel(userStats.readingLevel)) {
-        userStats.readingLevel += 1;
-      }
-
-      // Reset the editedFields property
       log.editedFields = null;
-      await log.save();
-    }
+      return await log.save();
+    });
+
+    await Promise.all(promises);
+
+    userStats.listeningLevel = calculateLevel(userStats.listeningXp);
+    userStats.readingLevel = calculateLevel(userStats.readingXp);
+    userStats.userLevel = calculateLevel(userStats.userXp);
+
     await userStats.save();
+
     return res.status(200).json(userStats).end();
   } catch (error) {
     return next(error as customError);
