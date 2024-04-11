@@ -5,6 +5,7 @@ import Log from '../models/log.model';
 import User from '../models/user.model';
 import { Types } from 'mongoose';
 import { customError } from '../middlewares/errorMiddleware';
+import updateStats from '../services/updateStats';
 
 export async function getUserLogs(
   req: Request,
@@ -52,6 +53,8 @@ export async function createLog(
       chars,
     });
     const savedLog = await newLog.save();
+    res.locals.log = savedLog;
+    updateStats(req, res, next);
     return res.status(200).json(savedLog);
   } catch (error) {
     return next(error as customError);
@@ -93,23 +96,13 @@ export async function updateLog(
     req.body;
 
   try {
-    const updatedLog = await Log.findByIdAndUpdate(
-      req.params.id,
-      {
-        description,
-        time,
-        date,
-        xp,
-        contentId,
-        episodes,
-        pages,
-        chars,
-      },
-      { new: false }
-    );
-    if (!updatedLog) throw new customError('Log not found', 404);
+    const log = await Log.findOne({
+      _id: new Types.ObjectId(req.params.id),
+      user: res.locals.user.id,
+    });
 
-    // Define the valid keys of IEditedFields
+    if (!log) throw new customError('Log not found', 404);
+
     const validKeys: (keyof IEditedFields)[] = [
       'episodes',
       'pages',
@@ -120,22 +113,26 @@ export async function updateLog(
 
     const editedFields: IEditedFields = {};
 
-    // Iterate over the properties of req.body and check if they exist in validKeys
     for (const key in req.body) {
-      if (
-        Object.prototype.hasOwnProperty.call(req.body, key) &&
-        validKeys.includes(key as keyof IEditedFields)
-      ) {
-        // Add the property to editedFields
+      if (validKeys.includes(key as keyof IEditedFields)) {
         editedFields[key as keyof IEditedFields] =
-          updatedLog[key as keyof IEditedFields];
+          log[key as keyof IEditedFields];
       }
     }
-    // Assign editedFields to updatedLog
-    updatedLog.editedFields = editedFields;
 
-    await updatedLog.save();
+    log.description = description !== undefined ? description : log.description;
+    log.time = time !== undefined ? time : log.time;
+    log.date = date !== undefined ? date : log.date;
+    log.xp = xp !== undefined ? xp : log.xp;
+    log.contentId = contentId !== undefined ? contentId : log.contentId;
+    log.episodes = episodes !== undefined ? episodes : log.episodes;
+    log.pages = pages !== undefined ? pages : log.pages;
+    log.chars = chars !== undefined ? chars : log.chars;
+    log.editedFields = editedFields;
 
+    const updatedLog = await log.save();
+    res.locals.log = updatedLog;
+    await updateStats(req, res, next);
     return res.sendStatus(204);
   } catch (error) {
     return next(error as customError);

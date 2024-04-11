@@ -25,10 +25,7 @@ const LogSchema = new Schema<ILog>(
       type: Number,
       required: function (this: ILog) {
         return (
-          (!this.chars &&
-            this.type !== 'anime' &&
-            ['reading', 'manga', 'ln', 'vn'].includes(this.type)) ||
-          this.type === 'video'
+          (!this.chars && this.type === 'reading') || this.type === 'video'
         );
       },
     },

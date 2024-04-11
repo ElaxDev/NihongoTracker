@@ -51,16 +51,42 @@ export async function updateUser(
 export async function getUser(req: Request, res: Response) {
   const userFound = await User.findOne({
     username: req.params.username,
-  }).populate('stats');
+  });
   if (!userFound) return res.status(404).json({ message: 'User not found' });
 
   return res.json({
     id: userFound._id,
     username: userFound.username,
-    statsId: userFound.statsId,
+    stats: userFound.stats,
     avatar: userFound.avatar,
     titles: userFound.titles,
     createdAt: userFound.createdAt,
     updatedAt: userFound.updatedAt,
   });
+}
+
+export async function getRanking(
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
+  try {
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 10;
+    const skip = (page - 1) * limit;
+    const filter = (req.query.filter as string) || 'userLevel';
+
+    const rankingUsers = await User.aggregate([
+      { $sort: { [`stats.${filter}`]: -1 } },
+      { $skip: skip },
+      { $limit: limit },
+      {
+        $project: { _id: 0, avatar: 1, username: 1, [`stats.${filter}`]: 1 },
+      },
+    ]);
+
+    return res.status(200).json(rankingUsers);
+  } catch (error) {
+    return next(error as customError);
+  }
 }

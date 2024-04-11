@@ -1,5 +1,4 @@
 import User from '../models/user.model';
-import Stats from '../models/stats.model';
 import { Request, Response, NextFunction } from 'express';
 import generateToken from '../libs/jwt';
 import { ILogin, IRegister } from '../types';
@@ -23,15 +22,13 @@ export async function register(
     }
 
     const user = await User.create({ username, password });
-    const stats = await Stats.create({});
-    await User.findByIdAndUpdate(user._id, { statsId: stats._id });
 
-    if (user && stats) {
+    if (user) {
       generateToken(res, user._id.toString());
       return res.status(201).json({ _id: user._id, name: user.username });
-    } else {
-      throw new customError('Invalid user data', 400);
     }
+
+    throw new customError('Invalid user data', 400);
   } catch (error) {
     return next(error as customError);
   }
@@ -40,14 +37,17 @@ export async function register(
 export async function login(req: Request, res: Response, next: NextFunction) {
   const { username, password }: ILogin = req.body;
   try {
-    const user = await User.findOne({ username: username }).populate('statsId');
+    if (!username || !password)
+      throw new customError('Please provide username and password', 400);
+
+    const user = await User.findOne({ username: username });
 
     if (user && (await user.matchPassword(password))) {
       generateToken(res, user._id.toString());
       return res.status(201).json({
         _id: user._id,
         name: user.username,
-        stats: user.statsId,
+        stats: user.stats,
         avatar: user.avatar,
         titles: user.titles,
         roles: user.roles,

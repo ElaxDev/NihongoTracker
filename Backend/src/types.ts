@@ -11,7 +11,34 @@ export interface tokenDataType {
   id: Types.ObjectId;
 }
 
-export interface IStats extends Document {
+export interface IRanking extends Document {
+  _id: Types.ObjectId;
+  month: number;
+  year: number;
+  users?: Types.ObjectId[];
+}
+
+export enum userRoles {
+  admin = 'admin',
+  user = 'user',
+  mod = 'mod',
+}
+
+export interface IUser extends Document {
+  _id: Types.ObjectId;
+  avatar?: string;
+  username: string;
+  password: string;
+  clubs?: Types.ObjectId[];
+  stats: IStats;
+  titles: string[];
+  roles: userRoles;
+  createdAt?: Date;
+  updatedAt?: Date;
+  matchPassword: (enteredPassword: string) => Promise<boolean>;
+}
+
+export interface IStats {
   userLevel: number;
   userXp: number;
   readingXp: number;
@@ -38,8 +65,6 @@ export interface IStats extends Document {
   watchedAnime: string[];
   playedVn: string[];
   readLn: string[];
-  lastUpdated: Date;
-  createdAt: Date;
 }
 
 export interface IEditedFields {
@@ -63,25 +88,6 @@ export interface ILog extends Document {
   chars?: number;
   time?: number;
   date?: Date;
-}
-
-export enum userRoles {
-  admin = 'admin',
-  user = 'user',
-  mod = 'mod',
-}
-export interface IUser extends Document {
-  _id: Types.ObjectId;
-  avatar?: string;
-  username: string;
-  password: string;
-  clubs?: Types.ObjectId[];
-  statsId?: Types.ObjectId;
-  titles: string[];
-  roles: userRoles;
-  createdAt?: Date;
-  updatedAt?: Date;
-  matchPassword: (enteredPassword: string) => Promise<boolean>;
 }
 
 export interface updateRequest {

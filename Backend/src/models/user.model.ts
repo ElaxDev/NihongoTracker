@@ -7,7 +7,34 @@ const UserSchema = new Schema<IUser>(
   {
     username: { type: String, required: true, unique: true },
     password: { type: String, required: true },
-    statsId: { type: Types.ObjectId, ref: 'Stats' },
+    stats: {
+      userLevel: { type: Number, required: true, default: 1 },
+      userXp: { type: Number, required: true, default: 0 },
+      readingXp: { type: Number, required: true, default: 0 },
+      readingLevel: { type: Number, required: true, default: 1 },
+      listeningXp: { type: Number, required: true, default: 0 },
+      listeningLevel: { type: Number, required: true, default: 1 },
+      charCountVn: { type: Number, required: true, default: 0 },
+      charCountLn: { type: Number, required: true, default: 0 },
+      readingTimeVn: { type: Number, required: true, default: 0 },
+      charCountReading: { type: Number, required: true, default: 0 },
+      pageCountLn: { type: Number, required: true, default: 0 },
+      readingTimeLn: { type: Number, required: true, default: 0 },
+      pageCountManga: { type: Number, required: true, default: 0 },
+      charCountManga: { type: Number, required: true, default: 0 },
+      readingTimeManga: { type: Number, required: true, default: 0 },
+      mangaPages: { type: Number, required: true, default: 0 },
+      listeningTime: { type: Number, required: true, default: 0 },
+      readingTime: { type: Number, required: true, default: 0 },
+      animeEpisodes: { type: Number, required: true, default: 0 },
+      animeWatchingTime: { type: Number, required: true, default: 0 },
+      videoWatchingTime: { type: Number, required: true, default: 0 },
+      lnCount: { type: Number, required: true, default: 0 },
+      readManga: { type: [String], required: true, default: [] },
+      watchedAnime: { type: [String], required: true, default: [] },
+      playedVn: { type: [String], required: true, default: [] },
+      readLn: { type: [String], required: true, default: [] },
+    },
     clubs: [{ type: Types.ObjectId, ref: 'Club' }],
     avatar: { type: String, default: '' },
     titles: { type: [String], default: [], required: true },
@@ -33,7 +60,6 @@ UserSchema.pre(
   'deleteOne',
   { document: true, query: false },
   async function (next) {
-    await this.model('Stats').deleteOne({ _id: this.statsId });
     await this.model('Log').deleteMany({ user: this._id });
     next();
   }

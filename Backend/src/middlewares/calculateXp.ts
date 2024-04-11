@@ -12,12 +12,16 @@ export async function calculateXp(
   const { episodes, pages, time, chars } = req.body;
   let type;
   try {
-    if (req.params.id) {
+    if (req.body.type) {
+      type = req.body.type;
+    } else if (req.params.id) {
       const foundLog = await Log.findById(req.params.id);
-      if (!foundLog) return next(new customError('Log not found', 404));
+      if (!foundLog) {
+        throw new customError('Log not found', 404);
+      }
       type = foundLog.type;
     } else {
-      type = req.body.type;
+      throw new customError('Log type not found', 400);
     }
     var timeXp = 0;
     var charsXp = 0;
