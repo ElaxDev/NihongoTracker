@@ -23,12 +23,17 @@ export async function register(
 
     const user = await User.create({ username, password });
 
-    if (user) {
-      generateToken(res, user._id.toString());
-      return res.status(201).json({ _id: user._id, name: user.username });
-    }
+    if (!user) throw new customError('Invalid user data', 400);
 
-    throw new customError('Invalid user data', 400);
+    generateToken(res, user._id.toString());
+    return res.status(201).json({
+      _id: user._id,
+      name: user.username,
+      stats: user.stats,
+      avatar: user.avatar,
+      titles: user.titles,
+      roles: user.roles,
+    });
   } catch (error) {
     return next(error as customError);
   }

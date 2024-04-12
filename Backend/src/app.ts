@@ -23,10 +23,10 @@ app.use(cookieParser());
 
 app.use('/api/auth', authRoutes);
 app.use('/api/logs', logsRoutes);
-app.use('/api/user', userRoutes);
+app.use('/api/users', userRoutes);
 app.use('/api/admin', adminRoutes);
 app.use(
-  '/',
+  '/api',
   Router().get('/', (_req, res) => {
     res.json({ message: 'API Working' });
   })

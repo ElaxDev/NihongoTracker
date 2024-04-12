@@ -90,3 +90,17 @@ export async function getRanking(
     return next(error as customError);
   }
 }
+
+export async function getUsers(
+  _req: Request,
+  res: Response,
+  next: NextFunction
+) {
+  try {
+    const users = await User.find({}).select('-password');
+    if (!users) throw new customError('No users found', 404);
+    return res.json(users);
+  } catch (error) {
+    return next(error as customError);
+  }
+}
