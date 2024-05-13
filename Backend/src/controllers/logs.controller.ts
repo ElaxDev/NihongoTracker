@@ -92,7 +92,7 @@ export async function updateLog(
   res: Response,
   next: NextFunction
 ) {
-  const { description, time, date, xp, contentId, episodes, pages, chars } =
+  const { description, time, date, contentId, episodes, pages, chars } =
     req.body;
 
   try {
@@ -123,7 +123,6 @@ export async function updateLog(
     log.description = description !== undefined ? description : log.description;
     log.time = time !== undefined ? time : log.time;
     log.date = date !== undefined ? date : log.date;
-    log.xp = xp !== undefined ? xp : log.xp;
     log.contentId = contentId !== undefined ? contentId : log.contentId;
     log.episodes = episodes !== undefined ? episodes : log.episodes;
     log.pages = pages !== undefined ? pages : log.pages;
