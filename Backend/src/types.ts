@@ -26,7 +26,7 @@ export enum userRoles {
 
 export interface IUser extends Document {
   _id: Types.ObjectId;
-  avatar?: string;
+  avatar?: Buffer;
   username: string;
   password: string;
   clubs?: Types.ObjectId[];
@@ -81,6 +81,9 @@ export interface ILog extends Document {
   type: 'reading' | 'anime' | 'vn' | 'video' | 'ln' | 'manga';
   contentId?: string;
   xp: number;
+  private: boolean;
+  adult: boolean;
+  image?: string;
   description: string;
   editedFields?: IEditedFields | null;
   episodes?: number;
@@ -93,7 +96,7 @@ export interface ILog extends Document {
 export interface updateRequest {
   username?: string;
   password?: string;
-  avatar?: string;
+  avatar?: Buffer;
   newPassword?: string;
   newPasswordConfirm?: string;
 }
