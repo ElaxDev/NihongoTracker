@@ -28,7 +28,7 @@ export async function register(
     generateToken(res, user._id.toString());
     return res.status(201).json({
       _id: user._id,
-      name: user.username,
+      username: user.username,
       stats: user.stats,
       avatar: user.avatar,
       titles: user.titles,
@@ -51,7 +51,7 @@ export async function login(req: Request, res: Response, next: NextFunction) {
       generateToken(res, user._id.toString());
       return res.status(201).json({
         _id: user._id,
-        name: user.username,
+        username: user.username,
         stats: user.stats,
         avatar: user.avatar,
         titles: user.titles,
