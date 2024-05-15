@@ -7,6 +7,9 @@ const LogSchema = new Schema<ILog>(
     type: { type: String, required: true },
     contentId: String,
     xp: { type: Number, required: true },
+    private: { type: Boolean, default: false },
+    adult: { type: Boolean, default: false },
+    image: String,
     description: { type: String, trim: true, required: true },
     editedFields: { type: {} as IEditedFields, default: null },
     episodes: {
