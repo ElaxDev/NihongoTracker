@@ -41,10 +41,16 @@ export interface IUser extends Document {
 export interface IStats {
   userLevel: number;
   userXp: number;
+  userXpToNextLevel: number;
+  userXpToCurrentLevel: number;
   readingXp: number;
   readingLevel: number;
+  readingXpToNextLevel: number;
+  readingXpToCurrentLevel: number;
   listeningXp: number;
   listeningLevel: number;
+  listeningXpToNextLevel: number;
+  listeningXpToCurrentLevel: number;
   charCountVn: number;
   charCountLn: number;
   readingTimeVn: number;

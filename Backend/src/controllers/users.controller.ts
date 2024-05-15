@@ -51,7 +51,7 @@ export async function updateUser(
 export async function getUser(req: Request, res: Response) {
   const userFound = await User.findOne({
     username: req.params.username,
-  });
+  }).collation({ locale: 'en', strength: 2 });
   if (!userFound) return res.status(404).json({ message: 'User not found' });
 
   return res.json({
@@ -75,9 +75,10 @@ export async function getRanking(
     const limit = parseInt(req.query.limit as string) || 10;
     const skip = (page - 1) * limit;
     const filter = (req.query.filter as string) || 'userLevel';
+    const sort = (req.query.sort as string) || 'desc';
 
     const rankingUsers = await User.aggregate([
-      { $sort: { [`stats.${filter}`]: -1 } },
+      { $sort: { [`stats.${filter}`]: sort === 'asc' ? 1 : -1 } },
       { $skip: skip },
       { $limit: limit },
       {
