@@ -6,11 +6,11 @@ export function checkPermission(requiredRole: 'admin' | 'user' | 'mod') {
   return async (_req: Request, res: Response, next: NextFunction) => {
     try {
       const userFound = await User.findOne({ _id: res.locals.user.id });
-      if (!userFound) return res.status(401).json({ message: 'Unauthorized' });
+      if (!userFound) throw new customError('Unauthorized', 401);
 
-      if (userFound.roles.includes(requiredRole)) {
-        return next();
-      }
+      if (!userFound.roles.includes(requiredRole))
+        throw new customError('Unauthorized', 401);
+      return next();
     } catch (error) {
       return next(error as customError);
     }
