@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { ParamsDictionary } from 'express-serve-static-core';
 import { ILog, IStats, IUser } from '../types';
-import { calculateLevel } from './calculateLevel';
+import { calculateLevel, calculateXp } from './calculateLevel';
 import { customError } from '../middlewares/errorMiddleware';
 import User from '../models/user.model';
 
@@ -76,6 +76,14 @@ export default async function updateStats(
     userStats.listeningLevel = calculateLevel(userStats.listeningXp);
     userStats.readingLevel = calculateLevel(userStats.readingXp);
     userStats.userLevel = calculateLevel(userStats.userXp);
+    userStats.listeningXpToNextLevel = calculateXp(
+      userStats.listeningLevel + 1
+    );
+    userStats.readingXpToNextLevel = calculateXp(userStats.readingLevel + 1);
+    userStats.userXpToNextLevel = calculateXp(userStats.userLevel + 1);
+    userStats.listeningXpToCurrentLevel = calculateXp(userStats.listeningLevel);
+    userStats.readingXpToCurrentLevel = calculateXp(userStats.readingLevel);
+    userStats.userXpToCurrentLevel = calculateXp(userStats.userLevel);
 
     user.markModified('stats');
     await user.save();
