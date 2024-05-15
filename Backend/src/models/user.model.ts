@@ -2,18 +2,57 @@ import { Schema, model } from 'mongoose';
 import { Types } from 'mongoose';
 import { IUser, userRoles } from '../types';
 import bcrypt from 'bcryptjs';
+import Log from './log.model'; // Import the Log model
+import { calculateXp } from '../services/calculateLevel';
 
 const UserSchema = new Schema<IUser>(
   {
-    username: { type: String, required: true, unique: true },
+    username: {
+      type: String,
+      required: true,
+      index: {
+        unique: true,
+        collation: { locale: 'en', strength: 2 },
+      },
+    },
     password: { type: String, required: true },
     stats: {
       userLevel: { type: Number, required: true, default: 1 },
       userXp: { type: Number, required: true, default: 0 },
+      userXpToNextLevel: {
+        type: Number,
+        required: true,
+        default: calculateXp(2),
+      },
+      userXpToCurrentLevel: {
+        type: Number,
+        required: true,
+        default: calculateXp(1),
+      },
       readingXp: { type: Number, required: true, default: 0 },
       readingLevel: { type: Number, required: true, default: 1 },
+      readingXpToNextLevel: {
+        type: Number,
+        required: true,
+        default: calculateXp(2),
+      },
+      readingXpToCurrentLevel: {
+        type: Number,
+        required: true,
+        default: calculateXp(1),
+      },
       listeningXp: { type: Number, required: true, default: 0 },
       listeningLevel: { type: Number, required: true, default: 1 },
+      listeningXpToNextLevel: {
+        type: Number,
+        required: true,
+        default: calculateXp(2),
+      },
+      listeningXpToCurrentLevel: {
+        type: Number,
+        required: true,
+        default: calculateXp(1),
+      },
       charCountVn: { type: Number, required: true, default: 0 },
       charCountLn: { type: Number, required: true, default: 0 },
       readingTimeVn: { type: Number, required: true, default: 0 },
@@ -36,7 +75,7 @@ const UserSchema = new Schema<IUser>(
       readLn: { type: [String], required: true, default: [] },
     },
     clubs: [{ type: Types.ObjectId, ref: 'Club' }],
-    avatar: { type: String, default: '' },
+    avatar: { type: Buffer, default: '' },
     titles: { type: [String], default: [], required: true },
     roles: {
       type: String,
@@ -57,10 +96,11 @@ UserSchema.pre('save', async function (next) {
 });
 
 UserSchema.pre(
-  'deleteOne',
+  'findOneAndDelete',
   { document: true, query: false },
-  async function (next) {
-    await this.model('Log').deleteMany({ user: this._id });
+  async function (this: IUser, next) {
+    console.log('Deleting user logs\nUser id:', this._id);
+    await Log.deleteMany({ user: this._id });
     next();
   }
 );
