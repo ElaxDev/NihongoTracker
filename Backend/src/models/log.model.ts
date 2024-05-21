@@ -28,7 +28,9 @@ const LogSchema = new Schema<ILog>(
       type: Number,
       required: function (this: ILog) {
         return (
-          (!this.chars && this.type === 'reading') || this.type === 'video'
+          (!this.chars && this.type === 'reading') ||
+          this.type === 'video' ||
+          this.type === 'audio'
         );
       },
     },

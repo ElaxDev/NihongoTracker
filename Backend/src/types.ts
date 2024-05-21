@@ -62,6 +62,7 @@ export interface IStats {
   readingTimeManga: number;
   mangaPages: number;
   listeningTime: number;
+  audioTime: number;
   readingTime: number;
   animeEpisodes: number;
   animeWatchingTime: number;
@@ -84,7 +85,7 @@ export interface IEditedFields {
 export interface ILog extends Document {
   _id: Types.ObjectId;
   user: Types.ObjectId;
-  type: 'reading' | 'anime' | 'vn' | 'video' | 'ln' | 'manga';
+  type: 'reading' | 'anime' | 'vn' | 'video' | 'ln' | 'manga' | 'audio';
   contentId?: string;
   xp: number;
   private: boolean;

@@ -2,7 +2,6 @@ import { Request, Response, NextFunction } from 'express';
 import { ParamsDictionary } from 'express-serve-static-core';
 import { ILog, IEditedFields } from '../types';
 import Log from '../models/log.model';
-import User from '../models/user.model';
 import { Types } from 'mongoose';
 import { customError } from '../middlewares/errorMiddleware';
 import updateStats from '../services/updateStats';
@@ -12,10 +11,44 @@ export async function getUserLogs(
   res: Response,
   next: NextFunction
 ) {
+  const page = parseInt(req.query.page as string) || 1;
+  const limit = parseInt(req.query.limit as string) || 10;
+  const skip = (page - 1) * limit;
   try {
-    const user = await User.findOne({ username: req.params.username });
-    if (!user) throw new customError('User not found', 404);
-    const logs = await Log.find({ user: user._id }).select('-user');
+    const logs = await Log.aggregate([
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'user',
+          foreignField: '_id',
+          as: 'user',
+        },
+      },
+      {
+        $sort: {
+          createdAt: -1,
+        },
+      },
+      {
+        $match: {
+          'user.username': req.params.username,
+        },
+      },
+      {
+        $project: {
+          user: 0,
+        },
+      },
+      {
+        $skip: skip,
+      },
+      {
+        $limit: limit,
+      },
+    ]);
+
+    if (!logs.length) throw new customError('User not found', 404);
+
     return res.json(logs);
   } catch (error) {
     return next(error as customError);

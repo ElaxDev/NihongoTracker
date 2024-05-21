@@ -66,6 +66,11 @@ export default async function updateStats(
         userStats.readingTimeVn += (time || 0) - (editedFields?.time || 0);
         userStats.charCountVn += (chars || 0) - (editedFields?.chars || 0);
         break;
+      case 'audio':
+        userStats.listeningXp += (xp || 0) - (editedFields?.xp || 0);
+        userStats.userXp += (xp || 0) - (editedFields?.xp || 0);
+        userStats.listeningTime += (time || 0) - (editedFields?.time || 0);
+        break;
       default:
         throw new customError('Invalid content type', 400);
     }

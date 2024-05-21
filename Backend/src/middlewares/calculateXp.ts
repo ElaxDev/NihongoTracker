@@ -36,7 +36,11 @@ export async function calculateXp(
         return next();
 
       case 'anime':
-        if (episodes) req.body.xp = Math.floor(((episodes * 45) / 100) * 29);
+        if (time) {
+          req.body.xp = Math.floor(((time * 45) / 100) * 5);
+        } else if (episodes) {
+          req.body.xp = Math.floor(((episodes * 45) / 100) * 29);
+        }
         return next();
 
       case 'video':
@@ -69,6 +73,10 @@ export async function calculateXp(
         if (chars) charsXp = Math.floor((chars / 350) * 5);
         if (pages) pagesXp = Math.floor(pages * 5);
         req.body.xp = Math.max(timeXp, charsXp, pagesXp);
+        return next();
+
+      case 'audio':
+        if (time) req.body.xp = Math.floor(((time * 45) / 100) * 5);
         return next();
 
       default:

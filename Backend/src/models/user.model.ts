@@ -64,6 +64,7 @@ const UserSchema = new Schema<IUser>(
       readingTimeManga: { type: Number, required: true, default: 0 },
       mangaPages: { type: Number, required: true, default: 0 },
       listeningTime: { type: Number, required: true, default: 0 },
+      audioTime: { type: Number, required: true, default: 0 },
       readingTime: { type: Number, required: true, default: 0 },
       animeEpisodes: { type: Number, required: true, default: 0 },
       animeWatchingTime: { type: Number, required: true, default: 0 },
