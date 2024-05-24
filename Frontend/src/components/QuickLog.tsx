@@ -64,7 +64,11 @@ function QuickLog() {
   return (
     <>
       <div className="dropdown">
-        <div tabIndex={0} role="button" className="btn m-1 w-24">
+        <div
+          tabIndex={0}
+          role="button"
+          className="btn m-1 w-24 btn-neutral text-neutral-content"
+        >
           Quick log
         </div>
         <ul
@@ -92,6 +96,7 @@ function QuickLog() {
                     <option value="ln">Light novels</option>
                     <option value="video">Video</option>
                     <option value="reading">Reading</option>
+                    <option value="audio">Audio</option>
                   </select>
                 </div>
                 <div>
@@ -199,7 +204,10 @@ function QuickLog() {
                     />
                   </div>
                 ) : null}
-                <button className="btn btn-primary w-24 mt-2" type="submit">
+                <button
+                  className="btn btn-neutral text-neutral-content w-24 mt-2"
+                  type="submit"
+                >
                   Create
                 </button>
               </div>

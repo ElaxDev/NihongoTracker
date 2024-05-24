@@ -36,7 +36,7 @@ function Header() {
 
   return (
     <div className="relative">
-      <div className="navbar bg-base-200 absolute w-full z-40 max-h-32">
+      <div className="navbar bg-neutral text-neutral-content absolute w-full z-40 max-h-32">
         <div className="navbar-start">
           <div className="dropdown">
             <div tabIndex={0} role="button" className="btn btn-ghost lg:hidden">
@@ -58,7 +58,7 @@ function Header() {
             {user ? (
               <ul
                 tabIndex={0}
-                className="menu menu-sm dropdown-content mt-3 z-[1] p-2 shadow bg-base-100 rounded-box w-52"
+                className="menu menu-sm dropdown-content mt-3 z-[1] p-2 shadow rounded-box w-52"
               >
                 <li>
                   <QuickLog />
@@ -116,7 +116,7 @@ function Header() {
               </div>
               <ul
                 tabIndex={0}
-                className="dropdown-content z-[1] menu p-2 shadow bg-base-100 rounded-box w-52"
+                className="dropdown-content z-[1] menu p-2 shadow bg-base-100 text-base-content rounded-box w-52"
               >
                 <li>
                   <Link to={`/user/${user.username}`}>Profile</Link>

@@ -19,14 +19,19 @@ import { QueryClientProvider } from '@tanstack/react-query';
 import queryClient from './queryClient.ts';
 import ProfileScreen from './screens/ProfileScreen.tsx';
 import NotFound from './screens/NotFound.tsx';
+import StatsScreen from './screens/StatsScreen.tsx';
+import ProfileHeader from './components/ProfileHeader.tsx';
 
 const router = createBrowserRouter(
   createRoutesFromElements(
     <Route path="/" element={<App />}>
       <Route index={true} path="/" element={<HomeScreen />} />
-      <Route path="/login" element={<LoginScreen />} />
-      <Route path="/register" element={<RegisterScreen />} />
-      <Route path="/user/:username" element={<ProfileScreen />} />
+      <Route path="login" element={<LoginScreen />} />
+      <Route path="register" element={<RegisterScreen />} />
+      <Route path="user/:username" element={<ProfileHeader />}>
+        <Route index element={<ProfileScreen />} />
+        <Route path="stats" element={<StatsScreen />} />
+      </Route>
       <Route path="*" element={<NotFound />} />
     </Route>
   )

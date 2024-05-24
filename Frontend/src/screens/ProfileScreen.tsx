@@ -1,84 +1,125 @@
-import { useNavigate, useParams } from 'react-router-dom';
-// import { useUserDataStore } from '../store/userData';
-import { getUserFn, getUserLogsFn } from '../api/authApi';
-import { AxiosError } from 'axios';
-import { useQuery } from '@tanstack/react-query';
-import { toast } from 'react-toastify';
-import Loader from '../components/Loader';
-import ProfileNavbar from '../components/ProfileNavbar';
+import { useParams } from 'react-router-dom';
 import LogCard from '../components/LogCard';
 import ProgressBar from '../components/ProgressBar';
+import { useState } from 'react';
+import React from 'react';
+import { useInfiniteQuery } from '@tanstack/react-query';
+import { getUserLogsFn } from '../api/authApi';
+import { useProfileDataStore } from '../store/profileData';
 
 function ProfileScreen() {
+  const [limit] = useState(10);
   const { username } = useParams<{ username: string }>();
-  const navigate = useNavigate();
+  const { user } = useProfileDataStore();
 
   const {
-    data: user,
-    error: userError,
-    isLoading: isLoadingUser,
-  } = useQuery({
-    queryKey: ['user', username],
-    queryFn: () => getUserFn(username as string),
-  });
-
-  if (userError) {
-    if (userError instanceof AxiosError) {
-      if (userError.status === 404) navigate('/404', { replace: true });
-      toast.error(userError.response?.data.message);
-    } else {
-      toast.error(userError.message ? userError.message : 'An error occurred');
-    }
-  }
-
-  const { data: logs } = useQuery({
+    data: logs,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useInfiniteQuery({
     queryKey: ['logs', username],
-    queryFn: () => getUserLogsFn(username as string),
+    queryFn: ({ pageParam }) =>
+      getUserLogsFn(username as string, { limit, page: pageParam as number }),
+    getNextPageParam: (lastPage, _allPages, lastPageParam) => {
+      if (lastPage.length < limit) return undefined;
+      return lastPageParam + 1;
+    },
+    initialPageParam: 1,
+    staleTime: Infinity,
   });
 
-  const totalXPToLevelUp = user?.stats.userXpToNextLevel
+  const totalUserXpToLevelUp = user?.stats.userXpToNextLevel
     ? user?.stats.userXpToNextLevel - user?.stats.userXpToCurrentLevel
     : 0;
   const userProgressXP = user?.stats.userXp
     ? user?.stats.userXp - user?.stats.userXpToCurrentLevel
     : 0;
-  const progressPercentage = (userProgressXP / totalXPToLevelUp) * 100;
+  const userProgressPercentage = (userProgressXP / totalUserXpToLevelUp) * 100;
+
+  const totalListeningXpToLevelUp = user?.stats.listeningXpToNextLevel
+    ? user?.stats.listeningXpToNextLevel - user?.stats.listeningXpToCurrentLevel
+    : 0;
+  const listeningProgressXP = user?.stats.listeningXp
+    ? user?.stats.listeningXp - user?.stats.listeningXpToCurrentLevel
+    : 0;
+  const listeningProgressPercentage =
+    (listeningProgressXP / totalListeningXpToLevelUp) * 100;
+
+  const totalReadingXpToLevelUp = user?.stats.readingXpToNextLevel
+    ? user?.stats.readingXpToNextLevel - user?.stats.readingXpToCurrentLevel
+    : 0;
+  const readingProgressXP = user?.stats.readingXp
+    ? user?.stats.readingXp - user?.stats.readingXpToCurrentLevel
+    : 0;
+  const readingProgressPercentage =
+    (readingProgressXP / totalReadingXpToLevelUp) * 100;
 
   return (
-    <div className="flex flex-col justify-center">
-      <div className="flex flex-col h-96 min-w-80 px-5 2xl:max-w-screen-2xl 2xl:px-24 justify-end mx-auto w-full">
-        <div className="flex items-end w-full mb-2">
-          <div className="avatar placeholder">
-            <div className="bg-neutral text-neutral-content rounded-full w-24">
-              <span className="text-3xl">
-                {user?.username[0].toUpperCase()}
-              </span>
-            </div>
-          </div>
-          <div className="py-22px px-25px">
-            <h1 className="text-xl font-bold inline-block">{user?.username}</h1>
-          </div>
-        </div>
+    <div className="flex flex-col items-center">
+      <div className="2xl:max-w-screen-2xl 2xl:min-w-[50%] min-w-full">
+        <div className="grid grid-cols-2 gap-10">
+          <div className="flex flex-col gap-5 pt-5">
+            <div className="card w-96 bg-base-100 shadow-xl">
+              <div className="card-body w-full">
+                <p>User Progress</p>
+                <ProgressBar
+                  progress={userProgressPercentage}
+                  maxProgress={100}
+                />
+                <div className="flex justify-between text-sm">
+                  <p>Level: {user?.stats.userLevel}</p>
+                  <p className="text-right">
+                    XP: {userProgressXP}/{totalUserXpToLevelUp}
+                  </p>
+                </div>
 
-        {isLoadingUser && <Loader />}
-      </div>
-      <ProfileNavbar username={user?.username} />
-      <div className="flex flex-col items-center">
-        <div className="2xl:max-w-screen-2xl 2xl:min-w-[50%] min-w-full">
-          <div className="grid grid-cols-2 gap-10">
-            <div className="">
-              <p className="font-bold text-xl">
-                Level: {user?.stats.userLevel}
-              </p>
-              <p className="font-bold text-xl">XP: {userProgressXP}</p>
-              <p className="font-bold text-xl">
-                XP to next level: {totalXPToLevelUp}
-              </p>
-              <ProgressBar progress={progressPercentage} maxProgress={100} />
+                <p>Listening Progress</p>
+                <ProgressBar
+                  progress={listeningProgressPercentage}
+                  maxProgress={100}
+                />
+                <div className="flex justify-between text-sm">
+                  <p>Level: {user?.stats.listeningLevel}</p>
+                  <p className="text-right">
+                    XP: {listeningProgressXP}/{totalListeningXpToLevelUp}
+                  </p>
+                </div>
+
+                <p>Reading Progress</p>
+                <ProgressBar
+                  progress={readingProgressPercentage}
+                  maxProgress={100}
+                />
+                <div className="flex justify-between text-sm">
+                  <p>Level: {user?.stats.readingLevel}</p>
+                  <p className="text-right">
+                    XP: {readingProgressXP}/{totalReadingXpToLevelUp}
+                  </p>
+                </div>
+              </div>
             </div>
-            <div className="grid gap-3 pt-4">
-              {logs?.map((log) => (log ? <LogCard log={log} /> : null))}
-            </div>
+          </div>
+
+          <div className="flex flex-col gap-5 py-5 items-center">
+            {logs?.pages.map((group, i) => (
+              <React.Fragment key={i}>
+                {group.map((log) => (
+                  <LogCard key={log._id} log={log} />
+                ))}
+              </React.Fragment>
+            ))}
+            <button
+              className="btn btn-wide bg-base-100"
+              onClick={() => fetchNextPage()}
+              disabled={!hasNextPage || isFetchingNextPage}
+            >
+              {isFetchingNextPage
+                ? 'Loading more...'
+                : hasNextPage
+                ? 'Load More'
+                : 'Nothing more to load'}
+            </button>
           </div>
         </div>
       </div>

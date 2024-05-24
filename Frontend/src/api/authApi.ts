@@ -3,13 +3,14 @@ import {
   ILoginResponse,
   IRegisterInput,
   ILoginInput,
-  filterTypes,
   updateUserRequest,
   updateLogRequest,
   createLogRequest,
   ILog,
   IUser,
   IRankingResponse,
+  IRankingParams,
+  ILogsParams,
 } from '../types';
 
 const BASE_URL = '/api/';
@@ -66,7 +67,7 @@ export async function updateUserFn(updateValues: updateUserRequest) {
   return data;
 }
 
-export async function getRankingFn(params: filterTypes) {
+export async function getRankingFn(params: IRankingParams) {
   const { data } = await api.get<IRankingResponse[]>(`users/ranking`, {
     params,
   });
@@ -91,8 +92,8 @@ export async function updateLogFn(id: string, updateValues: updateLogRequest) {
   return data;
 }
 
-export async function getUserLogsFn(username: string) {
-  const { data } = await api.get<ILog[]>(`users/${username}/logs`);
+export async function getUserLogsFn(username: string, params: ILogsParams) {
+  const { data } = await api.get<ILog[]>(`users/${username}/logs`, { params });
   return data;
 }
 

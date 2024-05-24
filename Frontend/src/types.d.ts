@@ -107,6 +107,8 @@ export interface IRankingParams {
   filter: filterTypes;
 }
 
+export type ILogsParams = Pick<IRankingParams, 'page' | 'limit'>;
+
 export interface updateUserRequest {
   username?: string;
   password?: string;
@@ -136,7 +138,7 @@ export interface updateLogRequest {
 export interface ILog {
   _id: string;
   user: string;
-  type: 'reading' | 'anime' | 'vn' | 'video' | 'ln' | 'manga';
+  type: 'reading' | 'anime' | 'vn' | 'video' | 'ln' | 'manga' | 'audio';
   contentId?: string;
   xp: number;
   private: boolean;
@@ -149,6 +151,8 @@ export interface ILog {
   chars?: number;
   time?: number;
   date?: string;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 export type createLogRequest = Omit<
