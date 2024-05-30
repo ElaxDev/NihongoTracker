@@ -1,16 +1,16 @@
-import { useParams } from 'react-router-dom';
+import { useOutletContext } from 'react-router-dom';
 import LogCard from '../components/LogCard';
 import ProgressBar from '../components/ProgressBar';
 import { useState } from 'react';
 import React from 'react';
 import { useInfiniteQuery } from '@tanstack/react-query';
 import { getUserLogsFn } from '../api/authApi';
-import { useProfileDataStore } from '../store/profileData';
+import { OutletContextType } from '../types';
 
 function ProfileScreen() {
   const [limit] = useState(10);
-  const { username } = useParams<{ username: string }>();
-  const { user } = useProfileDataStore();
+  const { user, username } = useOutletContext<OutletContextType>();
+  const accent = 'primary';
 
   const {
     data: logs,
@@ -66,6 +66,7 @@ function ProfileScreen() {
                 <ProgressBar
                   progress={userProgressPercentage}
                   maxProgress={100}
+                  progressColor={accent}
                 />
                 <div className="flex justify-between text-sm">
                   <p>Level: {user?.stats.userLevel}</p>
@@ -78,6 +79,7 @@ function ProfileScreen() {
                 <ProgressBar
                   progress={listeningProgressPercentage}
                   maxProgress={100}
+                  progressColor={accent}
                 />
                 <div className="flex justify-between text-sm">
                   <p>Level: {user?.stats.listeningLevel}</p>
@@ -90,6 +92,7 @@ function ProfileScreen() {
                 <ProgressBar
                   progress={readingProgressPercentage}
                   maxProgress={100}
+                  progressColor={accent}
                 />
                 <div className="flex justify-between text-sm">
                   <p>Level: {user?.stats.readingLevel}</p>

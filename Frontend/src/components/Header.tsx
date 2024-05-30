@@ -1,4 +1,5 @@
 import { Link, useNavigate } from 'react-router-dom';
+import { MdLogout, MdPerson } from 'react-icons/md';
 import { useUserDataStore } from '../store/userData';
 import { useMutation } from '@tanstack/react-query';
 import { logoutUserFn } from '../api/authApi';
@@ -7,6 +8,7 @@ import { AxiosError } from 'axios';
 import { logoutResponseType } from '../types';
 import Loader from './Loader';
 import QuickLog from './QuickLog';
+import { IconContext } from 'react-icons';
 
 function Header() {
   const { user, logout } = useUserDataStore();
@@ -118,12 +120,22 @@ function Header() {
                 tabIndex={0}
                 className="dropdown-content z-[1] menu p-2 shadow bg-base-100 text-base-content rounded-box w-52"
               >
-                <li>
-                  <Link to={`/user/${user.username}`}>Profile</Link>
-                </li>
-                <li>
-                  <a onClick={logoutHandler}>Logout</a>
-                </li>
+                <IconContext.Provider
+                  value={{ className: 'text-lg text-base-content' }}
+                >
+                  <li>
+                    <Link to={`/user/${user.username}`}>
+                      <MdPerson />
+                      Profile
+                    </Link>
+                  </li>
+                  <li>
+                    <a onClick={logoutHandler}>
+                      <MdLogout />
+                      Logout
+                    </a>
+                  </li>
+                </IconContext.Provider>
               </ul>
             </div>
           ) : (

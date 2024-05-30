@@ -4,13 +4,11 @@ import { getUserFn } from '../api/authApi';
 import { AxiosError } from 'axios';
 import { useQuery } from '@tanstack/react-query';
 import { toast } from 'react-toastify';
-import { useProfileDataStore } from '../store/profileData';
-import { useEffect } from 'react';
 import Loader from './Loader';
+import { OutletContextType } from '../types';
 
-function ProfileHeader() {
+export default function ProfileHeader() {
   const { username } = useParams<{ username: string }>();
-  const { setProfile } = useProfileDataStore();
   const navigate = useNavigate();
 
   const {
@@ -32,12 +30,6 @@ function ProfileHeader() {
     }
   }
 
-  useEffect(() => {
-    if (user) {
-      setProfile(user);
-    }
-  }, [user, setProfile]);
-
   return (
     <div className="flex flex-col justify-center bg-base-200">
       <div className="flex flex-col h-96 min-w-80 px-5 2xl:max-w-screen-2xl 2xl:px-24 justify-end mx-auto w-full">
@@ -57,9 +49,7 @@ function ProfileHeader() {
       {isLoadingUser && <Loader />}
 
       <ProfileNavbar username={user?.username} />
-      <Outlet />
+      <Outlet context={{ user, username } satisfies OutletContextType} />
     </div>
   );
 }
-
-export default ProfileHeader;

@@ -45,7 +45,7 @@ function QuickLog() {
 
   function logSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    if (hours && minutes) {
+    if (hours || minutes) {
       setTime(hours * 60 + minutes);
     } else {
       setTime(undefined);
@@ -58,7 +58,6 @@ function QuickLog() {
       chars,
       pages,
     } as ILog);
-    console.log(logType, logDescription, episodes, time, chars, pages);
   }
 
   return (

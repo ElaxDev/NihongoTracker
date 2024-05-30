@@ -17,6 +17,11 @@ enum userRoles {
   mod = 'mod',
 }
 
+export type OutletContextType = {
+  user: IUser | undefined;
+  username: string | undefined;
+};
+
 export interface IStats {
   userLevel: number;
   userXp: number;
