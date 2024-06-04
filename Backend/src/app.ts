@@ -1,4 +1,5 @@
 import express, { Router } from 'express';
+import path from 'path';
 import morgan from 'morgan';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
@@ -20,6 +21,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 app.use(morgan('dev'));
 app.use(cookieParser());
+app.use('/uploads', express.static(path.join(__dirname, '/src/uploads')));
 
 app.use('/api/auth', authRoutes);
 app.use('/api/logs', logsRoutes);

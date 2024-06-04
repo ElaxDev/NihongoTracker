@@ -26,9 +26,11 @@ export enum userRoles {
 
 export interface IUser extends Document {
   _id: Types.ObjectId;
-  avatar?: Buffer;
+  avatar?: string;
+  banner?: string;
   username: string;
   password: string;
+  discordId?: string;
   clubs?: Types.ObjectId[];
   stats: IStats;
   titles: string[];
@@ -58,11 +60,12 @@ export interface IStats {
   pageCountLn: number;
   readingTimeLn: number;
   pageCountManga: number;
+  pageCountReading: number;
   charCountManga: number;
   readingTimeManga: number;
   mangaPages: number;
   listeningTime: number;
-  audioTime: number;
+  audioListeningTime: number;
   readingTime: number;
   animeEpisodes: number;
   animeWatchingTime: number;
@@ -85,7 +88,7 @@ export interface IEditedFields {
 export interface ILog extends Document {
   _id: Types.ObjectId;
   user: Types.ObjectId;
-  type: 'reading' | 'anime' | 'vn' | 'video' | 'ln' | 'manga' | 'audio';
+  type: 'reading' | 'anime' | 'vn' | 'video' | 'manga' | 'audio' | 'other';
   contentId?: string;
   xp: number;
   private: boolean;
@@ -103,9 +106,9 @@ export interface ILog extends Document {
 export interface updateRequest {
   username?: string;
   password?: string;
-  avatar?: Buffer;
   newPassword?: string;
   newPasswordConfirm?: string;
+  discordId?: string;
 }
 
 export interface IRegister {

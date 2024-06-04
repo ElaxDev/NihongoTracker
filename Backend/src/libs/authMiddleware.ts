@@ -19,7 +19,7 @@ export async function protect(req: Request, res: Response, next: NextFunction) {
         res.locals.user = await User.findById(
           (decoded as decodedJWT).id
         ).select('-password');
-        next();
+        return next();
       } catch (error) {
         throw error as customError;
       }

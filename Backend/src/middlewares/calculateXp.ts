@@ -4,84 +4,78 @@ import Log from '../models/log.model';
 import { ILog } from '../types';
 import { customError } from './errorMiddleware';
 
+const XP_FACTOR_TIME = 5;
+const XP_FACTOR_PAGES = 5;
+const XP_FACTOR_CHARS = 5;
+const XP_FACTOR_EPISODES = 29;
+
+async function calculateXpForLog(log: ILog, req: Request): Promise<ILog> {
+  let type = log.type || '';
+  if (!type && req.params.id) {
+    const foundLog = await Log.findById(req.params.id);
+    if (!foundLog) {
+      throw new customError('Log not found', 404);
+    }
+    type = foundLog.type;
+  }
+
+  if (!type) {
+    throw new customError('Log type not found', 400);
+  }
+
+  const timeXp = log.time
+    ? Math.floor(((log.time * 45) / 100) * XP_FACTOR_TIME)
+    : 0;
+  const charsXp = log.chars
+    ? Math.floor((log.chars / 350) * XP_FACTOR_CHARS)
+    : 0;
+  const pagesXp = log.pages ? Math.floor(log.pages * XP_FACTOR_PAGES) : 0;
+  const episodesXp = log.episodes
+    ? Math.floor(((log.episodes * 45) / 100) * XP_FACTOR_EPISODES)
+    : 0;
+
+  switch (type) {
+    case 'reading':
+    case 'manga':
+      log.xp = Math.max(timeXp, charsXp, pagesXp);
+      break;
+    case 'anime':
+      if (timeXp) {
+        log.xp = timeXp;
+      } else if (episodesXp) {
+        log.xp = episodesXp;
+      }
+      break;
+    case 'vn':
+      log.xp = Math.max(timeXp, charsXp);
+      break;
+    case 'video':
+    case 'other':
+    case 'audio':
+      log.xp = timeXp;
+      break;
+    default:
+      throw new customError('Invalid log type', 400);
+  }
+  return log;
+}
+
 export async function calculateXp(
-  req: Request<ParamsDictionary, any, ILog>,
-  res: Response,
+  req: Request<ParamsDictionary, any, ILog | ILog[]>,
+  _res: Response,
   next: NextFunction
 ) {
-  const { episodes, pages, time, chars } = req.body;
-  let type;
   try {
-    if (req.body.type) {
-      type = req.body.type;
-    } else if (req.params.id) {
-      const foundLog = await Log.findById(req.params.id);
-      if (!foundLog) {
-        throw new customError('Log not found', 404);
-      }
-      type = foundLog.type;
+    if (Array.isArray(req.body)) {
+      const modifiedLogs = await Promise.all(
+        req.body.map((log) => calculateXpForLog(log, req))
+      );
+      req.body = modifiedLogs;
     } else {
-      throw new customError('Log type not found', 400);
+      const modifiedLog = await calculateXpForLog(req.body, req);
+      req.body = modifiedLog;
     }
-    var timeXp = 0;
-    var charsXp = 0;
-    var pagesXp = 0;
-    switch (type) {
-      case 'reading':
-        timeXp = 0;
-        charsXp = 0;
-        if (time) timeXp = Math.floor(((time * 45) / 100) * 5);
-        if (chars) charsXp = Math.floor((chars / 350) * 5);
-        req.body.xp = Math.max(timeXp, charsXp);
-        return next();
-
-      case 'anime':
-        if (time) {
-          req.body.xp = Math.floor(((time * 45) / 100) * 5);
-        } else if (episodes) {
-          req.body.xp = Math.floor(((episodes * 45) / 100) * 29);
-        }
-        return next();
-
-      case 'video':
-        if (time) req.body.xp = Math.floor(((time * 45) / 100) * 5);
-        return next();
-
-      case 'vn':
-        timeXp = 0;
-        charsXp = 0;
-        if (time) timeXp = Math.floor(((time * 45) / 100) * 5);
-        if (chars) charsXp = Math.floor((chars / 350) * 5);
-        req.body.xp = Math.max(timeXp, charsXp);
-        return next();
-
-      case 'ln':
-        timeXp = 0;
-        charsXp = 0;
-        pagesXp = 0;
-        if (time) timeXp = Math.floor(((time * 45) / 100) * 5);
-        if (chars) charsXp = Math.floor((chars / 350) * 5);
-        if (pages) pagesXp = Math.floor(pages * 5);
-        req.body.xp = Math.max(timeXp, charsXp, pagesXp);
-        return next();
-
-      case 'manga':
-        timeXp = 0;
-        charsXp = 0;
-        pagesXp = 0;
-        if (time) timeXp = Math.floor(((time * 45) / 100) * 5);
-        if (chars) charsXp = Math.floor((chars / 350) * 5);
-        if (pages) pagesXp = Math.floor(pages * 5);
-        req.body.xp = Math.max(timeXp, charsXp, pagesXp);
-        return next();
-
-      case 'audio':
-        if (time) req.body.xp = Math.floor(((time * 45) / 100) * 5);
-        return next();
-
-      default:
-        return res.status(400).json({ error: 'Invalid log type' });
-    }
+    return next();
   } catch (error) {
     return next(error as customError);
   }

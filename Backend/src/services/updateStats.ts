@@ -1,12 +1,27 @@
-import { Request, Response, NextFunction } from 'express';
-import { ParamsDictionary } from 'express-serve-static-core';
+import { Response, NextFunction } from 'express';
 import { ILog, IStats, IUser } from '../types';
 import { calculateLevel, calculateXp } from './calculateLevel';
 import { customError } from '../middlewares/errorMiddleware';
 import User from '../models/user.model';
 
+function updateField(
+  newValue: number | undefined,
+  oldValue: number | undefined
+): number {
+  return (newValue || 0) - (oldValue || 0);
+}
+
+function updateLevelAndXp(userStats: any, field: string) {
+  userStats[`${field}Level`] = calculateLevel(userStats[`${field}Xp`]);
+  userStats[`${field}XpToNextLevel`] = calculateXp(
+    userStats[`${field}Level`] + 1
+  );
+  userStats[`${field}XpToCurrentLevel`] = calculateXp(
+    userStats[`${field}Level`]
+  );
+}
+
 export default async function updateStats(
-  _req: Request<ParamsDictionary, any, ILog>,
   res: Response,
   next: NextFunction
 ): Promise<void | IStats> {
@@ -20,56 +35,54 @@ export default async function updateStats(
     const log = res.locals.log as ILog;
     const { type, xp, editedFields, episodes, time, chars, pages } = log;
 
+    // Update XP fields
+    const xpUpdate = updateField(xp, editedFields?.xp);
+    userStats.userXp += xpUpdate;
+
     switch (type) {
       case 'anime':
-        userStats.listeningXp += (xp || 0) - (editedFields?.xp || 0);
-        userStats.userXp += (xp || 0) - (editedFields?.xp || 0);
-        userStats.listeningTime +=
-          (episodes || 0) * 24 - (editedFields?.episodes || 0) * 24 || 0;
-        userStats.animeWatchingTime +=
-          (episodes || 0) * 24 - (editedFields?.episodes || 0) * 24 || 0;
-        userStats.animeEpisodes +=
-          (episodes || 0) - (editedFields?.episodes || 0);
+        userStats.listeningXp += xpUpdate;
+        userStats.listeningTime += time
+          ? updateField(time, editedFields?.time)
+          : updateField(episodes, editedFields?.episodes) * 24;
+        userStats.animeWatchingTime += time
+          ? updateField(time, editedFields?.time)
+          : updateField(episodes, editedFields?.episodes) * 24;
+        userStats.animeEpisodes += updateField(
+          episodes,
+          editedFields?.episodes
+        );
         break;
       case 'video':
-        userStats.listeningXp += (xp || 0) - (editedFields?.xp || 0);
-        userStats.userXp += (xp || 0) - (editedFields?.xp || 0);
-        userStats.listeningTime += (time || 0) - (editedFields?.time || 0);
-        userStats.videoWatchingTime += (time || 0) - (editedFields?.time || 0);
-        break;
-      case 'ln':
-        userStats.readingXp += (xp || 0) - (editedFields?.xp || 0);
-        userStats.userXp += (xp || 0) - (editedFields?.xp || 0);
-        userStats.readingTime += (time || 0) - (editedFields?.time || 0);
-        userStats.readingTimeLn += (time || 0) - (editedFields?.time || 0);
-        userStats.charCountLn += (chars || 0) - (editedFields?.chars || 0);
-        userStats.pageCountLn += (pages || 0) - (editedFields?.pages || 0);
+        userStats.listeningXp += xpUpdate;
+        userStats.listeningTime += updateField(time, editedFields?.time);
+        userStats.videoWatchingTime += updateField(time, editedFields?.time);
         break;
       case 'manga':
-        userStats.readingXp += (xp || 0) - (editedFields?.xp || 0);
-        userStats.userXp += (xp || 0) - (editedFields?.xp || 0);
-        userStats.mangaPages += (pages || 0) - (editedFields?.pages || 0);
-        userStats.charCountManga += (chars || 0) - (editedFields?.chars || 0);
-        userStats.readingTime += (time || 0) - (editedFields?.time || 0);
-        userStats.readingTimeManga += (time || 0) - (editedFields?.time || 0);
+        userStats.readingXp += xpUpdate;
+        userStats.mangaPages += updateField(pages, editedFields?.pages);
+        userStats.charCountManga += updateField(chars, editedFields?.chars);
+        userStats.readingTime += updateField(time, editedFields?.time);
+        userStats.readingTimeManga += updateField(time, editedFields?.time);
         break;
       case 'reading':
-        userStats.readingXp += (xp || 0) - (editedFields?.xp || 0);
-        userStats.userXp += (xp || 0) - (editedFields?.xp || 0);
-        userStats.readingTime += (time || 0) - (editedFields?.time || 0);
-        userStats.charCountReading += (chars || 0) - (editedFields?.chars || 0);
+        userStats.readingXp += xpUpdate;
+        userStats.readingTime += updateField(time, editedFields?.time);
+        userStats.charCountReading += updateField(chars, editedFields?.chars);
+        userStats.pageCountReading += updateField(pages, editedFields?.pages);
         break;
       case 'vn':
-        userStats.readingXp += (xp || 0) - (editedFields?.xp || 0);
-        userStats.userXp += (xp || 0) - (editedFields?.xp || 0);
-        userStats.readingTime += (time || 0) - (editedFields?.time || 0);
-        userStats.readingTimeVn += (time || 0) - (editedFields?.time || 0);
-        userStats.charCountVn += (chars || 0) - (editedFields?.chars || 0);
+        userStats.readingXp += xpUpdate;
+        userStats.readingTime += updateField(time, editedFields?.time);
+        userStats.readingTimeVn += updateField(time, editedFields?.time);
+        userStats.charCountVn += updateField(chars, editedFields?.chars);
         break;
       case 'audio':
-        userStats.listeningXp += (xp || 0) - (editedFields?.xp || 0);
-        userStats.userXp += (xp || 0) - (editedFields?.xp || 0);
-        userStats.listeningTime += (time || 0) - (editedFields?.time || 0);
+        userStats.listeningXp += xpUpdate;
+        userStats.listeningTime += updateField(time, editedFields?.time);
+        userStats.audioListeningTime += updateField(time, editedFields?.time);
+        break;
+      case 'other':
         break;
       default:
         throw new customError('Invalid content type', 400);
@@ -78,17 +91,10 @@ export default async function updateStats(
     log.editedFields = null;
     await log.save();
 
-    userStats.listeningLevel = calculateLevel(userStats.listeningXp);
-    userStats.readingLevel = calculateLevel(userStats.readingXp);
-    userStats.userLevel = calculateLevel(userStats.userXp);
-    userStats.listeningXpToNextLevel = calculateXp(
-      userStats.listeningLevel + 1
-    );
-    userStats.readingXpToNextLevel = calculateXp(userStats.readingLevel + 1);
-    userStats.userXpToNextLevel = calculateXp(userStats.userLevel + 1);
-    userStats.listeningXpToCurrentLevel = calculateXp(userStats.listeningLevel);
-    userStats.readingXpToCurrentLevel = calculateXp(userStats.readingLevel);
-    userStats.userXpToCurrentLevel = calculateXp(userStats.userLevel);
+    // Update levels and XP
+    updateLevelAndXp(userStats, 'listening');
+    updateLevelAndXp(userStats, 'reading');
+    updateLevelAndXp(userStats, 'user');
 
     user.markModified('stats');
     await user.save();

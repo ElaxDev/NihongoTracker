@@ -16,6 +16,7 @@ const UserSchema = new Schema<IUser>(
       },
     },
     password: { type: String, required: true },
+    discordId: { type: String, default: '' },
     stats: {
       userLevel: { type: Number, required: true, default: 1 },
       userXp: { type: Number, required: true, default: 0 },
@@ -64,8 +65,9 @@ const UserSchema = new Schema<IUser>(
       readingTimeManga: { type: Number, required: true, default: 0 },
       mangaPages: { type: Number, required: true, default: 0 },
       listeningTime: { type: Number, required: true, default: 0 },
-      audioTime: { type: Number, required: true, default: 0 },
+      audioListeningTime: { type: Number, required: true, default: 0 },
       readingTime: { type: Number, required: true, default: 0 },
+      outputTime: { type: Number, required: true, default: 0 },
       animeEpisodes: { type: Number, required: true, default: 0 },
       animeWatchingTime: { type: Number, required: true, default: 0 },
       videoWatchingTime: { type: Number, required: true, default: 0 },
@@ -76,7 +78,8 @@ const UserSchema = new Schema<IUser>(
       readLn: { type: [String], required: true, default: [] },
     },
     clubs: [{ type: Types.ObjectId, ref: 'Club' }],
-    avatar: { type: Buffer, default: '' },
+    avatar: { type: String, default: '' },
+    banner: { type: String, default: '' },
     titles: { type: [String], default: [], required: true },
     roles: {
       type: String,

@@ -21,16 +21,20 @@ const LogSchema = new Schema<ILog>(
     pages: {
       type: Number,
       required: function (this: ILog) {
-        return !this.chars && (this.type === 'ln' || this.type === 'manga');
+        return (
+          (!this.chars && this.type === 'manga') ||
+          (!this.chars && !this.time && this.type === 'reading')
+        );
       },
     },
     time: {
       type: Number,
       required: function (this: ILog) {
         return (
-          (!this.chars && this.type === 'reading') ||
+          (!this.chars && !this.pages && this.type === 'reading') ||
           this.type === 'video' ||
-          this.type === 'audio'
+          this.type === 'audio' ||
+          this.type === 'other'
         );
       },
     },
@@ -38,8 +42,9 @@ const LogSchema = new Schema<ILog>(
       type: Number,
       required: function (this: ILog) {
         return (
-          (!this.time && (this.type === 'reading' || this.type === 'vn')) ||
-          (!this.pages && (this.type === 'ln' || this.type === 'manga'))
+          (!this.time && this.type === 'vn') ||
+          (!this.time && !this.pages && this.type === 'reading') ||
+          (!this.pages && this.type === 'manga')
         );
       },
     },

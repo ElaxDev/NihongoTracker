@@ -52,6 +52,7 @@ export async function login(req: Request, res: Response, next: NextFunction) {
       return res.status(201).json({
         _id: user._id,
         username: user.username,
+        discordId: user.discordId,
         stats: user.stats,
         avatar: user.avatar,
         titles: user.titles,

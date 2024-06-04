@@ -55,45 +55,6 @@ export async function getUserLogs(
   }
 }
 
-export async function createLog(
-  req: Request<ParamsDictionary, any, ILog>,
-  res: Response,
-  next: NextFunction
-) {
-  const {
-    type,
-    contentId,
-    pages,
-    episodes,
-    xp,
-    description,
-    time,
-    date,
-    chars,
-  } = req.body;
-  const user: ILog['user'] = res.locals.user.id;
-  try {
-    const newLog = new Log({
-      user,
-      type,
-      contentId,
-      pages,
-      episodes,
-      xp,
-      description,
-      time,
-      date,
-      chars,
-    });
-    const savedLog = await newLog.save();
-    res.locals.log = savedLog;
-    updateStats(req, res, next);
-    return res.status(200).json(savedLog);
-  } catch (error) {
-    return next(error as customError);
-  }
-}
-
 export async function getLog(req: Request, res: Response, next: NextFunction) {
   try {
     const foundLog = await Log.findById(req.params.id).populate('user');
@@ -129,7 +90,7 @@ export async function updateLog(
     req.body;
 
   try {
-    const log = await Log.findOne({
+    const log: ILog | null = await Log.findOne({
       _id: new Types.ObjectId(req.params.id),
       user: res.locals.user.id,
     });
@@ -164,9 +125,78 @@ export async function updateLog(
 
     const updatedLog = await log.save();
     res.locals.log = updatedLog;
-    await updateStats(req, res, next);
+    await updateStats(res, next);
     return res.sendStatus(204);
   } catch (error) {
     return next(error as customError);
   }
+}
+
+async function createLogFunction(
+  logData: ILog,
+  res: Response,
+  next: NextFunction
+) {
+  const {
+    type,
+    contentId,
+    pages,
+    episodes,
+    xp,
+    description,
+    time,
+    date,
+    chars,
+  } = logData;
+  const user: ILog['user'] = res.locals.user.id;
+  const newLog: ILog | null = new Log({
+    user,
+    type,
+    contentId,
+    pages,
+    episodes,
+    xp,
+    description,
+    time,
+    date,
+    chars,
+  });
+  const savedLog = await newLog.save();
+  res.locals.log = savedLog;
+  await updateStats(res, next);
+  return savedLog;
+}
+
+export async function createLog(
+  req: Request<ParamsDictionary, any, ILog>,
+  res: Response,
+  next: NextFunction
+) {
+  const savedLog = await createLogFunction(req.body, res, next);
+  return res.status(200).json(savedLog);
+}
+
+interface Results {
+  success: ILog[];
+  failed: { log: ILog; error: string }[];
+}
+
+export async function importLogs(
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
+  const logs: ILog[] = req.body;
+  const results: Results = { success: [], failed: [] };
+  for (const log of logs) {
+    try {
+      const savedLog = await createLogFunction(log, res, next);
+      results.success.push(savedLog);
+    } catch (error) {
+      results.failed.push({ log, error: (error as customError).message });
+    }
+  }
+  return res
+    .status(200)
+    .json({ message: `${req.body.length} logs imported successfully!` });
 }

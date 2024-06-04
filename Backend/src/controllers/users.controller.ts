@@ -2,13 +2,14 @@ import User from '../models/user.model';
 import { Request, Response, NextFunction } from 'express';
 import { updateRequest } from '../types';
 import { customError } from '../middlewares/errorMiddleware';
+import uploadFile from '../services/uploadFile';
 
 export async function updateUser(
   req: Request,
   res: Response,
   next: NextFunction
 ) {
-  const { username, avatar, newPassword, newPasswordConfirm, password } =
+  const { username, newPassword, newPasswordConfirm, password, discordId } =
     req.body as updateRequest;
 
   try {
@@ -17,7 +18,7 @@ export async function updateUser(
       throw new customError('User not found', 404);
     }
 
-    if (newPassword || password || newPasswordConfirm) {
+    if (newPassword || newPasswordConfirm) {
       if (!password) {
         throw new customError('Old password is required', 400);
       }
@@ -37,8 +38,46 @@ export async function updateUser(
       user.password = newPassword;
     }
 
-    if (username) user.username = username;
-    user.avatar = avatar;
+    if (username) {
+      if (!username.match(/^[a-zA-Z0-9_]*$/)) {
+        throw new customError(
+          'Username can only contain letters, numbers and underscores',
+          400
+        );
+      }
+      if (username.length < 1 || username.length > 20) {
+        throw new customError(
+          'Username must be between 1 and 20 characters',
+          400
+        );
+      }
+      if (await User.findOne({ username })) {
+        throw new customError('Username already taken', 400);
+      }
+      if (!password) {
+        throw new customError('Password is required', 400);
+      }
+      if (user.username !== username) user.username = username;
+    }
+
+    if (req.file) {
+      try {
+        const file = await uploadFile(req.file);
+        if (req.file.fieldname === 'avatar') {
+          user.avatar = file.downloadURL;
+        } else if (req.file.fieldname === 'banner') {
+          user.banner = file.downloadURL;
+        } else {
+          throw new customError('Invalid fieldname', 400);
+        }
+      } catch (error) {
+        next(error as customError);
+      }
+    }
+
+    if (discordId) {
+      user.discordId = discordId;
+    }
 
     const updatedUser = await user.save();
 
@@ -58,6 +97,7 @@ export async function getUser(req: Request, res: Response) {
     id: userFound._id,
     username: userFound.username,
     stats: userFound.stats,
+    discordId: userFound.discordId,
     avatar: userFound.avatar,
     titles: userFound.titles,
     createdAt: userFound.createdAt,
