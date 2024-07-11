@@ -11,7 +11,10 @@ export async function register(
 ) {
   const { username, password, passwordConfirmation }: IRegister = req.body;
   try {
-    const userExists = await User.findOne({ username: username });
+    const userExists = await User.findOne({ username: username }).collation({
+      locale: 'en',
+      strength: 2,
+    });
 
     if (userExists) {
       throw new customError('An user with that username already exists!', 400);
@@ -31,6 +34,7 @@ export async function register(
       username: user.username,
       stats: user.stats,
       avatar: user.avatar,
+      banner: user.banner,
       titles: user.titles,
       roles: user.roles,
     });
@@ -45,16 +49,20 @@ export async function login(req: Request, res: Response, next: NextFunction) {
     if (!username || !password)
       throw new customError('Please provide username and password', 400);
 
-    const user = await User.findOne({ username: username });
+    const user = await User.findOne({ username: username }).collation({
+      locale: 'en',
+      strength: 2,
+    });
 
     if (user && (await user.matchPassword(password))) {
       generateToken(res, user._id.toString());
-      return res.status(201).json({
+      return res.status(200).json({
         _id: user._id,
         username: user.username,
         discordId: user.discordId,
         stats: user.stats,
         avatar: user.avatar,
+        banner: user.banner,
         titles: user.titles,
         roles: user.roles,
       });

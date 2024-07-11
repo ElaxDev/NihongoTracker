@@ -1,8 +1,10 @@
 export interface IUser {
   _id: string;
   avatar?: string;
+  banner?: string;
   username: string;
   clubs?: string[];
+  discordId?: string;
   stats: IStats;
   titles: string[];
   roles: userRoles;
@@ -42,6 +44,7 @@ export interface IStats {
   pageCountLn: number;
   readingTimeLn: number;
   pageCountManga: number;
+  pageCountReading: number;
   charCountManga: number;
   readingTimeManga: number;
   mangaPages: number;
@@ -59,7 +62,7 @@ export interface IStats {
 
 export type ILoginResponse = Pick<
   IUser,
-  '_id' | 'username' | 'stats' | 'avatar' | 'titles' | 'roles'
+  '_id' | 'username' | 'stats' | 'avatar' | 'titles' | 'roles' | 'discordId'
 >;
 
 export interface IRegisterInput {
@@ -117,7 +120,8 @@ export type ILogsParams = Pick<IRankingParams, 'page' | 'limit'>;
 export interface updateUserRequest {
   username?: string;
   password?: string;
-  avatar?: Buffer;
+  discordId?: string;
+  avatar?: string;
   newPassword?: string;
   newPasswordConfirm?: string;
 }
@@ -143,7 +147,7 @@ export interface updateLogRequest {
 export interface ILog {
   _id: string;
   user: string;
-  type: 'reading' | 'anime' | 'vn' | 'video' | 'ln' | 'manga' | 'audio';
+  type: 'reading' | 'anime' | 'vn' | 'video' | 'manga' | 'audio' | 'other';
   contentId?: string;
   xp: number;
   private: boolean;
@@ -155,7 +159,7 @@ export interface ILog {
   pages?: number;
   chars?: number;
   time?: number;
-  date?: string;
+  date: string;
   createdAt: Date;
   updatedAt: Date;
 }

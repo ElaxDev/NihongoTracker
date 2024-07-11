@@ -7,9 +7,9 @@ const logTypeText = {
   anime: 'Anime',
   vn: 'Visual Novel',
   video: 'Video',
-  ln: 'Light Novel',
   manga: 'Manga',
   audio: 'Audio',
+  other: 'Other',
 };
 
 function LogCard({ log }: { log: ILog }) {
@@ -20,10 +20,19 @@ function LogCard({ log }: { log: ILog }) {
     if (type === 'anime') {
       return <p>Episodes: {episodes}</p>;
     } else if (type === 'manga') {
-      return <p>Pages: {pages}</p>;
-    } else if (type === 'vn' || type === 'ln' || type === 'reading') {
       if (chars) {
-        return <p>Character count:{chars}</p>;
+        return (
+          <>
+            <p>Pages: {pages}</p>
+            <p>Character count: {chars}</p>
+          </>
+        );
+      } else {
+        return <p>Pages: {pages}</p>;
+      }
+    } else if (type === 'vn' || type === 'reading') {
+      if (chars) {
+        return <p>Character count: {chars}</p>;
       } else if (time) {
         return <p>Time: {time > 60 ? `${time / 60}h` : `${time}m`}</p>;
       }
@@ -35,16 +44,15 @@ function LogCard({ log }: { log: ILog }) {
   }
 
   return (
-    <div className="card grid-cols-2 h-full w-full min-h-8 bg-base-100 text-base-content shadow-xl">
-      {/* <Link
-          to="#"
-          className="h-full bg-center bg-no-repeat bg-cover w-12"
-          style={{
-            backgroundImage:
-              'url(https://img.daisyui.com/images/stock/photo-1635805737707-575885ab0820.jpg)',
-          }}
-        /> */}
-      <div className="card-body">
+    <div className="card card-side h-full w-full min-h-8 bg-base-100 text-base-content max-h-52">
+      {/* <figure className="flex flex-initial">
+        <img
+          src={`https://s4.anilist.co/file/anilistcdn/media/anime/cover/large/bx3455-oNiJmsZZTAAj.png`}
+          alt="Log Image"
+          className="h-full object-contain w-36"
+        />
+      </figure> */}
+      <div className="card-body w-full">
         <h2 className="card-title">{description}</h2>
         <p>Type: {logTypeText[type]}</p>
         {renderQuantity()}

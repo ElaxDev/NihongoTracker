@@ -1,5 +1,5 @@
 import { Link, useNavigate } from 'react-router-dom';
-import { MdLogout, MdPerson } from 'react-icons/md';
+import { MdLogout, MdPerson, MdSettings } from 'react-icons/md';
 import { useUserDataStore } from '../store/userData';
 import { useMutation } from '@tanstack/react-query';
 import { logoutUserFn } from '../api/authApi';
@@ -38,7 +38,7 @@ function Header() {
 
   return (
     <div className="relative">
-      <div className="navbar bg-neutral text-neutral-content absolute w-full z-40 max-h-32">
+      <div className="navbar transition duration-200 bg-neutral/85 hover:bg-neutral/100 text-neutral-content absolute w-full z-40 max-h-32">
         <div className="navbar-start">
           <div className="dropdown">
             <div tabIndex={0} role="button" className="btn btn-ghost lg:hidden">
@@ -127,6 +127,12 @@ function Header() {
                     <Link to={`/user/${user.username}`}>
                       <MdPerson />
                       Profile
+                    </Link>
+                  </li>
+                  <li>
+                    <Link to={`/settings`}>
+                      <MdSettings />
+                      Settings
                     </Link>
                   </li>
                   <li>

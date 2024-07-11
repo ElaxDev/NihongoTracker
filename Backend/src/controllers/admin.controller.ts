@@ -22,13 +22,14 @@ export async function updateUserById(
   res: Response,
   next: NextFunction
 ) {
-  const { username, password, clubs, stats, titles, roles, avatar } =
+  const { username, password, clubs, stats, titles, roles, avatar, banner } =
     req.body as IUser;
   try {
     const updatedUser = await User.findByIdAndUpdate(
       req.params.id,
       {
         avatar,
+        banner,
         username,
         password,
         clubs,

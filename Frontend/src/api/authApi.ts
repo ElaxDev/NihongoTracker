@@ -3,7 +3,6 @@ import {
   ILoginResponse,
   IRegisterInput,
   ILoginInput,
-  updateUserRequest,
   updateLogRequest,
   createLogRequest,
   ILog,
@@ -54,16 +53,17 @@ export async function getUserFn(username: string): Promise<IUser> {
   return data;
 }
 
-export async function updateUserFn(updateValues: updateUserRequest) {
-  const updateParams = Object.entries(updateValues).reduce(
-    (params, [key, value]) => {
-      params.append(key, value);
-      return params;
+export async function updateUserFn(updateValues: FormData) {
+  const { data } = await api.put<IUser>(`/users`, updateValues, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
     },
-    new URLSearchParams()
-  );
+  });
+  return data;
+}
 
-  const { data } = await api.put<IUser>(`/users`, updateParams);
+export async function clearUserDataFn() {
+  const { data } = await api.post(`users/cleardata`);
   return data;
 }
 
@@ -99,5 +99,15 @@ export async function getUserLogsFn(username: string, params: ILogsParams) {
 
 export async function createLogFn(logValues: createLogRequest) {
   const { data } = await api.post<ILog>(`logs`, logValues);
+  return data;
+}
+
+export async function deleteLogFn(id: string) {
+  const { data } = await api.delete(`logs/${id}`);
+  return data;
+}
+
+export async function importLogsFn() {
+  const { data } = await api.get(`logs/importlogs`);
   return data;
 }

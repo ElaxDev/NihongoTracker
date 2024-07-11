@@ -17,11 +17,9 @@ function LoginScreen() {
   const { mutate, isPending, isSuccess } = useMutation({
     mutationFn: loginUserFn,
     onSuccess: (data: ILoginResponse) => {
-      console.log(data);
       setUser(data);
     },
     onError: (error) => {
-      console.log(error);
       if (error instanceof AxiosError) {
         toast.error(error.response?.data.message);
       } else {
@@ -33,7 +31,6 @@ function LoginScreen() {
   async function submitHandler(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     mutate({ username, password });
-    console.log('submit');
   }
 
   useEffect(() => {
@@ -45,8 +42,8 @@ function LoginScreen() {
 
   return (
     <div className="relative">
-      <div className="h-screen flex justify-center items-center">
-        <div className="card shrink-0 w-full max-w-sm shadow-2xl bg-base-200">
+      <div className="h-screen flex justify-center items-center bg-base-200">
+        <div className="card shrink-0 w-full max-w-sm shadow-2xl bg-base-100">
           <form className="card-body" onSubmit={submitHandler}>
             <div className="form-control">
               <label className="label">

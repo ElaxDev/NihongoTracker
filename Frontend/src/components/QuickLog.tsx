@@ -18,8 +18,7 @@ function QuickLog() {
 
   const { mutate } = useMutation({
     mutationFn: createLogFn,
-    onSuccess: (log) => {
-      console.log(log);
+    onSuccess: () => {
       setLogType(null);
       setLogDescription('');
       setEpisodes(0);
@@ -43,18 +42,18 @@ function QuickLog() {
     }
   }
 
-  function logSubmit(e: React.FormEvent<HTMLFormElement>) {
+  async function logSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     if (hours || minutes) {
-      setTime(hours * 60 + minutes);
+      await setTime(hours * 60 + minutes);
     } else {
-      setTime(undefined);
+      await setTime(undefined);
     }
     mutate({
       type: logType,
       description: logDescription,
       episodes,
-      time,
+      time: time,
       chars,
       pages,
     } as ILog);
@@ -72,7 +71,7 @@ function QuickLog() {
         </div>
         <ul
           tabIndex={0}
-          className="dropdown-content z-[1] menu p-2 shadow bg-base-100 rounded-box w-auto min-w-64"
+          className="dropdown-content z-[1] menu p-2 shadow bg-base-100 text-base-content rounded-box w-auto min-w-64"
         >
           <form onSubmit={logSubmit}>
             <label className="form-control w-full max-w-xs">
@@ -86,13 +85,12 @@ function QuickLog() {
                     onChange={(e) => setLogType(e.target.value as ILog['type'])}
                     value={logType || 'Log type'}
                   >
-                    <option disabled selected>
+                    <option disabled value="Log type">
                       Log type
                     </option>
                     <option value="anime">Anime</option>
                     <option value="manga">Manga</option>
                     <option value="vn">Visual novels</option>
-                    <option value="ln">Light novels</option>
                     <option value="video">Video</option>
                     <option value="reading">Reading</option>
                     <option value="audio">Audio</option>
@@ -185,7 +183,7 @@ function QuickLog() {
                     value={chars}
                   />
                 </div>
-                {logType === 'ln' || logType === 'manga' ? (
+                {logType === 'manga' ? (
                   <div>
                     <div>
                       <div className="label">

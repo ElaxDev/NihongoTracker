@@ -7,7 +7,7 @@ import { customError } from './errorMiddleware';
 const XP_FACTOR_TIME = 5;
 const XP_FACTOR_PAGES = 5;
 const XP_FACTOR_CHARS = 5;
-const XP_FACTOR_EPISODES = 29;
+const XP_FACTOR_EPISODES = XP_FACTOR_TIME * 24;
 
 async function calculateXpForLog(log: ILog, req: Request): Promise<ILog> {
   let type = log.type || '';

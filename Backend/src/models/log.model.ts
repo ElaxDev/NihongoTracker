@@ -31,7 +31,8 @@ const LogSchema = new Schema<ILog>(
       type: Number,
       required: function (this: ILog) {
         return (
-          (!this.chars && !this.pages && this.type === 'reading') ||
+          (!this.chars &&
+            ((this.type === 'reading' && !this.pages) || this.type === 'vn')) ||
           this.type === 'video' ||
           this.type === 'audio' ||
           this.type === 'other'
@@ -48,7 +49,7 @@ const LogSchema = new Schema<ILog>(
         );
       },
     },
-    date: { type: Date, default: new Date() },
+    date: { type: Date, default: new Date(), required: true },
   },
   { timestamps: true }
 );

@@ -35,6 +35,7 @@ export interface IUser extends Document {
   stats: IStats;
   titles: string[];
   roles: userRoles;
+  lastImport?: Date;
   createdAt?: Date;
   updatedAt?: Date;
   matchPassword: (enteredPassword: string) => Promise<boolean>;
@@ -100,7 +101,7 @@ export interface ILog extends Document {
   pages?: number;
   chars?: number;
   time?: number;
-  date?: Date;
+  date: Date;
 }
 
 export interface updateRequest {

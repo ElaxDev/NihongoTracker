@@ -2,7 +2,8 @@ import { Request, Response, NextFunction } from 'express';
 import { ParamsDictionary } from 'express-serve-static-core';
 import { ILog, IEditedFields } from '../types';
 import Log from '../models/log.model';
-import { Types } from 'mongoose';
+import User from '../models/user.model';
+import { PipelineStage, Types } from 'mongoose';
 import { customError } from '../middlewares/errorMiddleware';
 import updateStats from '../services/updateStats';
 
@@ -11,11 +12,18 @@ export async function getUserLogs(
   res: Response,
   next: NextFunction
 ) {
-  const page = parseInt(req.query.page as string) || 1;
-  const limit = parseInt(req.query.limit as string) || 10;
+  const page =
+    req.query.page != undefined && parseInt(req.query.page as string) >= 0
+      ? parseInt(req.query.page as string)
+      : 1;
+  const limit =
+    req.query.limit != undefined && parseInt(req.query.limit as string) >= 0
+      ? parseInt(req.query.limit as string)
+      : 10;
   const skip = (page - 1) * limit;
+
   try {
-    const logs = await Log.aggregate([
+    let pipeline: PipelineStage[] = [
       {
         $lookup: {
           from: 'users',
@@ -37,19 +45,27 @@ export async function getUserLogs(
       {
         $project: {
           user: 0,
+          editedFields: 0,
         },
       },
       {
         $skip: skip,
       },
-      {
+    ];
+
+    if (limit > 0) {
+      pipeline.push({
         $limit: limit,
-      },
-    ]);
+      });
+    }
 
-    if (!logs.length) throw new customError('User not found', 404);
+    const logs = await Log.aggregate(pipeline, {
+      collation: { locale: 'en', strength: 2 },
+    });
 
-    return res.json(logs);
+    if (!logs.length) return res.status(204);
+
+    return res.status(200).json(logs);
   } catch (error) {
     return next(error as customError);
   }
@@ -172,8 +188,17 @@ export async function createLog(
   res: Response,
   next: NextFunction
 ) {
-  const savedLog = await createLogFunction(req.body, res, next);
-  return res.status(200).json(savedLog);
+  const { type, description } = req.body;
+
+  if (!type) throw new customError('Log type is required', 400);
+  if (!description) throw new customError('Description is required', 400);
+
+  try {
+    const savedLog = await createLogFunction(req.body, res, next);
+    return res.status(200).json(savedLog);
+  } catch (error) {
+    return next(error as customError);
+  }
 }
 
 interface Results {
@@ -196,7 +221,21 @@ export async function importLogs(
       results.failed.push({ log, error: (error as customError).message });
     }
   }
-  return res
-    .status(200)
-    .json({ message: `${req.body.length} logs imported successfully!` });
+  const user = await User.findById(res.locals.user.id);
+  if (!user) throw new customError('User not found', 404);
+  user.lastImport = new Date();
+  user.save();
+  let statusMessage = `${results.success.length} log${
+    results.success.length > 1 ? 's' : ''
+  } imported successfully`;
+  if (results.failed.length) {
+    statusMessage += `\n${results.failed.length} log${
+      results.failed.length > 1 ? 's' : ''
+    } failed to import`;
+  } else if (results.success.length === 0) {
+    statusMessage = 'No logs to import, your logs are up to date';
+  }
+  return res.status(200).json({
+    message: statusMessage,
+  });
 }

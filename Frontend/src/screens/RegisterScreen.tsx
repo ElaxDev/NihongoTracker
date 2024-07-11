@@ -32,7 +32,6 @@ function RegisterScreen() {
   async function submitHandler(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     mutate({ username, password, passwordConfirmation });
-    console.log('submit');
   }
 
   useEffect(() => {
@@ -44,8 +43,8 @@ function RegisterScreen() {
 
   return (
     <div className="relative">
-      <div className="h-screen flex justify-center items-center">
-        <div className="card shrink-0 w-full max-w-sm shadow-2xl bg-base-200">
+      <div className="h-screen flex justify-center items-center bg-base-200">
+        <div className="card shrink-0 w-full max-w-sm shadow-2xl bg-base-100">
           <form className="card-body" onSubmit={submitHandler}>
             <div className="form-control">
               <label className="label">
