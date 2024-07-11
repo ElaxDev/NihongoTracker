@@ -1,4 +1,5 @@
 import User from '../models/user.model';
+import Log from '../models/log.model';
 import { Request, Response, NextFunction } from 'express';
 import { updateRequest } from '../types';
 import { customError } from '../middlewares/errorMiddleware';
@@ -57,15 +58,23 @@ export async function updateUser(
       if (!password) {
         throw new customError('Password is required', 400);
       }
+      if (!(await user.matchPassword(password))) {
+        throw new customError('Incorrect password', 401);
+      }
+
       if (user.username !== username) user.username = username;
     }
 
-    if (req.file) {
+    if (req.files && Object.keys(req.files).length > 0) {
       try {
-        const file = await uploadFile(req.file);
-        if (req.file.fieldname === 'avatar') {
+        const files = req.files as {
+          [fieldname: string]: Express.Multer.File[];
+        };
+        if (files && files.avatar) {
+          const file = await uploadFile(files.avatar[0]);
           user.avatar = file.downloadURL;
-        } else if (req.file.fieldname === 'banner') {
+        } else if (files && files.banner) {
+          const file = await uploadFile(files.banner[0]);
           user.banner = file.downloadURL;
         } else {
           throw new customError('Invalid fieldname', 400);
@@ -81,7 +90,16 @@ export async function updateUser(
 
     const updatedUser = await user.save();
 
-    return res.json(updatedUser);
+    return res.status(200).json({
+      _id: updatedUser._id,
+      username: updatedUser.username,
+      discordId: updatedUser.discordId,
+      stats: updatedUser.stats,
+      avatar: updatedUser.avatar,
+      banner: updatedUser.banner,
+      titles: updatedUser.titles,
+      roles: updatedUser.roles,
+    });
   } catch (error) {
     return next(error as customError);
   }
@@ -99,6 +117,7 @@ export async function getUser(req: Request, res: Response) {
     stats: userFound.stats,
     discordId: userFound.discordId,
     avatar: userFound.avatar,
+    banner: userFound.banner,
     titles: userFound.titles,
     createdAt: userFound.createdAt,
     updatedAt: userFound.updatedAt,
@@ -141,6 +160,32 @@ export async function getUsers(
     const users = await User.find({}).select('-password');
     if (!users) throw new customError('No users found', 404);
     return res.json(users);
+  } catch (error) {
+    return next(error as customError);
+  }
+}
+
+export async function clearUserData(
+  _req: Request,
+  res: Response,
+  next: NextFunction
+) {
+  try {
+    const user = await User.findById(res.locals.user._id);
+    if (!user) {
+      throw new customError('User not found', 404);
+    }
+
+    await user.updateOne({
+      discordId: '',
+      clubs: [],
+      titles: [],
+      $unset: { stats: '', lastImport: '' },
+    });
+
+    await Log.deleteMany({ user: user._id });
+
+    return res.status(200).json({ message: 'User data cleared' });
   } catch (error) {
     return next(error as customError);
   }

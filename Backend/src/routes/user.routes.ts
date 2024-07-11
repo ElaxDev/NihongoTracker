@@ -4,6 +4,7 @@ import {
   getUser,
   updateUser,
   getUsers,
+  clearUserData,
 } from '../controllers/users.controller';
 import { getUserLogs } from '../controllers/logs.controller';
 import { protect } from '../libs/authMiddleware';
@@ -22,6 +23,16 @@ router.get('/:username', getUser);
 
 router.get('/:username/logs', getUserLogs);
 
-router.put('/', protect, upload.single('avatar'), updateUser);
+router.put(
+  '/',
+  protect,
+  upload.fields([
+    { name: 'avatar', maxCount: 1 },
+    { name: 'banner', maxCount: 1 },
+  ]),
+  updateUser
+);
+
+router.post('/cleardata', protect, clearUserData);
 
 export default router;

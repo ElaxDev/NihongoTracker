@@ -54,13 +54,12 @@ function ProfileScreen() {
     : 0;
   const readingProgressPercentage =
     (readingProgressXP / totalReadingXpToLevelUp) * 100;
-
   return (
-    <div className="flex flex-col items-center">
-      <div className="2xl:max-w-screen-2xl 2xl:min-w-[50%] min-w-full">
+    <div className="flex flex-col items-center py-8">
+      <div className="2xl:max-w-screen-2xl 2xl:min-w-[50%] min-w-full 2xl:px-0 px-10">
         <div className="grid grid-cols-2 gap-10">
-          <div className="flex flex-col gap-5 pt-5">
-            <div className="card w-96 bg-base-100 shadow-xl">
+          <div className="flex flex-col shrink gap-5">
+            <div className="card w-full bg-base-100">
               <div className="card-body w-full">
                 <p>User Progress</p>
                 <ProgressBar
@@ -104,7 +103,7 @@ function ProfileScreen() {
             </div>
           </div>
 
-          <div className="flex flex-col gap-5 py-5 items-center">
+          <div className="flex flex-col gap-5 items-center">
             {logs?.pages.map((group, i) => (
               <React.Fragment key={i}>
                 {group.map((log) => (

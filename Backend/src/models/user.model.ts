@@ -87,6 +87,7 @@ const UserSchema = new Schema<IUser>(
       default: userRoles.user,
       required: true,
     },
+    lastImport: { type: Date, default: null },
   },
   { timestamps: true }
 );
