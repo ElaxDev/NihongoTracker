@@ -1,6 +1,12 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="dim">
+<html lang="en" data-theme="">
   <head>
+    <script async crossorigin="anonymous">
+      var selectedTheme = localStorage.getItem('theme');
+      if (selectedTheme) {
+        document.documentElement.setAttribute('data-theme', selectedTheme);
+      }
+    </script>
     <meta charset="UTF-8" />
     <meta name="viewport" content="initial-scale=1, width=device-width" />
     <title>NihongoTracker</title>
