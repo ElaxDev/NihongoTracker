@@ -5,7 +5,7 @@ const LogSchema = new Schema<ILog>(
   {
     user: { type: Schema.Types.ObjectId, required: true, ref: 'User' },
     type: { type: String, required: true },
-    contentId: String,
+    contentId: Number,
     xp: { type: Number, required: true },
     private: { type: Boolean, default: false },
     adult: { type: Boolean, default: false },

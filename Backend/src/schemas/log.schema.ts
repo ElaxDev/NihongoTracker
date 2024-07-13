@@ -5,7 +5,7 @@ const LogSchemaValidator = z
   .strictObject({
     user: z.string(),
     type: z.enum(['anime', 'ln', 'manga', 'vn', 'video', 'reading']), // Add all possible values
-    contentId: z.string(),
+    contentId: z.number(),
     xp: z.number(),
     description: z.string().min(1), // Assuming at least one character is required
     episodes: z.number(),

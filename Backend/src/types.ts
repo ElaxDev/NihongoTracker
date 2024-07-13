@@ -90,7 +90,7 @@ export interface ILog extends Document {
   _id: Types.ObjectId;
   user: Types.ObjectId;
   type: 'reading' | 'anime' | 'vn' | 'video' | 'manga' | 'audio' | 'other';
-  contentId?: string;
+  contentId?: number;
   xp: number;
   private: boolean;
   adult: boolean;
