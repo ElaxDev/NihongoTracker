@@ -5,7 +5,7 @@ const LogSchema = new Schema<ILog>(
   {
     user: { type: Schema.Types.ObjectId, required: true, ref: 'User' },
     type: { type: String, required: true },
-    contentId: Number,
+    contentId: { type: Number },
     xp: { type: Number, required: true },
     private: { type: Boolean, default: false },
     adult: { type: Boolean, default: false },
@@ -53,5 +53,22 @@ const LogSchema = new Schema<ILog>(
   },
   { timestamps: true }
 );
+
+LogSchema.virtual('media', {
+  ref: function (this: ILog) {
+    if (this.type === 'anime') return 'Anime';
+    if (this.type === 'manga') return 'Manga';
+    if (this.type === 'reading') return 'LightNovel';
+    if (this.type === 'vn') return 'VisualNovel';
+    return null;
+  },
+  localField: 'contentId',
+  foreignField: function (this: ILog) {
+    if (this.type === 'anime' || 'manga' || 'reading') return 'anilistId';
+    if (this.type === 'vn') return 'vndbId';
+    return '_id';
+  },
+  justOne: true,
+});
 
 export default model<ILog>('Log', LogSchema);

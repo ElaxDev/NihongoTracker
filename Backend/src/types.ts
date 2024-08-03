@@ -1,6 +1,73 @@
 import { Request } from 'express';
 import { Types, Document } from 'mongoose';
 
+export interface IVisualNovelDocument extends Document {
+  title: string;
+  publisher: string;
+  description: string;
+  vndbScore?: number;
+  vndbId: number;
+  approximatedCharCount?: number;
+  approximatedReadingTime?: number;
+  coverImage: string;
+  coverImageNSFW?: boolean;
+  startedUserCount?: number;
+  readingUserCount?: number;
+  finishedUserCount?: number;
+  adult: boolean;
+}
+
+export interface IMangaDocument extends Document {
+  title: string;
+  anilistId: number;
+  description: string;
+  genres: string[];
+  chapters: number;
+  volumes: number;
+  anilistScore?: number;
+  adult: boolean;
+  status: string;
+  approximatedCharCount?: number;
+  approximatedReadingTime?: number;
+  coverImage: string;
+  startDate: string;
+  endDate: string;
+}
+
+export interface ILightNovelDocument extends Document {
+  title: string;
+  anilistId: number;
+  description?: string;
+  author?: string;
+  genres?: string[];
+  anilistScore?: number;
+  startDate?: string;
+  endDate?: string;
+  adult: boolean;
+  coverImage: string;
+  approximatedCharCount?: number;
+  approximatedReadingTime?: number;
+  startedUserCount?: number;
+  readingUserCount?: number;
+  finishedUserCount?: number;
+}
+
+export interface IAnimeDocument extends Document {
+  anilistId: number;
+  title: string;
+  description?: string;
+  episodes: number;
+  anilistScore?: number;
+  adult: boolean;
+  episodeDuration?: number;
+  coverImage: string;
+  releaseYear?: number;
+  genres?: string[];
+  startedUserCount?: number;
+  watchingUserCount?: number;
+  finishedUserCount?: number;
+}
+
 export interface decodedJWT {
   id: Types.ObjectId;
   iat: number;
