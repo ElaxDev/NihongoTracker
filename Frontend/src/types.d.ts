@@ -138,7 +138,7 @@ export interface updateLogRequest {
   description?: string;
   time?: number;
   date?: Date;
-  contentId?: string;
+  contentId?: number;
   episodes?: number;
   pages?: number;
   chars?: number;
@@ -148,7 +148,7 @@ export interface ILog {
   _id: string;
   user: string;
   type: 'reading' | 'anime' | 'vn' | 'video' | 'manga' | 'audio' | 'other';
-  contentId?: string;
+  contentId?: number;
   xp: number;
   private: boolean;
   adult: boolean;
@@ -173,4 +173,31 @@ export interface IRankingResponse {
   username: string;
   avatar: string;
   stats: Pick<IStats, filterTypes>;
+}
+
+interface AnilistSearchResult {
+  Page: {
+    pageInfo: {
+      total: number;
+      currentPage: number;
+      lastPage: number;
+      hasNextPage: boolean;
+      perPage: number;
+    };
+    media: {
+      id: number;
+      title: {
+        romaji: string;
+        english: string;
+        native: string;
+      };
+      type: string;
+      coverImage: {
+        extraLarge: string;
+        medium: string;
+        large: string;
+        color: string;
+      };
+    }[];
+  };
 }

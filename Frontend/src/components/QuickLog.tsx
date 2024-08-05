@@ -1,9 +1,11 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { ILog } from '../types';
 import { createLogFn } from '../api/authApi';
+import { useSearchAnilist } from '../hooks/useSearchAnilist';
 import { toast } from 'react-toastify';
 import { AxiosError } from 'axios';
 import { useMutation } from '@tanstack/react-query';
+import React from 'react';
 
 function QuickLog() {
   const [logType, setLogType] = useState<ILog['type'] | null>(null);
@@ -14,7 +16,21 @@ function QuickLog() {
   const [pages, setPages] = useState<number>(0);
   const [hours, setHours] = useState<number>(0);
   const [minutes, setMinutes] = useState<number>(0);
+  const [contentId, setcontentId] = useState<number | undefined>(undefined);
   const [showTime, setShowTime] = useState<boolean>(false);
+  const [isSuggestionsOpen, setIsSuggestionsOpen] = useState(false);
+  const suggestionRef = useRef<HTMLDivElement>(null);
+
+  const {
+    data: searchResult,
+    // error: searchError,
+    isLoading: isSearching,
+  } = useSearchAnilist(
+    logDescription,
+    logType == 'anime' ? 'ANIME' : logType == 'manga' ? 'MANGA' : '',
+    1,
+    5
+  );
 
   const { mutate } = useMutation({
     mutationFn: createLogFn,
@@ -42,6 +58,12 @@ function QuickLog() {
     }
   }
 
+  function handleSearch(e: React.ChangeEvent<HTMLInputElement>) {
+    e.preventDefault();
+    setLogDescription(e.target.value);
+    console.log(searchResult);
+  }
+
   async function logSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     if (hours || minutes) {
@@ -54,9 +76,37 @@ function QuickLog() {
       description: logDescription,
       episodes,
       time: time,
+      contentId,
       chars,
       pages,
     } as ILog);
+  }
+
+  function handleDescriptionInputBlur() {
+    setTimeout(() => {
+      if (
+        suggestionRef.current &&
+        !suggestionRef.current.contains(document.activeElement)
+      ) {
+        setIsSuggestionsOpen(false);
+      }
+    }, 10);
+  }
+
+  function setSelectedSuggestion(title: string, id: number) {
+    setLogDescription(title);
+    setcontentId(id);
+  }
+
+  function handleSuggestionClick(
+    title: string,
+    id: number
+  ): React.MouseEventHandler<HTMLLIElement> | undefined {
+    return (event: React.MouseEvent<HTMLLIElement, MouseEvent>) => {
+      event.stopPropagation();
+      setSelectedSuggestion(title, id);
+      setIsSuggestionsOpen(false);
+    };
   }
 
   return (
@@ -97,16 +147,55 @@ function QuickLog() {
                   </select>
                 </div>
                 <div>
-                  <div className="label">
-                    <span className="label-text">Write a log description</span>
+                  <div>
+                    <div className="label">
+                      <span className="label-text">
+                        Write a log description
+                      </span>
+                    </div>
+                    <input
+                      type="text"
+                      placeholder="Log description"
+                      className="input input-bordered w-full max-w-xs"
+                      onFocus={() => setIsSuggestionsOpen(true)}
+                      onBlur={handleDescriptionInputBlur}
+                      onChange={handleSearch}
+                      value={logDescription}
+                      tabIndex={0}
+                    />
+                    <div
+                      ref={suggestionRef}
+                      className={`dropdown dropdown-open ${
+                        isSuggestionsOpen && searchResult ? 'block' : 'hidden'
+                      }`}
+                    >
+                      <ul
+                        tabIndex={0}
+                        className="dropdown-content menu bg-base-200 rounded-box w-full shadow-lg mt-2"
+                      >
+                        {isSearching ? (
+                          <li>
+                            <a>Loading...</a>
+                          </li>
+                        ) : searchResult?.Page?.media.length === 0 ? (
+                          <li>
+                            <a>No results found</a>
+                          </li>
+                        ) : null}
+                        {searchResult?.Page?.media.map((group, i) => (
+                          <li
+                            key={i}
+                            onClick={handleSuggestionClick(
+                              group.title.romaji,
+                              group.id
+                            )}
+                          >
+                            <a>{group.title.romaji}</a>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
                   </div>
-                  <input
-                    type="text"
-                    placeholder="Log description"
-                    className="input input-bordered w-full max-w-xs"
-                    onChange={(e) => setLogDescription(e.target.value)}
-                    value={logDescription}
-                  />
                 </div>
                 {logType === 'anime' ? (
                   <div>

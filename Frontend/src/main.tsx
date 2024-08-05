@@ -22,6 +22,8 @@ import NotFound from './screens/NotFound.tsx';
 import StatsScreen from './screens/StatsScreen.tsx';
 import ProfileHeader from './components/ProfileHeader.tsx';
 import SettingsScreen from './screens/SettingsScreen.tsx';
+import ProtectedRoutes from './contexts/protectedRoute.tsx';
+import LogScreen from './screens/LogScreen.tsx';
 
 const router = createBrowserRouter(
   createRoutesFromElements(
@@ -33,6 +35,9 @@ const router = createBrowserRouter(
       <Route path="user/:username" element={<ProfileHeader />}>
         <Route index element={<ProfileScreen />} />
         <Route path="stats" element={<StatsScreen />} />
+      </Route>
+      <Route element={<ProtectedRoutes />}>
+        <Route index path="createlog" element={<LogScreen />} />
       </Route>
       <Route path="*" element={<NotFound />} />
     </Route>

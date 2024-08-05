@@ -112,38 +112,43 @@ function Header() {
 
         <div className="navbar-end gap-3 mx-3">
           {user ? (
-            <div className="dropdown dropdown-hover dropdown-bottom dropdown-end">
-              <div tabIndex={0} role="button" className="btn m-1">
-                {user.username}
-              </div>
-              <ul
-                tabIndex={0}
-                className="dropdown-content z-[1] menu p-2 shadow bg-base-100 text-base-content rounded-box w-52"
-              >
-                <IconContext.Provider
-                  value={{ className: 'text-lg text-base-content' }}
+            <>
+              <Link className="btn btn-primary btn-outline" to="/createlog">
+                Create Log
+              </Link>
+              <div className="dropdown dropdown-hover dropdown-bottom dropdown-end">
+                <div tabIndex={0} role="button" className="btn m-1">
+                  {user.username}
+                </div>
+                <ul
+                  tabIndex={0}
+                  className="dropdown-content z-[1] menu p-2 shadow bg-base-100 text-base-content rounded-box w-52"
                 >
-                  <li>
-                    <Link to={`/user/${user.username}`}>
-                      <MdPerson />
-                      Profile
-                    </Link>
-                  </li>
-                  <li>
-                    <Link to={`/settings`}>
-                      <MdSettings />
-                      Settings
-                    </Link>
-                  </li>
-                  <li>
-                    <a onClick={logoutHandler}>
-                      <MdLogout />
-                      Logout
-                    </a>
-                  </li>
-                </IconContext.Provider>
-              </ul>
-            </div>
+                  <IconContext.Provider
+                    value={{ className: 'text-lg currentColor' }}
+                  >
+                    <li>
+                      <Link to={`/user/${user.username}`}>
+                        <MdPerson />
+                        Profile
+                      </Link>
+                    </li>
+                    <li>
+                      <Link to={`/settings`}>
+                        <MdSettings />
+                        Settings
+                      </Link>
+                    </li>
+                    <li>
+                      <a onClick={logoutHandler}>
+                        <MdLogout />
+                        Logout
+                      </a>
+                    </li>
+                  </IconContext.Provider>
+                </ul>
+              </div>
+            </>
           ) : (
             <>
               <Link className="btn btn-primary" to="/login">

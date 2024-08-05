@@ -78,7 +78,7 @@ function ProfileScreen() {
                 <ProgressBar
                   progress={listeningProgressPercentage}
                   maxProgress={100}
-                  progressColor={accent}
+                  progressColor={`primary`}
                 />
                 <div className="flex justify-between text-sm">
                   <p>Level: {user?.stats.listeningLevel}</p>
