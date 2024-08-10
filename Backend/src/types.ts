@@ -60,7 +60,7 @@ export interface IAnimeDocument extends Document {
   anilistScore?: number;
   adult: boolean;
   episodeDuration?: number;
-  coverImage: string;
+  coverImageLarge: string;
   releaseYear?: number;
   genres?: string[];
   startedUserCount?: number;

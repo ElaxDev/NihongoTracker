@@ -37,7 +37,15 @@ function LogCard({ log }: { log: ILog }) {
         return <p>Time: {time > 60 ? `${time / 60}h` : `${time}m`}</p>;
       }
     } else if ((type === 'video' || type === 'audio') && time) {
-      return <p>Time: {time / 60}</p>;
+      return (
+        <p>
+          {time
+            ? time >= 60
+              ? `Time: ${time / 60}h`
+              : `Time: ${time}m`
+            : null}
+        </p>
+      );
     } else {
       return null;
     }
