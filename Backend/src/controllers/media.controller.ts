@@ -1,6 +1,11 @@
 import { Request, Response, NextFunction } from 'express';
 import { ParamsDictionary } from 'express-serve-static-core';
-import { ILog, IEditedFields, IAnimeDocument } from '../types';
+import {
+  IAnimeDocument,
+  ILightNovelDocument,
+  IMangaDocument,
+  IVisualNovelDocument,
+} from '../types';
 import Anime from '../models/anime.model';
 import Manga from '../models/manga.model';
 import LightNovel from '../models/lightNovel.model';
@@ -8,7 +13,6 @@ import visualNovel from '../models/visualNovel.model';
 import { Types } from 'mongoose';
 import { customError } from '../middlewares/errorMiddleware';
 import updateStats from '../services/updateStats';
-import { number } from 'zod';
 
 export async function getAnime(
   req: Request,
@@ -104,454 +108,507 @@ export async function updateAnime(
   }
 }
 
-async function createMediaFunction(
-  logData: ILog,
-  res: Response,
-  next: NextFunction
-) {
+async function createAnimeFunction(animeDetails: IAnimeDocument) {
   const {
-    type,
-    contentId,
-    pages,
-    episodes,
-    xp,
+    anilistId,
+    title,
     description,
-    time,
-    date,
-    chars,
-  } = logData;
-  const user: ILog['user'] = res.locals.user.id;
-  const newLog: ILog | null = new Log({
-    user,
-    type,
-    contentId,
-    pages,
     episodes,
-    xp,
+    anilistScore,
+    adult,
+    episodeDuration,
+    coverImageLarge,
+    releaseYear,
+    genres,
+    startedUserCount,
+    watchingUserCount,
+    finishedUserCount,
+  } = animeDetails;
+  const newAnime: IAnimeDocument | null = new Anime({
+    anilistId,
+    title,
     description,
-    time,
-    date,
-    chars,
+    episodes,
+    anilistScore,
+    adult,
+    episodeDuration,
+    coverImageLarge,
+    releaseYear,
+    genres,
+    startedUserCount,
+    watchingUserCount,
+    finishedUserCount,
   });
-  const savedLog = await newLog.save();
-  res.locals.log = savedLog;
-  await updateStats(res, next);
-  return savedLog;
+  const savedAnime = await newAnime.save();
+  return savedAnime;
 }
 
-export async function createMedia(
-  req: Request<ParamsDictionary, any, ILog>,
+export async function createAnime(
+  req: Request<ParamsDictionary, any, IAnimeDocument>,
   res: Response,
   next: NextFunction
 ) {
-  const { type, description } = req.body;
+  const { anilistId, title, episodes } = req.body;
 
-  if (!type) throw new customError('Log type is required', 400);
-  if (!description) throw new customError('Description is required', 400);
+  if (!anilistId) throw new customError('The Anilist ID is required', 400);
+  if (!title) throw new customError('The title is required', 400);
+  if (!episodes) throw new customError('The episode count is required', 400);
 
   try {
-    const savedLog = await createMediaFunction(req.body, res, next);
-    return res.status(200).json(savedLog);
-  } catch (error) {
-    return next(error as customError);
-  }
-}
-export async function getMedia(
-  req: Request,
-  res: Response,
-  next: NextFunction
-) {
-  try {
-    const foundLog = await Log.findById(req.params.id).populate('user');
-    if (!foundLog) throw new customError('Log not found', 404);
-    return res.status(200).json(foundLog);
+    const savedAnime = await createAnimeFunction(req.body);
+    return res.sendStatus(200).json(savedAnime);
   } catch (error) {
     return next(error as customError);
   }
 }
 
-export async function deleteMedia(
+export async function getManga(
   req: Request,
   res: Response,
   next: NextFunction
 ) {
   try {
-    const deletedLog = await Log.findByIdAndDelete(
+    const foundManga = await Manga.findById(req.params.id);
+    if (!foundManga) throw new customError('Requested manga not found', 404);
+    return res.status(200).json(foundManga);
+  } catch (error) {
+    return next(error as customError);
+  }
+}
+
+export async function deleteManga(
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
+  try {
+    const deletedManga = await Manga.findByIdAndDelete(
       new Types.ObjectId(req.params.id)
     );
-    if (!deletedLog) throw new customError('Log not found', 404);
+    if (!deletedManga) throw new customError('Requested manga not found', 404);
     return res.sendStatus(204);
   } catch (error) {
     return next(error as customError);
   }
 }
 
-export async function updateMedia(
-  req: Request<ParamsDictionary, any, ILog>,
-  res: Response,
-  next: NextFunction
-) {
-  const { description, time, date, contentId, episodes, pages, chars } =
-    req.body;
-
-  try {
-    const log: ILog | null = await Log.findOne({
-      _id: new Types.ObjectId(req.params.id),
-      user: res.locals.user.id,
-    });
-
-    if (!log) throw new customError('Log not found', 404);
-
-    const validKeys: (keyof IEditedFields)[] = [
-      'episodes',
-      'pages',
-      'chars',
-      'time',
-      'xp',
-    ];
-
-    const editedFields: IEditedFields = {};
-
-    for (const key in req.body) {
-      if (validKeys.includes(key as keyof IEditedFields)) {
-        editedFields[key as keyof IEditedFields] =
-          log[key as keyof IEditedFields];
-      }
-    }
-
-    log.description = description !== undefined ? description : log.description;
-    log.time = time !== undefined ? time : log.time;
-    log.date = date !== undefined ? date : log.date;
-    log.contentId = contentId !== undefined ? contentId : log.contentId;
-    log.episodes = episodes !== undefined ? episodes : log.episodes;
-    log.pages = pages !== undefined ? pages : log.pages;
-    log.chars = chars !== undefined ? chars : log.chars;
-    log.editedFields = editedFields;
-
-    const updatedLog = await log.save();
-    res.locals.log = updatedLog;
-    await updateStats(res, next);
-    return res.sendStatus(204);
-  } catch (error) {
-    return next(error as customError);
-  }
-}
-
-async function createMediaFunction(
-  logData: ILog,
+export async function updateManga(
+  req: Request<ParamsDictionary, any, IMangaDocument>,
   res: Response,
   next: NextFunction
 ) {
   const {
-    type,
-    contentId,
-    pages,
-    episodes,
-    xp,
+    anilistId,
+    title,
     description,
-    time,
-    date,
-    chars,
-  } = logData;
-  const user: ILog['user'] = res.locals.user.id;
-  const newLog: ILog | null = new Log({
-    user,
-    type,
-    contentId,
-    pages,
-    episodes,
-    xp,
+    chapters,
+    volumes,
+    anilistScore,
+    adult,
+    coverImageLarge,
+    releaseYear,
+    genres,
+    startedUserCount,
+    readingUserCount,
+    finishedUserCount,
+  } = req.body;
+
+  try {
+    const manga: IMangaDocument | null = await Manga.findOne({
+      vndbId: Number(req.params.id),
+    });
+
+    if (!manga) throw new customError('Manga not found', 404);
+
+    manga.anilistId = anilistId !== undefined ? anilistId : manga.anilistId;
+    manga.description =
+      description !== undefined ? description : manga.description;
+    manga.title = title !== undefined ? title : manga.title;
+    manga.chapters = chapters !== undefined ? chapters : manga.chapters;
+    manga.volumes = volumes !== undefined ? volumes : manga.volumes;
+    manga.anilistScore =
+      anilistScore !== undefined ? anilistScore : manga.anilistScore;
+    manga.adult = adult !== undefined ? adult : manga.adult;
+    manga.coverImageLarge =
+      coverImageLarge !== undefined ? coverImageLarge : manga.coverImageLarge;
+    manga.releaseYear =
+      releaseYear !== undefined ? releaseYear : manga.releaseYear;
+    manga.genres = genres !== undefined ? genres : manga.genres;
+    manga.startedUserCount =
+      startedUserCount !== undefined
+        ? startedUserCount
+        : manga.startedUserCount;
+    manga.readingUserCount =
+      readingUserCount !== undefined
+        ? readingUserCount
+        : manga.readingUserCount;
+    manga.finishedUserCount =
+      finishedUserCount !== undefined
+        ? finishedUserCount
+        : manga.finishedUserCount;
+
+    const updatedManga = await manga.save();
+    await updateStats(res, next);
+    return res.sendStatus(200).json(updatedManga);
+  } catch (error) {
+    return next(error as customError);
+  }
+}
+
+async function createMangaFunction(
+  mangaDetails: IMangaDocument,
+  res: Response,
+  next: NextFunction
+) {
+  const {
+    anilistId,
+    title,
     description,
-    time,
-    date,
-    chars,
+    chapters,
+    volumes,
+    anilistScore,
+    adult,
+    coverImageLarge,
+    releaseYear,
+    genres,
+    startedUserCount,
+    readingUserCount,
+    finishedUserCount,
+  } = mangaDetails;
+  const newManga: IMangaDocument | null = new Manga({
+    anilistId,
+    title,
+    description,
+    chapters,
+    volumes,
+    anilistScore,
+    adult,
+    coverImageLarge,
+    releaseYear,
+    genres,
+    startedUserCount,
+    readingUserCount,
+    finishedUserCount,
   });
-  const savedLog = await newLog.save();
-  res.locals.log = savedLog;
-  await updateStats(res, next);
-  return savedLog;
+  const savedManga = await newManga.save();
+  return savedManga;
 }
 
-export async function createMedia(
-  req: Request<ParamsDictionary, any, ILog>,
+export async function createManga(
+  req: Request<ParamsDictionary, any, IMangaDocument>,
   res: Response,
   next: NextFunction
 ) {
-  const { type, description } = req.body;
+  const { anilistId, title, chapters, volumes } = req.body;
 
-  if (!type) throw new customError('Log type is required', 400);
-  if (!description) throw new customError('Description is required', 400);
+  if (!anilistId) throw new customError('The Anilist ID is required', 400);
+  if (!title) throw new customError('The title is required', 400);
+  if (!chapters) throw new customError('The chapter count is required', 400);
+  if (!volumes) throw new customError('The volume count is required', 400);
 
   try {
-    const savedLog = await createMediaFunction(req.body, res, next);
-    return res.status(200).json(savedLog);
-  } catch (error) {
-    return next(error as customError);
-  }
-}
-export async function getMedia(
-  req: Request,
-  res: Response,
-  next: NextFunction
-) {
-  try {
-    const foundLog = await Log.findById(req.params.id).populate('user');
-    if (!foundLog) throw new customError('Log not found', 404);
-    return res.status(200).json(foundLog);
+    const savedManga = await createMangaFunction(req.body, res, next);
+    return res.sendStatus(200).json(savedManga);
   } catch (error) {
     return next(error as customError);
   }
 }
 
-export async function deleteMedia(
+export async function getLightNovel(
   req: Request,
   res: Response,
   next: NextFunction
 ) {
   try {
-    const deletedLog = await Log.findByIdAndDelete(
+    const foundLightNovel = await LightNovel.findById(req.params.id);
+    if (!foundLightNovel) throw new customError('Light Novel not found', 404);
+    return res.status(200).json(foundLightNovel);
+  } catch (error) {
+    return next(error as customError);
+  }
+}
+
+export async function deleteLightNovel(
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
+  try {
+    const deletedLightNovel = await LightNovel.findByIdAndDelete(
       new Types.ObjectId(req.params.id)
     );
-    if (!deletedLog) throw new customError('Log not found', 404);
+    if (!deletedLightNovel) throw new customError('Light Novel not found', 404);
     return res.sendStatus(204);
   } catch (error) {
     return next(error as customError);
   }
 }
 
-export async function updateMedia(
-  req: Request<ParamsDictionary, any, ILog>,
-  res: Response,
-  next: NextFunction
-) {
-  const { description, time, date, contentId, episodes, pages, chars } =
-    req.body;
-
-  try {
-    const log: ILog | null = await Log.findOne({
-      _id: new Types.ObjectId(req.params.id),
-      user: res.locals.user.id,
-    });
-
-    if (!log) throw new customError('Log not found', 404);
-
-    const validKeys: (keyof IEditedFields)[] = [
-      'episodes',
-      'pages',
-      'chars',
-      'time',
-      'xp',
-    ];
-
-    const editedFields: IEditedFields = {};
-
-    for (const key in req.body) {
-      if (validKeys.includes(key as keyof IEditedFields)) {
-        editedFields[key as keyof IEditedFields] =
-          log[key as keyof IEditedFields];
-      }
-    }
-
-    log.description = description !== undefined ? description : log.description;
-    log.time = time !== undefined ? time : log.time;
-    log.date = date !== undefined ? date : log.date;
-    log.contentId = contentId !== undefined ? contentId : log.contentId;
-    log.episodes = episodes !== undefined ? episodes : log.episodes;
-    log.pages = pages !== undefined ? pages : log.pages;
-    log.chars = chars !== undefined ? chars : log.chars;
-    log.editedFields = editedFields;
-
-    const updatedLog = await log.save();
-    res.locals.log = updatedLog;
-    await updateStats(res, next);
-    return res.sendStatus(204);
-  } catch (error) {
-    return next(error as customError);
-  }
-}
-
-async function createMediaFunction(
-  logData: ILog,
+export async function updateLightNovel(
+  req: Request<ParamsDictionary, any, ILightNovelDocument>,
   res: Response,
   next: NextFunction
 ) {
   const {
-    type,
-    contentId,
-    pages,
-    episodes,
-    xp,
+    anilistId,
+    title,
     description,
-    time,
-    date,
-    chars,
-  } = logData;
-  const user: ILog['user'] = res.locals.user.id;
-  const newLog: ILog | null = new Log({
-    user,
-    type,
-    contentId,
-    pages,
-    episodes,
-    xp,
+    volumes,
+    anilistScore,
+    adult,
+    coverImageLarge,
+    releaseYear,
+    genres,
+    startedUserCount,
+    readingUserCount,
+    finishedUserCount,
+  } = req.body;
+
+  try {
+    const lightNovel: ILightNovelDocument | null = await LightNovel.findOne({
+      vndbId: Number(req.params.id),
+    });
+
+    if (!lightNovel) throw new customError('Light Novel not found', 404);
+
+    lightNovel.anilistId =
+      anilistId !== undefined ? anilistId : lightNovel.anilistId;
+    lightNovel.description =
+      description !== undefined ? description : lightNovel.description;
+    lightNovel.title = title !== undefined ? title : lightNovel.title;
+    lightNovel.volumes = volumes !== undefined ? volumes : lightNovel.volumes;
+    lightNovel.anilistScore =
+      anilistScore !== undefined ? anilistScore : lightNovel.anilistScore;
+    lightNovel.adult = adult !== undefined ? adult : lightNovel.adult;
+    lightNovel.coverImageLarge =
+      coverImageLarge !== undefined
+        ? coverImageLarge
+        : lightNovel.coverImageLarge;
+    lightNovel.releaseYear =
+      releaseYear !== undefined ? releaseYear : lightNovel.releaseYear;
+    lightNovel.genres = genres !== undefined ? genres : lightNovel.genres;
+    lightNovel.startedUserCount =
+      startedUserCount !== undefined
+        ? startedUserCount
+        : lightNovel.startedUserCount;
+    lightNovel.readingUserCount =
+      readingUserCount !== undefined
+        ? readingUserCount
+        : lightNovel.readingUserCount;
+    lightNovel.finishedUserCount =
+      finishedUserCount !== undefined
+        ? finishedUserCount
+        : lightNovel.finishedUserCount;
+
+    const updatedLightNovel = await lightNovel.save();
+    await updateStats(res, next);
+    return res.sendStatus(200).json(updatedLightNovel);
+  } catch (error) {
+    return next(error as customError);
+  }
+}
+
+async function createLightNovelFunction(
+  lightNovelDetails: ILightNovelDocument,
+  res: Response,
+  next: NextFunction
+) {
+  const {
+    anilistId,
+    title,
     description,
-    time,
-    date,
-    chars,
+    volumes,
+    anilistScore,
+    adult,
+    coverImageLarge,
+    releaseYear,
+    genres,
+    startedUserCount,
+    readingUserCount,
+    finishedUserCount,
+  } = lightNovelDetails;
+  const newLightNovel: ILightNovelDocument | null = new LightNovel({
+    anilistId,
+    title,
+    description,
+    volumes,
+    anilistScore,
+    adult,
+    coverImageLarge,
+    releaseYear,
+    genres,
+    startedUserCount,
+    readingUserCount,
+    finishedUserCount,
   });
-  const savedLog = await newLog.save();
-  res.locals.log = savedLog;
-  await updateStats(res, next);
-  return savedLog;
+  const savedLightNovel = await newLightNovel.save();
+  return savedLightNovel;
 }
 
-export async function createMedia(
-  req: Request<ParamsDictionary, any, ILog>,
+export async function createLightNovel(
+  req: Request<ParamsDictionary, any, ILightNovelDocument>,
   res: Response,
   next: NextFunction
 ) {
-  const { type, description } = req.body;
+  const { anilistId, title, volumes } = req.body;
 
-  if (!type) throw new customError('Log type is required', 400);
-  if (!description) throw new customError('Description is required', 400);
+  if (!anilistId) throw new customError('The Anilist ID is required', 400);
+  if (!title) throw new customError('The title is required', 400);
+  if (!volumes) throw new customError('The volume count is required', 400);
 
   try {
-    const savedLog = await createMediaFunction(req.body, res, next);
-    return res.status(200).json(savedLog);
+    const savedLightNovel = await createLightNovelFunction(req.body, res, next);
+    return res.sendStatus(200).json(savedLightNovel);
   } catch (error) {
     return next(error as customError);
   }
 }
 
-export async function getMedia(
+export async function getVisualNovel(
   req: Request,
   res: Response,
   next: NextFunction
 ) {
   try {
-    const foundLog = await Log.findById(req.params.id).populate('user');
-    if (!foundLog) throw new customError('Log not found', 404);
-    return res.status(200).json(foundLog);
+    const foundVisualNovel = await visualNovel.findById(req.params.id);
+    if (!foundVisualNovel) throw new customError('Visual Novel not found', 404);
+    return res.status(200).json(foundVisualNovel);
   } catch (error) {
     return next(error as customError);
   }
 }
 
-export async function deleteMedia(
+export async function deleteVisualNovel(
   req: Request,
   res: Response,
   next: NextFunction
 ) {
   try {
-    const deletedLog = await Log.findByIdAndDelete(
+    const deletedVisualNovel = await visualNovel.findByIdAndDelete(
       new Types.ObjectId(req.params.id)
     );
-    if (!deletedLog) throw new customError('Log not found', 404);
+    if (!deletedVisualNovel)
+      throw new customError('Visual Novel not found', 404);
     return res.sendStatus(204);
   } catch (error) {
     return next(error as customError);
   }
 }
 
-export async function updateMedia(
-  req: Request<ParamsDictionary, any, ILog>,
-  res: Response,
-  next: NextFunction
-) {
-  const { description, time, date, contentId, episodes, pages, chars } =
-    req.body;
-
-  try {
-    const log: ILog | null = await Log.findOne({
-      _id: new Types.ObjectId(req.params.id),
-      user: res.locals.user.id,
-    });
-
-    if (!log) throw new customError('Log not found', 404);
-
-    const validKeys: (keyof IEditedFields)[] = [
-      'episodes',
-      'pages',
-      'chars',
-      'time',
-      'xp',
-    ];
-
-    const editedFields: IEditedFields = {};
-
-    for (const key in req.body) {
-      if (validKeys.includes(key as keyof IEditedFields)) {
-        editedFields[key as keyof IEditedFields] =
-          log[key as keyof IEditedFields];
-      }
-    }
-
-    log.description = description !== undefined ? description : log.description;
-    log.time = time !== undefined ? time : log.time;
-    log.date = date !== undefined ? date : log.date;
-    log.contentId = contentId !== undefined ? contentId : log.contentId;
-    log.episodes = episodes !== undefined ? episodes : log.episodes;
-    log.pages = pages !== undefined ? pages : log.pages;
-    log.chars = chars !== undefined ? chars : log.chars;
-    log.editedFields = editedFields;
-
-    const updatedLog = await log.save();
-    res.locals.log = updatedLog;
-    await updateStats(res, next);
-    return res.sendStatus(204);
-  } catch (error) {
-    return next(error as customError);
-  }
-}
-
-async function createMediaFunction(
-  logData: ILog,
+export async function updateVisualNovel(
+  req: Request<ParamsDictionary, any, IVisualNovelDocument>,
   res: Response,
   next: NextFunction
 ) {
   const {
-    type,
-    contentId,
-    pages,
-    episodes,
-    xp,
+    anilistId,
+    title,
     description,
-    time,
-    date,
-    chars,
-  } = logData;
-  const user: ILog['user'] = res.locals.user.id;
-  const newLog: ILog | null = new Log({
-    user,
-    type,
-    contentId,
-    pages,
-    episodes,
-    xp,
-    description,
-    time,
-    date,
-    chars,
-  });
-  const savedLog = await newLog.save();
-  res.locals.log = savedLog;
-  await updateStats(res, next);
-  return savedLog;
+    anilistScore,
+    adult,
+    coverImageLarge,
+    releaseYear,
+    genres,
+    startedUserCount,
+    playingUserCount,
+    finishedUserCount,
+  } = req.body;
+
+  try {
+    const visualNovel: IVisualNovelDocument | null = await visualNovel.findOne({
+      vndbId: Number(req.params.id),
+    });
+
+    if (!visualNovel) throw new customError('Visual Novel not found', 404);
+
+    visualNovel.anilistId =
+      anilistId !== undefined ? anilistId : visualNovel.anilistId;
+    visualNovel.description =
+      description !== undefined ? description : visualNovel.description;
+    visualNovel.title = title !== undefined ? title : visualNovel.title;
+    visualNovel.anilistScore =
+      anilistScore !== undefined ? anilistScore : visualNovel.anilistScore;
+    visualNovel.adult = adult !== undefined ? adult : visualNovel.adult;
+    visualNovel.coverImageLarge =
+      coverImageLarge !== undefined
+        ? coverImageLarge
+        : visualNovel.coverImageLarge;
+    visualNovel.releaseYear =
+      releaseYear !== undefined ? releaseYear : visualNovel.releaseYear;
+    visualNovel.genres = genres !== undefined ? genres : visualNovel.genres;
+    visualNovel.startedUserCount =
+      startedUserCount !== undefined
+        ? startedUserCount
+        : visualNovel.startedUserCount;
+    visualNovel.playingUserCount =
+      playingUserCount !== undefined
+        ? playingUserCount
+        : visualNovel.playingUserCount;
+    visualNovel.finishedUserCount =
+      finishedUserCount !== undefined
+        ? finishedUserCount
+        : visualNovel.finishedUserCount;
+
+    const updatedVisualNovel = await visualNovel.save();
+    await updateStats(res, next);
+    return res.sendStatus(200).json(updatedVisualNovel);
+  } catch (error) {
+    return next(error as customError);
+  }
 }
 
-export async function createMedia(
-  req: Request<ParamsDictionary, any, ILog>,
+async function createVisualNovelFunction(
+  visualNovelDetails: IVisualNovelDocument,
   res: Response,
   next: NextFunction
 ) {
-  const { type, description } = req.body;
+  const {
+    anilistId,
+    title,
+    description,
+    anilistScore,
+    adult,
+    coverImageLarge,
+    releaseYear,
+    genres,
+    startedUserCount,
+    playingUserCount,
+    finishedUserCount,
+  } = visualNovelDetails;
+  const newVisualNovel: IVisualNovelDocument | null = new visualNovel({
+    anilistId,
+    title,
+    description,
+    anilistScore,
+    adult,
+    coverImageLarge,
+    releaseYear,
+    genres,
+    startedUserCount,
+    playingUserCount,
+    finishedUserCount,
+  });
+  const savedVisualNovel = await newVisualNovel.save();
+  return savedVisualNovel;
+}
 
-  if (!type) throw new customError('Log type is required', 400);
-  if (!description) throw new customError('Description is required', 400);
+export async function createVisualNovel(
+  req: Request<ParamsDictionary, any, IVisualNovelDocument>,
+  res: Response,
+  next: NextFunction
+) {
+  const { anilistId, title } = req.body;
+
+  if (!anilistId) throw new customError('The Anilist ID is required', 400);
+  if (!title) throw new customError('The title is required', 400);
 
   try {
-    const savedLog = await createMediaFunction(req.body, res, next);
-    return res.status(200).json(savedLog);
+    const savedVisualNovel = await createVisualNovelFunction(
+      req.body,
+      res,
+      next
+    );
+    return res.sendStatus(200).json(savedVisualNovel);
   } catch (error) {
     return next(error as customError);
   }

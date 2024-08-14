@@ -18,10 +18,10 @@ const AnimeSchema = new Schema<IAnimeDocument>({
   },
   description: {
     type: String,
+    default: '',
   },
-  coverImage: {
+  coverImageLarge: {
     type: String,
-    required: true,
   },
   episodes: {
     type: Number,
