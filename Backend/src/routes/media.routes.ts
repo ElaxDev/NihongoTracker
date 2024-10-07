@@ -1,31 +1,80 @@
 import { Router } from 'express';
-import { getUserLogs } from '../controllers/logs.controller';
+import {
+  createAnime,
+  createLightNovel,
+  createManga,
+  createVisualNovel,
+  getAnimeById,
+  updateAnime,
+  updateLightNovel,
+  updateManga,
+  updateVisualNovel,
+  deleteAnime,
+  deleteLightNovel,
+  deleteManga,
+  deleteVisualNovel,
+  getMangaById,
+  getLightNovelById,
+  getVisualNovelById,
+  searchAnime,
+  getAnimes,
+} from '../controllers/media.controller';
 import { protect } from '../libs/authMiddleware';
-import multer from 'multer';
+import { checkPermission } from '../middlewares/checkPermission';
+import { userRoles } from '../types';
 
 const router = Router();
-const upload = multer({
-  storage: multer.memoryStorage(),
-});
 
-router.get('/', getUsers);
+router.post('/anime', protect, checkPermission(userRoles.admin), createAnime);
+router.get('/anime', getAnimes);
+router.get('/anime/:id', getAnimeById);
+router.get('/search-anime', searchAnime);
+router.put('/anime', protect, checkPermission(userRoles.admin), updateAnime);
+router.delete('/anime', protect, checkPermission(userRoles.admin), deleteAnime);
 
-router.get('/ranking', getRanking);
+router.post('/manga', protect, checkPermission(userRoles.admin), createManga);
+router.get('/manga', getMangaById);
+router.put('/manga', protect, checkPermission(userRoles.admin), updateManga);
+router.delete('/manga', protect, checkPermission(userRoles.admin), deleteManga);
 
-router.get('/:username', getUser);
-
-router.get('/:username/logs', getUserLogs);
-
-router.put(
-  '/',
+router.post(
+  '/light-novel',
   protect,
-  upload.fields([
-    { name: 'avatar', maxCount: 1 },
-    { name: 'banner', maxCount: 1 },
-  ]),
-  updateUser
+  checkPermission(userRoles.admin),
+  createLightNovel
+);
+router.get('/light-novel', getLightNovelById);
+router.put(
+  '/light-novel',
+  protect,
+  checkPermission(userRoles.admin),
+  updateLightNovel
+);
+router.delete(
+  '/light-novel',
+  protect,
+  checkPermission(userRoles.admin),
+  deleteLightNovel
 );
 
-router.post('/cleardata', protect, clearUserData);
+router.post(
+  '/visual-novel',
+  protect,
+  checkPermission(userRoles.admin),
+  createVisualNovel
+);
+router.get('/visual-novel', getVisualNovelById);
+router.put(
+  '/visual-novel',
+  protect,
+  checkPermission(userRoles.admin),
+  updateVisualNovel
+);
+router.delete(
+  '/visual-novel',
+  protect,
+  checkPermission(userRoles.admin),
+  deleteVisualNovel
+);
 
 export default router;

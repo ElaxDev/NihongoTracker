@@ -4,7 +4,7 @@ import ProgressBar from '../components/ProgressBar';
 import { useState } from 'react';
 import React from 'react';
 import { useInfiniteQuery } from '@tanstack/react-query';
-import { getUserLogsFn } from '../api/authApi';
+import { getUserLogsFn } from '../api/trackerApi';
 import { OutletContextType } from '../types';
 
 function ProfileScreen() {

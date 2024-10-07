@@ -109,10 +109,10 @@ export type filterTypes =
   | 'videoWatchingTime';
 
 export interface IRankingParams {
-  page: number;
-  limit: number;
-  sort: sortTypes;
-  filter: filterTypes;
+  page?: number;
+  limit?: number;
+  sort?: sortTypes;
+  filter?: filterTypes;
 }
 
 export type ILogsParams = Pick<IRankingParams, 'page' | 'limit'>;
@@ -142,6 +142,10 @@ export interface updateLogRequest {
   episodes?: number;
   pages?: number;
   chars?: number;
+}
+
+export interface IAnimeLog extends ILog {
+  anilistUrl?: string;
 }
 
 export interface ILog {
@@ -198,6 +202,29 @@ interface AnilistSearchResult {
         large: string;
         color: string;
       };
+      siteUrl: string;
     }[];
   };
+}
+
+export interface IAnimeDocument {
+  _id: string;
+  sources?: string[];
+  title: string;
+  type: 'TV' | 'MOVIE' | 'OVA' | 'ONA' | 'SPECIAL' | 'UNKNOWN';
+  episodes?: number;
+  status: 'FINISHED' | 'ONGOING' | 'UPCOMING' | 'UNKNOWN';
+  animeSeason: {
+    season?: 'SPRING' | 'SUMMER' | 'FALL' | 'WINTER' | 'UNDEFINED';
+    year: number | null;
+  };
+  picture?: string;
+  thumbnail?: string;
+  duration?: {
+    value?: number;
+    unit?: 'SECONDS';
+  } | null;
+  synonyms?: string[];
+  relatedAnime?: string[];
+  tags?: string[];
 }

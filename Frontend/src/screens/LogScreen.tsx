@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
-import { ILog } from '../types';
-import { createLogFn } from '../api/authApi';
+import { ILog, IAnimeLog } from '../types';
+import { createLogFn } from '../api/trackerApi';
 import { useSearchAnilist } from '../hooks/useSearchAnilist';
 import { toast } from 'react-toastify';
 import { AxiosError } from 'axios';
@@ -16,10 +16,10 @@ function LogScreen() {
   const [pages, setPages] = useState<number>(0);
   const [hours, setHours] = useState<number>(0);
   const [minutes, setMinutes] = useState<number>(0);
-  const [contentId, setcontentId] = useState<number | undefined>(undefined);
   const [showTime, setShowTime] = useState<boolean>(false);
   const [showChars, setShowChars] = useState<boolean>(false);
   const [isSuggestionsOpen, setIsSuggestionsOpen] = useState(false);
+  const [shouldSearch, setShouldSearch] = useState<boolean>(true);
   const [logImg, setLogImg] = useState<string>('');
   const suggestionRef = useRef<HTMLDivElement>(null);
 
@@ -28,19 +28,27 @@ function LogScreen() {
     error: searchError,
     isLoading: isSearching,
   } = useSearchAnilist(
-    logDescription,
-    logType == 'anime' ? 'ANIME' : logType == 'manga' ? 'MANGA' : ''
+    shouldSearch ? logDescription : '',
+    shouldSearch
+      ? logType == 'anime'
+        ? 'ANIME'
+        : logType == 'manga'
+        ? 'MANGA'
+        : ''
+      : ''
   );
 
-  const { mutate } = useMutation({
+  const { mutate, isPending: isLogCreating } = useMutation({
     mutationFn: createLogFn,
     onSuccess: () => {
       setLogType(null);
       setLogDescription('');
+      setLogImg('');
       setEpisodes(0);
       setTime(0);
       setChars(0);
       setPages(0);
+      setShouldSearch(false);
       toast.success('Log created successfully!');
     },
     onError: (error) => {
@@ -87,26 +95,23 @@ function LogScreen() {
       description: logDescription,
       episodes,
       time: time,
-      contentId,
       chars,
       pages,
-    } as ILog);
+    } as IAnimeLog);
   }
 
-  function setSelectedSuggestion(title: string, id: number, imageUrl: string) {
+  function setSelectedSuggestion(title: string, imageUrl: string) {
     setLogDescription(title);
-    setcontentId(id);
     setLogImg(imageUrl);
   }
 
   function handleSuggestionClick(
     title: string,
-    id: number,
-    imageUrl: string
+    anilistLink: string
   ): React.MouseEventHandler<HTMLLIElement> | undefined {
     return (event: React.MouseEvent<HTMLLIElement, MouseEvent>) => {
       event.stopPropagation();
-      setSelectedSuggestion(title, id, imageUrl);
+      setSelectedSuggestion(title, anilistLink);
       setIsSuggestionsOpen(false);
     };
   }
@@ -115,7 +120,10 @@ function LogScreen() {
     if (searchError) {
       toast.error(`Error: ${searchError.message}`);
     }
-  }, [searchError]);
+    if (logDescription && logType) {
+      setShouldSearch(true);
+    }
+  }, [searchError, logDescription, logType]);
 
   return (
     <div className="pt-32 py-16 flex justify-center items-center bg-base-300 min-h-screen">
@@ -188,7 +196,6 @@ function LogScreen() {
                             key={i}
                             onClick={handleSuggestionClick(
                               group.title.romaji,
-                              group.id,
                               group.coverImage.large
                             )}
                           >
@@ -311,7 +318,7 @@ function LogScreen() {
                       className="btn btn-neutral text-neutral-content w-24 mt-2"
                       type="submit"
                     >
-                      Create
+                      {isLogCreating ? 'Loading...' : 'Submit'}
                     </button>
                   </div>
                 </>
@@ -319,10 +326,11 @@ function LogScreen() {
             </form>
           </div>
           {logImg ? (
-            <div className="p-3">
+            <div className="p-3 gap-2 flex flex-col items-center">
               <figure>
                 <img src={logImg} />
               </figure>
+              <p className="font-bold text-lg">{logDescription}</p>
             </div>
           ) : null}
         </div>

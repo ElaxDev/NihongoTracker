@@ -13,7 +13,7 @@ const VisualNovelSchema = new Schema<IVisualNovelDocument>({
   startedUserCount: { type: Number },
   readingUserCount: { type: Number },
   finishedUserCount: { type: Number },
-  description: { type: String, required: true },
+  description: { type: String, default: '' },
   adult: { type: Boolean, required: true, default: true },
 });
 

@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { ParamsDictionary } from 'express-serve-static-core';
-import { ILog, IEditedFields } from '../types';
+import { ILog, IEditedFields, ICreateAnimeLog } from '../types';
 import Log from '../models/log.model';
 import User from '../models/user.model';
 import { PipelineStage, Types } from 'mongoose';
@@ -149,7 +149,7 @@ export async function updateLog(
 }
 
 async function createLogFunction(
-  logData: ILog,
+  logData: ICreateAnimeLog,
   res: Response,
   next: NextFunction
 ) {
@@ -184,7 +184,7 @@ async function createLogFunction(
 }
 
 export async function createLog(
-  req: Request<ParamsDictionary, any, ILog>,
+  req: Request<ParamsDictionary, any, ICreateAnimeLog>,
   res: Response,
   next: NextFunction
 ) {
@@ -235,7 +235,33 @@ export async function importLogs(
   } else if (results.success.length === 0) {
     statusMessage = 'No logs to import, your logs are up to date';
   }
+  console.log(results.failed);
   return res.status(200).json({
     message: statusMessage,
   });
+}
+
+export async function assignMedia(
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
+  try {
+    const assignData: { logsId: string[]; mediaId: string } = req.body;
+    const updatedLogs = await Log.updateMany(
+      { _id: { $in: assignData.logsId } },
+      { contentId: assignData.mediaId },
+      { new: true }
+    );
+    if (!updatedLogs)
+      throw new customError(
+        `Log${assignData.logsId.length > 1 || 's'} not found`,
+        404
+      );
+    console.log('Updated Logs:', updatedLogs);
+    console.log('Assign Data:', assignData);
+    return res.status(200).json(updatedLogs);
+  } catch (error) {
+    return next(error as customError);
+  }
 }

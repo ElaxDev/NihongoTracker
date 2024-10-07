@@ -8,6 +8,7 @@ import authRoutes from './routes/auth.routes';
 import logsRoutes from './routes/logs.routes';
 import userRoutes from './routes/user.routes';
 import adminRoutes from './routes/admin.routes';
+import mediaRoutes from './routes/media.routes';
 
 const app = express();
 
@@ -24,6 +25,7 @@ app.use(cookieParser());
 app.use('/uploads', express.static(path.join(__dirname, '/src/uploads')));
 
 app.use('/api/auth', authRoutes);
+app.use('/api/media', mediaRoutes);
 app.use('/api/logs', logsRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/admin', adminRoutes);
@@ -34,8 +36,8 @@ app.use(
   })
 );
 
-app.use(errorHandler);
 app.use(notFoundHandler);
+app.use(errorHandler);
 
 const globalErrorHandler = function (err: Error): void {
   console.error('Uncaught Exception', err);

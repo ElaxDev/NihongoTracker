@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { getUserLogsFn } from '../api/authApi';
+import { getUserLogsFn } from '../api/trackerApi';
 import { useOutletContext } from 'react-router-dom';
 import { OutletContextType } from '../types';
 import { ILog } from '../types';

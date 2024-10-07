@@ -14,7 +14,23 @@ import { Types } from 'mongoose';
 import { customError } from '../middlewares/errorMiddleware';
 import updateStats from '../services/updateStats';
 
-export async function getAnime(
+export async function getAnimes(
+  _req: Request,
+  res: Response,
+  next: NextFunction
+) {
+  try {
+    const foundAnime = await Anime.aggregate([
+      { $project: { _id: 1, title: 1, synonyms: 1 } },
+    ]);
+    if (!foundAnime) throw new customError('No anime found', 404);
+    return res.status(200).json(foundAnime);
+  } catch (error) {
+    return next(error as customError);
+  }
+}
+
+export async function getAnimeById(
   req: Request,
   res: Response,
   next: NextFunction
@@ -24,6 +40,30 @@ export async function getAnime(
     if (!foundAnime) throw new customError('Anime not found', 404);
     return res.status(200).json(foundAnime);
   } catch (error) {
+    return next(error as customError);
+  }
+}
+
+export async function searchAnime(
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
+  try {
+    function escapeRegex(text: string) {
+      return text.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&');
+    }
+    if (!req.query.title) throw new customError('The title is required', 400);
+    const regex = new RegExp(escapeRegex(req.query.title as string), 'gi');
+    console.log(regex);
+    const foundAnime = await Anime.find({
+      $or: [{ title: regex }, { synonyms: regex }],
+    });
+    if (!foundAnime || foundAnime.length === 0)
+      throw new customError('Anime not found', 404);
+    return res.status(200).json(foundAnime);
+  } catch (error) {
+    console.log(error);
     return next(error as customError);
   }
 }
@@ -50,19 +90,18 @@ export async function updateAnime(
   next: NextFunction
 ) {
   const {
-    anilistId,
+    sources,
+    type,
     title,
-    description,
     episodes,
-    anilistScore,
-    adult,
-    episodeDuration,
-    coverImageLarge,
-    releaseYear,
-    genres,
-    startedUserCount,
-    watchingUserCount,
-    finishedUserCount,
+    status,
+    animeSeason,
+    picture,
+    thumbnail,
+    duration,
+    synonyms,
+    relatedAnime,
+    tags,
   } = req.body;
 
   try {
@@ -72,33 +111,20 @@ export async function updateAnime(
 
     if (!anime) throw new customError('Anime not found', 404);
 
-    anime.anilistId = anilistId !== undefined ? anilistId : anime.anilistId;
-    anime.description =
-      description !== undefined ? description : anime.description;
+    anime.sources = sources !== undefined ? sources : anime.sources;
+    anime.type = type !== undefined ? type : anime.type;
     anime.title = title !== undefined ? title : anime.title;
     anime.episodes = episodes !== undefined ? episodes : anime.episodes;
-    anime.anilistScore =
-      anilistScore !== undefined ? anilistScore : anime.anilistScore;
-    anime.adult = adult !== undefined ? adult : anime.adult;
-    anime.episodeDuration =
-      episodeDuration !== undefined ? episodeDuration : anime.episodeDuration;
-    anime.coverImageLarge =
-      coverImageLarge !== undefined ? coverImageLarge : anime.coverImageLarge;
-    anime.releaseYear =
-      releaseYear !== undefined ? releaseYear : anime.releaseYear;
-    anime.genres = genres !== undefined ? genres : anime.genres;
-    anime.startedUserCount =
-      startedUserCount !== undefined
-        ? startedUserCount
-        : anime.startedUserCount;
-    anime.watchingUserCount =
-      watchingUserCount !== undefined
-        ? watchingUserCount
-        : anime.watchingUserCount;
-    anime.finishedUserCount =
-      finishedUserCount !== undefined
-        ? finishedUserCount
-        : anime.finishedUserCount;
+    anime.status = status !== undefined ? status : anime.status;
+    anime.animeSeason =
+      animeSeason !== undefined ? animeSeason : anime.animeSeason;
+    anime.picture = picture !== undefined ? picture : anime.picture;
+    anime.thumbnail = thumbnail !== undefined ? thumbnail : anime.thumbnail;
+    anime.duration = duration !== undefined ? duration : anime.duration;
+    anime.synonyms = synonyms !== undefined ? synonyms : anime.synonyms;
+    anime.relatedAnime =
+      relatedAnime !== undefined ? relatedAnime : anime.relatedAnime;
+    anime.tags = tags !== undefined ? tags : anime.tags;
 
     const updatedAnime = await anime.save();
     await updateStats(res, next);
@@ -110,34 +136,32 @@ export async function updateAnime(
 
 async function createAnimeFunction(animeDetails: IAnimeDocument) {
   const {
-    anilistId,
+    sources,
+    type,
     title,
-    description,
     episodes,
-    anilistScore,
-    adult,
-    episodeDuration,
-    coverImageLarge,
-    releaseYear,
-    genres,
-    startedUserCount,
-    watchingUserCount,
-    finishedUserCount,
+    status,
+    animeSeason,
+    picture,
+    thumbnail,
+    duration,
+    synonyms,
+    relatedAnime,
+    tags,
   } = animeDetails;
   const newAnime: IAnimeDocument | null = new Anime({
-    anilistId,
+    sources,
+    type,
     title,
-    description,
     episodes,
-    anilistScore,
-    adult,
-    episodeDuration,
-    coverImageLarge,
-    releaseYear,
-    genres,
-    startedUserCount,
-    watchingUserCount,
-    finishedUserCount,
+    status,
+    animeSeason,
+    picture,
+    thumbnail,
+    duration,
+    synonyms,
+    relatedAnime,
+    tags,
   });
   const savedAnime = await newAnime.save();
   return savedAnime;
@@ -148,10 +172,12 @@ export async function createAnime(
   res: Response,
   next: NextFunction
 ) {
-  const { anilistId, title, episodes } = req.body;
+  const { type, title, episodes, status, animeSeason } = req.body;
 
-  if (!anilistId) throw new customError('The Anilist ID is required', 400);
   if (!title) throw new customError('The title is required', 400);
+  if (!type) throw new customError('The type is required', 400);
+  if (!status) throw new customError('The status is required', 400);
+  if (!animeSeason.year) throw new customError('The status is required', 400);
   if (!episodes) throw new customError('The episode count is required', 400);
 
   try {
@@ -162,13 +188,13 @@ export async function createAnime(
   }
 }
 
-export async function getManga(
+export async function getMangaById(
   req: Request,
   res: Response,
   next: NextFunction
 ) {
   try {
-    const foundManga = await Manga.findById(req.params.id);
+    const foundManga = await Manga.findById(req.query.id);
     if (!foundManga) throw new customError('Requested manga not found', 404);
     return res.status(200).json(foundManga);
   } catch (error) {
@@ -198,19 +224,20 @@ export async function updateManga(
   next: NextFunction
 ) {
   const {
-    anilistId,
     title,
+    anilistId,
     description,
+    genres,
     chapters,
     volumes,
     anilistScore,
     adult,
-    coverImageLarge,
-    releaseYear,
-    genres,
-    startedUserCount,
-    readingUserCount,
-    finishedUserCount,
+    status,
+    approximatedCharCount,
+    approximatedReadingTime,
+    coverImage,
+    startDate,
+    endDate,
   } = req.body;
 
   try {
@@ -223,29 +250,25 @@ export async function updateManga(
     manga.anilistId = anilistId !== undefined ? anilistId : manga.anilistId;
     manga.description =
       description !== undefined ? description : manga.description;
+    manga.genres = genres !== undefined ? genres : manga.genres;
     manga.title = title !== undefined ? title : manga.title;
     manga.chapters = chapters !== undefined ? chapters : manga.chapters;
     manga.volumes = volumes !== undefined ? volumes : manga.volumes;
     manga.anilistScore =
       anilistScore !== undefined ? anilistScore : manga.anilistScore;
     manga.adult = adult !== undefined ? adult : manga.adult;
-    manga.coverImageLarge =
-      coverImageLarge !== undefined ? coverImageLarge : manga.coverImageLarge;
-    manga.releaseYear =
-      releaseYear !== undefined ? releaseYear : manga.releaseYear;
-    manga.genres = genres !== undefined ? genres : manga.genres;
-    manga.startedUserCount =
-      startedUserCount !== undefined
-        ? startedUserCount
-        : manga.startedUserCount;
-    manga.readingUserCount =
-      readingUserCount !== undefined
-        ? readingUserCount
-        : manga.readingUserCount;
-    manga.finishedUserCount =
-      finishedUserCount !== undefined
-        ? finishedUserCount
-        : manga.finishedUserCount;
+    manga.status = status !== undefined ? status : manga.status;
+    manga.approximatedCharCount =
+      approximatedCharCount !== undefined
+        ? approximatedCharCount
+        : manga.approximatedCharCount;
+    manga.approximatedReadingTime =
+      approximatedReadingTime !== undefined
+        ? approximatedReadingTime
+        : manga.approximatedReadingTime;
+    manga.coverImage = coverImage !== undefined ? coverImage : manga.coverImage;
+    manga.startDate = startDate !== undefined ? startDate : manga.startDate;
+    manga.endDate = endDate !== undefined ? endDate : manga.endDate;
 
     const updatedManga = await manga.save();
     await updateStats(res, next);
@@ -255,40 +278,38 @@ export async function updateManga(
   }
 }
 
-async function createMangaFunction(
-  mangaDetails: IMangaDocument,
-  res: Response,
-  next: NextFunction
-) {
+async function createMangaFunction(mangaDetails: IMangaDocument) {
   const {
-    anilistId,
     title,
+    anilistId,
     description,
+    genres,
     chapters,
     volumes,
     anilistScore,
     adult,
-    coverImageLarge,
-    releaseYear,
-    genres,
-    startedUserCount,
-    readingUserCount,
-    finishedUserCount,
+    status,
+    approximatedCharCount,
+    approximatedReadingTime,
+    coverImage,
+    startDate,
+    endDate,
   } = mangaDetails;
   const newManga: IMangaDocument | null = new Manga({
-    anilistId,
     title,
+    anilistId,
     description,
+    genres,
     chapters,
     volumes,
     anilistScore,
     adult,
-    coverImageLarge,
-    releaseYear,
-    genres,
-    startedUserCount,
-    readingUserCount,
-    finishedUserCount,
+    status,
+    approximatedCharCount,
+    approximatedReadingTime,
+    coverImage,
+    startDate,
+    endDate,
   });
   const savedManga = await newManga.save();
   return savedManga;
@@ -307,20 +328,20 @@ export async function createManga(
   if (!volumes) throw new customError('The volume count is required', 400);
 
   try {
-    const savedManga = await createMangaFunction(req.body, res, next);
+    const savedManga = await createMangaFunction(req.body);
     return res.sendStatus(200).json(savedManga);
   } catch (error) {
     return next(error as customError);
   }
 }
 
-export async function getLightNovel(
+export async function getLightNovelById(
   req: Request,
   res: Response,
   next: NextFunction
 ) {
   try {
-    const foundLightNovel = await LightNovel.findById(req.params.id);
+    const foundLightNovel = await LightNovel.findById(req.query.id);
     if (!foundLightNovel) throw new customError('Light Novel not found', 404);
     return res.status(200).json(foundLightNovel);
   } catch (error) {
@@ -350,15 +371,18 @@ export async function updateLightNovel(
   next: NextFunction
 ) {
   const {
-    anilistId,
     title,
+    anilistId,
     description,
-    volumes,
-    anilistScore,
-    adult,
-    coverImageLarge,
-    releaseYear,
+    author,
     genres,
+    anilistScore,
+    startDate,
+    endDate,
+    adult,
+    coverImage,
+    approximatedCharCount,
+    approximatedReadingTime,
     startedUserCount,
     readingUserCount,
     finishedUserCount,
@@ -376,17 +400,24 @@ export async function updateLightNovel(
     lightNovel.description =
       description !== undefined ? description : lightNovel.description;
     lightNovel.title = title !== undefined ? title : lightNovel.title;
-    lightNovel.volumes = volumes !== undefined ? volumes : lightNovel.volumes;
+    lightNovel.author = author !== undefined ? author : lightNovel.author;
+    lightNovel.genres = genres !== undefined ? genres : lightNovel.genres;
     lightNovel.anilistScore =
       anilistScore !== undefined ? anilistScore : lightNovel.anilistScore;
+    lightNovel.startDate =
+      startDate !== undefined ? startDate : lightNovel.startDate;
+    lightNovel.endDate = endDate !== undefined ? endDate : lightNovel.endDate;
     lightNovel.adult = adult !== undefined ? adult : lightNovel.adult;
-    lightNovel.coverImageLarge =
-      coverImageLarge !== undefined
-        ? coverImageLarge
-        : lightNovel.coverImageLarge;
-    lightNovel.releaseYear =
-      releaseYear !== undefined ? releaseYear : lightNovel.releaseYear;
-    lightNovel.genres = genres !== undefined ? genres : lightNovel.genres;
+    lightNovel.coverImage =
+      coverImage !== undefined ? coverImage : lightNovel.coverImage;
+    lightNovel.approximatedCharCount =
+      approximatedCharCount !== undefined
+        ? approximatedCharCount
+        : lightNovel.approximatedCharCount;
+    lightNovel.approximatedReadingTime =
+      approximatedReadingTime !== undefined
+        ? approximatedReadingTime
+        : lightNovel.approximatedReadingTime;
     lightNovel.startedUserCount =
       startedUserCount !== undefined
         ? startedUserCount
@@ -409,34 +440,38 @@ export async function updateLightNovel(
 }
 
 async function createLightNovelFunction(
-  lightNovelDetails: ILightNovelDocument,
-  res: Response,
-  next: NextFunction
+  lightNovelDetails: ILightNovelDocument
 ) {
   const {
-    anilistId,
     title,
+    anilistId,
     description,
-    volumes,
-    anilistScore,
-    adult,
-    coverImageLarge,
-    releaseYear,
+    author,
     genres,
+    anilistScore,
+    startDate,
+    endDate,
+    adult,
+    coverImage,
+    approximatedCharCount,
+    approximatedReadingTime,
     startedUserCount,
     readingUserCount,
     finishedUserCount,
   } = lightNovelDetails;
   const newLightNovel: ILightNovelDocument | null = new LightNovel({
-    anilistId,
     title,
+    anilistId,
     description,
-    volumes,
-    anilistScore,
-    adult,
-    coverImageLarge,
-    releaseYear,
+    author,
     genres,
+    anilistScore,
+    startDate,
+    endDate,
+    adult,
+    coverImage,
+    approximatedCharCount,
+    approximatedReadingTime,
     startedUserCount,
     readingUserCount,
     finishedUserCount,
@@ -450,27 +485,27 @@ export async function createLightNovel(
   res: Response,
   next: NextFunction
 ) {
-  const { anilistId, title, volumes } = req.body;
+  const { anilistId, title, coverImage } = req.body;
 
   if (!anilistId) throw new customError('The Anilist ID is required', 400);
   if (!title) throw new customError('The title is required', 400);
-  if (!volumes) throw new customError('The volume count is required', 400);
+  if (!coverImage) throw new customError('The cover image is required', 400);
 
   try {
-    const savedLightNovel = await createLightNovelFunction(req.body, res, next);
+    const savedLightNovel = await createLightNovelFunction(req.body);
     return res.sendStatus(200).json(savedLightNovel);
   } catch (error) {
     return next(error as customError);
   }
 }
 
-export async function getVisualNovel(
+export async function getVisualNovelById(
   req: Request,
   res: Response,
   next: NextFunction
 ) {
   try {
-    const foundVisualNovel = await visualNovel.findById(req.params.id);
+    const foundVisualNovel = await visualNovel.findById(req.query.id);
     if (!foundVisualNovel) throw new customError('Visual Novel not found', 404);
     return res.status(200).json(foundVisualNovel);
   } catch (error) {
@@ -501,55 +536,69 @@ export async function updateVisualNovel(
   next: NextFunction
 ) {
   const {
-    anilistId,
     title,
+    publisher,
     description,
-    anilistScore,
-    adult,
-    coverImageLarge,
-    releaseYear,
-    genres,
+    vndbScore,
+    vndbId,
+    approximatedCharCount,
+    approximatedReadingTime,
+    coverImage,
+    coverImageNSFW,
     startedUserCount,
-    playingUserCount,
+    readingUserCount,
     finishedUserCount,
+    adult,
   } = req.body;
 
   try {
-    const visualNovel: IVisualNovelDocument | null = await visualNovel.findOne({
-      vndbId: Number(req.params.id),
-    });
+    const foundVisualNovel: IVisualNovelDocument | null =
+      await visualNovel.findOne({
+        vndbId: Number(req.params.id),
+      });
 
-    if (!visualNovel) throw new customError('Visual Novel not found', 404);
+    if (!foundVisualNovel) throw new customError('Visual Novel not found', 404);
 
-    visualNovel.anilistId =
-      anilistId !== undefined ? anilistId : visualNovel.anilistId;
-    visualNovel.description =
-      description !== undefined ? description : visualNovel.description;
-    visualNovel.title = title !== undefined ? title : visualNovel.title;
-    visualNovel.anilistScore =
-      anilistScore !== undefined ? anilistScore : visualNovel.anilistScore;
-    visualNovel.adult = adult !== undefined ? adult : visualNovel.adult;
-    visualNovel.coverImageLarge =
-      coverImageLarge !== undefined
-        ? coverImageLarge
-        : visualNovel.coverImageLarge;
-    visualNovel.releaseYear =
-      releaseYear !== undefined ? releaseYear : visualNovel.releaseYear;
-    visualNovel.genres = genres !== undefined ? genres : visualNovel.genres;
-    visualNovel.startedUserCount =
+    foundVisualNovel.vndbId =
+      vndbId !== undefined ? vndbId : foundVisualNovel.vndbId;
+    foundVisualNovel.description =
+      description !== undefined ? description : foundVisualNovel.description;
+    foundVisualNovel.title =
+      title !== undefined ? title : foundVisualNovel.title;
+    foundVisualNovel.publisher =
+      publisher !== undefined ? publisher : foundVisualNovel.publisher;
+    foundVisualNovel.vndbScore =
+      vndbScore !== undefined ? vndbScore : foundVisualNovel.vndbScore;
+    foundVisualNovel.approximatedCharCount =
+      approximatedCharCount !== undefined
+        ? approximatedCharCount
+        : foundVisualNovel.approximatedCharCount;
+    foundVisualNovel.approximatedReadingTime =
+      approximatedReadingTime !== undefined
+        ? approximatedReadingTime
+        : foundVisualNovel.approximatedReadingTime;
+    foundVisualNovel.coverImage =
+      coverImage !== undefined ? coverImage : foundVisualNovel.coverImage;
+    foundVisualNovel.coverImageNSFW =
+      coverImageNSFW !== undefined
+        ? coverImageNSFW
+        : foundVisualNovel.coverImageNSFW;
+    foundVisualNovel.startedUserCount =
       startedUserCount !== undefined
         ? startedUserCount
-        : visualNovel.startedUserCount;
-    visualNovel.playingUserCount =
-      playingUserCount !== undefined
-        ? playingUserCount
-        : visualNovel.playingUserCount;
-    visualNovel.finishedUserCount =
+        : foundVisualNovel.startedUserCount;
+    foundVisualNovel.readingUserCount =
+      readingUserCount !== undefined
+        ? readingUserCount
+        : foundVisualNovel.readingUserCount;
+    foundVisualNovel.finishedUserCount =
       finishedUserCount !== undefined
         ? finishedUserCount
-        : visualNovel.finishedUserCount;
+        : foundVisualNovel.finishedUserCount;
+    foundVisualNovel.adult =
+      adult !== undefined ? adult : foundVisualNovel.adult;
 
-    const updatedVisualNovel = await visualNovel.save();
+    const updatedVisualNovel = await foundVisualNovel.save();
     await updateStats(res, next);
     return res.sendStatus(200).json(updatedVisualNovel);
   } catch (error) {
@@ -558,35 +607,37 @@ export async function updateVisualNovel(
 }
 
 async function createVisualNovelFunction(
-  visualNovelDetails: IVisualNovelDocument,
-  res: Response,
-  next: NextFunction
+  visualNovelDetails: IVisualNovelDocument
 ) {
   const {
-    anilistId,
     title,
+    publisher,
     description,
-    anilistScore,
-    adult,
-    coverImageLarge,
-    releaseYear,
-    genres,
+    vndbScore,
+    vndbId,
+    approximatedCharCount,
+    approximatedReadingTime,
+    coverImage,
+    coverImageNSFW,
     startedUserCount,
-    playingUserCount,
+    readingUserCount,
     finishedUserCount,
+    adult,
   } = visualNovelDetails;
   const newVisualNovel: IVisualNovelDocument | null = new visualNovel({
-    anilistId,
     title,
+    publisher,
     description,
-    anilistScore,
-    adult,
-    coverImageLarge,
-    releaseYear,
-    genres,
+    vndbScore,
+    vndbId,
+    approximatedCharCount,
+    approximatedReadingTime,
+    coverImage,
+    coverImageNSFW,
     startedUserCount,
-    playingUserCount,
+    readingUserCount,
     finishedUserCount,
+    adult,
   });
   const savedVisualNovel = await newVisualNovel.save();
   return savedVisualNovel;
@@ -597,17 +648,14 @@ export async function createVisualNovel(
   res: Response,
   next: NextFunction
 ) {
-  const { anilistId, title } = req.body;
+  const { vndbId, coverImage, title } = req.body;
 
-  if (!anilistId) throw new customError('The Anilist ID is required', 400);
+  if (!vndbId) throw new customError('The VNDB ID is required', 400);
+  if (!coverImage) throw new customError('The cover image is required', 400);
   if (!title) throw new customError('The title is required', 400);
 
   try {
-    const savedVisualNovel = await createVisualNovelFunction(
-      req.body,
-      res,
-      next
-    );
+    const savedVisualNovel = await createVisualNovelFunction(req.body);
     return res.sendStatus(200).json(savedVisualNovel);
   } catch (error) {
     return next(error as customError);

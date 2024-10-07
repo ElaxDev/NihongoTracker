@@ -2,7 +2,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { MdLogout, MdPerson, MdSettings } from 'react-icons/md';
 import { useUserDataStore } from '../store/userData';
 import { useMutation } from '@tanstack/react-query';
-import { logoutUserFn } from '../api/authApi';
+import { logoutUserFn } from '../api/trackerApi';
 import { toast } from 'react-toastify';
 import { AxiosError } from 'axios';
 import { logoutResponseType } from '../types';
@@ -86,7 +86,14 @@ function Header() {
         </div>
         {user ? (
           <div className="hidden lg:inline-flex">
-            <QuickLog />
+            {/* <QuickLog /> */}
+            <Link
+              className="group transition duration-300 relative"
+              to="/ranking"
+            >
+              Ranking
+              <span className="block w-full h-0.5 bg-primary absolute bottom-0 left-1/2 transform -translate-x-1/2 group-hover:scale-x-100 transition-transform duration-500 scale-x-0"></span>
+            </Link>
           </div>
         ) : (
           <div className="navbar-center hidden lg:flex">

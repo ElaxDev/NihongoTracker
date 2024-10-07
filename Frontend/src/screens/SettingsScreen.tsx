@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { updateUserFn, importLogsFn, clearUserDataFn } from '../api/authApi';
+import { updateUserFn, importLogsFn, clearUserDataFn } from '../api/trackerApi';
 import { toast } from 'react-toastify';
 import { AxiosError } from 'axios';
 import { ILoginResponse } from '../types';

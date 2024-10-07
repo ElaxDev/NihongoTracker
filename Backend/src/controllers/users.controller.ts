@@ -80,7 +80,7 @@ export async function updateUser(
           throw new customError('Invalid fieldname', 400);
         }
       } catch (error) {
-        next(error as customError);
+        return next(error as customError);
       }
     }
 
@@ -105,11 +105,11 @@ export async function updateUser(
   }
 }
 
-export async function getUser(req: Request, res: Response) {
+export async function getUser(req: Request, res: Response, next: NextFunction) {
   const userFound = await User.findOne({
     username: req.params.username,
   }).collation({ locale: 'en', strength: 2 });
-  if (!userFound) return res.status(404).json({ message: 'User not found' });
+  if (!userFound) return next(new customError('User not found', 404));
 
   return res.json({
     id: userFound._id,
@@ -141,7 +141,7 @@ export async function getRanking(
       { $skip: skip },
       { $limit: limit },
       {
-        $project: { _id: 0, avatar: 1, username: 1, [`stats.${filter}`]: 1 },
+        $project: { _id: 0, avatar: 1, username: 1, stats: 1 },
       },
     ]);
 

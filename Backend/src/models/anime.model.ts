@@ -2,49 +2,68 @@ import { Schema, model } from 'mongoose';
 import { IAnimeDocument } from '../types';
 
 const AnimeSchema = new Schema<IAnimeDocument>({
+  sources: {
+    type: [String],
+    uniqueItems: true,
+  },
   title: {
     type: String,
     required: true,
   },
-  anilistId: {
-    type: Number,
-    required: true,
-    unique: true,
-  },
-  adult: {
-    type: Boolean,
-    required: true,
-    default: false,
-  },
-  description: {
+  type: {
     type: String,
-    default: '',
-  },
-  coverImageLarge: {
-    type: String,
+    enum: ['TV', 'MOVIE', 'OVA', 'ONA', 'SPECIAL', 'UNKNOWN'],
+    required: true,
   },
   episodes: {
     type: Number,
+    min: 0,
+    default: 0,
+  },
+  status: {
+    type: String,
+    enum: ['FINISHED', 'ONGOING', 'UPCOMING', 'UNKNOWN'],
     required: true,
   },
-  episodeDuration: {
-    type: Number,
-    default: 24,
+  animeSeason: {
+    season: {
+      type: String,
+      enum: ['SPRING', 'SUMMER', 'FALL', 'WINTER', 'UNDEFINED'],
+      default: 'UNDEFINED',
+    },
+    year: {
+      type: Number,
+      min: 1907,
+      required: true,
+    },
   },
-  releaseYear: {
-    type: Number,
+  picture: {
+    type: String,
   },
-  startedUserCount: {
-    type: Number,
+  thumbnail: {
+    type: String,
   },
-  watchingUserCount: {
-    type: Number,
+  duration: {
+    value: {
+      type: Number,
+      min: 1,
+    },
+    unit: {
+      type: String,
+      enum: ['SECONDS'],
+    },
   },
-  finishedUserCount: {
-    type: Number,
-  },
-  genres: {
+  synonyms: {
     type: [String],
+    uniqueItems: true,
+  },
+  relatedAnime: {
+    type: [String],
+    uniqueItems: true,
+  },
+  tags: {
+    type: [String],
+    uniqueItems: true,
   },
 });
 

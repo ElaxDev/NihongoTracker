@@ -81,12 +81,14 @@ const UserSchema = new Schema<IUser>(
     avatar: { type: String, default: '' },
     banner: { type: String, default: '' },
     titles: { type: [String], default: [], required: true },
-    roles: {
-      type: String,
-      enum: Object.values(userRoles),
-      default: userRoles.user,
-      required: true,
-    },
+    roles: [
+      {
+        type: String,
+        enum: Object.values(userRoles),
+        default: userRoles.user,
+        required: true,
+      },
+    ],
     lastImport: { type: Date, default: null },
   },
   { timestamps: true }

@@ -42,6 +42,7 @@ function transformList(list: manabeLogs[]) {
     VIDEO: { logType: 'video', parametro: 'time' },
     AUDIO: { logType: 'audio', parametro: 'time' },
     OUTPUT: { logType: 'other', parametro: 'time' },
+    JUEGO: { logType: 'other', parametro: 'time' },
   };
 
   return list
@@ -75,7 +76,7 @@ export default async function getLogsFromAPI(
     }
     const response = await axios.get(apiUrl, {
       params: {
-        user: user.discordId,
+        userId: user.discordId,
         startDate: user.lastImport,
         limit: 0,
         page: 1,
@@ -83,6 +84,7 @@ export default async function getLogsFromAPI(
     });
     const logs = transformList(response.data);
     req.body = logs;
+    console.log(response.data);
     return next();
   } catch (error) {
     return next(error as customError);

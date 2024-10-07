@@ -1,5 +1,5 @@
 import { ParamsDictionary } from 'express-serve-static-core';
-import { ILog } from '../types';
+import { ICreateAnimeLog } from '../types';
 import { Router } from 'express';
 import {
   getLog,
@@ -7,6 +7,7 @@ import {
   deleteLog,
   updateLog,
   importLogs,
+  assignMedia,
 } from '../controllers/logs.controller';
 import { calculateXp } from '../middlewares/calculateXp';
 import { protect } from '../libs/authMiddleware';
@@ -29,7 +30,14 @@ const router = Router();
 
 router.get('/importlogs', protect, getLogsFromAPI, calculateXp, importLogs);
 
-router.post<ParamsDictionary, any, ILog>('/', protect, calculateXp, createLog);
+router.put('/assign-media', protect, assignMedia);
+
+router.post<ParamsDictionary, any, ICreateAnimeLog>(
+  '/',
+  protect,
+  calculateXp,
+  createLog
+);
 
 router.get('/:id', getLog);
 

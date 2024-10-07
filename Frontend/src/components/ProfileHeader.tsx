@@ -1,6 +1,6 @@
 import ProfileNavbar from './ProfileNavbar';
 import { Outlet, useNavigate, useParams } from 'react-router-dom';
-import { getUserFn } from '../api/authApi';
+import { getUserFn } from '../api/trackerApi';
 import { AxiosError } from 'axios';
 import { useQuery } from '@tanstack/react-query';
 import { toast } from 'react-toastify';

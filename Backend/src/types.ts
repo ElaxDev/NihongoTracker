@@ -4,7 +4,7 @@ import { Types, Document } from 'mongoose';
 export interface IVisualNovelDocument extends Document {
   title: string;
   publisher: string;
-  description: string;
+  description?: string;
   vndbScore?: number;
   vndbId: number;
   approximatedCharCount?: number;
@@ -53,19 +53,24 @@ export interface ILightNovelDocument extends Document {
 }
 
 export interface IAnimeDocument extends Document {
-  anilistId: number;
+  sources?: string[];
   title: string;
-  description?: string;
-  episodes: number;
-  anilistScore?: number;
-  adult: boolean;
-  episodeDuration?: number;
-  coverImageLarge?: string;
-  releaseYear?: number;
-  genres?: string[];
-  startedUserCount?: number;
-  watchingUserCount?: number;
-  finishedUserCount?: number;
+  type: 'TV' | 'MOVIE' | 'OVA' | 'ONA' | 'SPECIAL' | 'UNKNOWN';
+  episodes?: number;
+  status: 'FINISHED' | 'ONGOING' | 'UPCOMING' | 'UNKNOWN';
+  animeSeason: {
+    season?: 'SPRING' | 'SUMMER' | 'FALL' | 'WINTER' | 'UNDEFINED';
+    year: number | null;
+  };
+  picture?: string;
+  thumbnail?: string;
+  duration?: {
+    value?: number;
+    unit?: 'SECONDS';
+  } | null;
+  synonyms?: string[];
+  relatedAnime?: string[];
+  tags?: string[];
 }
 
 export interface decodedJWT {
@@ -101,7 +106,7 @@ export interface IUser extends Document {
   clubs?: Types.ObjectId[];
   stats: IStats;
   titles: string[];
-  roles: userRoles;
+  roles: userRoles[];
   lastImport?: Date;
   createdAt?: Date;
   updatedAt?: Date;
@@ -154,10 +159,9 @@ export interface IEditedFields {
 }
 
 export interface ILog extends Document {
-  _id: Types.ObjectId;
   user: Types.ObjectId;
   type: 'reading' | 'anime' | 'vn' | 'video' | 'manga' | 'audio' | 'other';
-  contentId?: number;
+  contentId?: Types.ObjectId | string;
   xp: number;
   private: boolean;
   adult: boolean;
@@ -171,6 +175,9 @@ export interface ILog extends Document {
   date: Date;
 }
 
+export interface ICreateAnimeLog extends ILog {
+  anilistUrl?: string;
+}
 export interface updateRequest {
   username?: string;
   password?: string;

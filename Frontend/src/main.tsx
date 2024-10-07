@@ -24,6 +24,9 @@ import ProfileHeader from './components/ProfileHeader.tsx';
 import SettingsScreen from './screens/SettingsScreen.tsx';
 import ProtectedRoutes from './contexts/protectedRoute.tsx';
 import LogScreen from './screens/LogScreen.tsx';
+import RankingScreen from './screens/RankingScreen.tsx';
+import ListScreen from './screens/ListScreen.tsx';
+import AssignMedia from './screens/AssignMedia.tsx';
 
 const router = createBrowserRouter(
   createRoutesFromElements(
@@ -32,12 +35,15 @@ const router = createBrowserRouter(
       <Route path="login" element={<LoginScreen />} />
       <Route path="register" element={<RegisterScreen />} />
       <Route path="settings" element={<SettingsScreen />} />
+      <Route path="ranking" element={<RankingScreen />} />
       <Route path="user/:username" element={<ProfileHeader />}>
         <Route index element={<ProfileScreen />} />
         <Route path="stats" element={<StatsScreen />} />
+        <Route path="list" element={<ListScreen />} />
       </Route>
       <Route element={<ProtectedRoutes />}>
         <Route index path="createlog" element={<LogScreen />} />
+        <Route path="assignmedia" element={<AssignMedia />} />
       </Route>
       <Route path="*" element={<NotFound />} />
     </Route>

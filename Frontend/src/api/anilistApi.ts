@@ -31,6 +31,7 @@ const query = gql`
           large
           color
         }
+        siteUrl
       }
     }
   }
@@ -45,13 +46,6 @@ export async function searchAnilist(
   perPage: number = 10,
   ids?: number[] | number
 ): Promise<AnilistSearchResult> {
-  console.log({
-    search: search,
-    type: type,
-    page: page,
-    perPage: perPage,
-    ids: ids,
-  });
   const variables = {
     search: search,
     type: type,
@@ -59,5 +53,18 @@ export async function searchAnilist(
     perPage: perPage,
     ids: ids,
   };
-  return await anilist.request(query, variables);
+  if (!type)
+    return {
+      Page: {
+        pageInfo: {
+          total: 0,
+          currentPage: 0,
+          lastPage: 0,
+          hasNextPage: false,
+          perPage: 0,
+        },
+        media: [],
+      },
+    };
+  return anilist.request(query, variables);
 }

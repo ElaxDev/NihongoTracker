@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react';
 import { ILog } from '../types';
-import { createLogFn } from '../api/authApi';
+import { createLogFn } from '../api/trackerApi';
 import { useSearchAnilist } from '../hooks/useSearchAnilist';
 import { toast } from 'react-toastify';
 import { AxiosError } from 'axios';

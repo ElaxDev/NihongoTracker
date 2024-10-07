@@ -10,6 +10,7 @@ import {
   IRankingResponse,
   IRankingParams,
   ILogsParams,
+  IAnimeDocument,
 } from '../types';
 
 const BASE_URL = '/api/';
@@ -67,7 +68,7 @@ export async function clearUserDataFn() {
   return data;
 }
 
-export async function getRankingFn(params: IRankingParams) {
+export async function getRankingFn(params?: IRankingParams) {
   const { data } = await api.get<IRankingResponse[]>(`users/ranking`, {
     params,
   });
@@ -92,7 +93,29 @@ export async function updateLogFn(id: string, updateValues: updateLogRequest) {
   return data;
 }
 
-export async function getUserLogsFn(username: string, params: ILogsParams) {
+export async function getAnimesFn() {
+  const { data } = await api.get<
+    Pick<IAnimeDocument, '_id' | 'title' | 'synonyms'>[]
+  >(`media/anime`);
+  return data;
+}
+
+export async function searchAnimeFn(params: { title: string }) {
+  const { data } = await api.get<IAnimeDocument[]>(`media/search-anime`, {
+    params,
+  });
+  return data;
+}
+
+export async function assignMediaFn(logsId: string[], mediaId: string) {
+  const { data } = await api.put(`logs/assign-media`, {
+    logsId,
+    mediaId,
+  });
+  return data;
+}
+
+export async function getUserLogsFn(username: string, params?: ILogsParams) {
   const { data } = await api.get<ILog[]>(`users/${username}/logs`, { params });
   return data;
 }

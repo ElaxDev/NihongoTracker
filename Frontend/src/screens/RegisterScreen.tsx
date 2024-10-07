@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { registerUserFn } from '../api/authApi';
+import { registerUserFn } from '../api/trackerApi';
 import { useMutation } from '@tanstack/react-query';
 import { ILoginResponse } from '../types';
 import { useUserDataStore } from '../store/userData';

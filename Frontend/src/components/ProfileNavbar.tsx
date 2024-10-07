@@ -12,7 +12,7 @@ function ProfileNavbar({ username }: { username: string | undefined }) {
             <Link to={`/user/${username}/stats`}>Stats</Link>
           </li>
           <li>
-            <a>Link</a>
+            <Link to={`/user/${username}/list`}>Immersion List</Link>
           </li>
           <li>
             <a>Link</a>
