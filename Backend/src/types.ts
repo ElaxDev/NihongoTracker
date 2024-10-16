@@ -1,20 +1,25 @@
 import { Request } from 'express';
 import { Types, Document } from 'mongoose';
 
-export interface IVisualNovelDocument extends Document {
+export interface IVisualNovelTitle extends Document {
+  id: string;
+  lang: string;
+  official: boolean;
   title: string;
-  publisher: string;
-  description?: string;
-  vndbScore?: number;
-  vndbId: number;
-  approximatedCharCount?: number;
-  approximatedReadingTime?: number;
-  coverImage: string;
-  coverImageNSFW?: boolean;
-  startedUserCount?: number;
-  readingUserCount?: number;
-  finishedUserCount?: number;
-  adult: boolean;
+  latin: string;
+}
+export interface IVisualNovelDetail extends Document {
+  id: string;
+  olang: string;
+  image: string;
+  l_wikidata: string;
+  c_votecount: number;
+  c_rating: number;
+  c_average: number;
+  length: number;
+  devstatus: number;
+  alias: string;
+  description: string;
 }
 
 export interface IMangaDocument extends Document {
@@ -105,12 +110,22 @@ export interface IUser extends Document {
   discordId?: string;
   clubs?: Types.ObjectId[];
   stats: IStats;
+  immersionList: Types.ObjectId;
   titles: string[];
   roles: userRoles[];
   lastImport?: Date;
   createdAt?: Date;
   updatedAt?: Date;
   matchPassword: (enteredPassword: string) => Promise<boolean>;
+}
+
+export interface IImmersionList extends Document {
+  _id: Types.ObjectId;
+  manga: Types.ObjectId[];
+  anime: Types.ObjectId[];
+  vn: Types.ObjectId[];
+  reading: Types.ObjectId[];
+  video: Types.ObjectId[];
 }
 
 export interface IStats {
@@ -143,11 +158,6 @@ export interface IStats {
   animeEpisodes: number;
   animeWatchingTime: number;
   videoWatchingTime: number;
-  lnCount: number;
-  readManga: string[];
-  watchedAnime: string[];
-  playedVn: string[];
-  readLn: string[];
 }
 
 export interface IEditedFields {

@@ -12,7 +12,7 @@
   - [x] Integración con Anilist
   - [ ] Integración con Youtube
   - [ ] Integración con TMDB
-  - [ ] Integración con VNDB
+  - [x] Integración con VNDB
 - [x] Importar logs de Iniesta
 - [x] Importar logs de TMW
 
@@ -55,6 +55,8 @@
 - [x] Eliminar novela ligera
 - [x] Obtener novela ligera
 - [ ] Buscar novela ligera
+- [ ] Lista de inmersión
+- [ ] Asignarle media a los logs
 
 ## Frontend
 
@@ -66,7 +68,7 @@
 - [x] Página de perfil
 - [x] Página de configuración
 - [ ] Página de stats
-- [ ] Página de ranking
+- [x] Página de ranking
 - [ ] Feed principal
 - [x] Formulario de creación de Log
 - [ ] Formulario de edición de Log

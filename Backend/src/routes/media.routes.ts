@@ -3,21 +3,19 @@ import {
   createAnime,
   createLightNovel,
   createManga,
-  createVisualNovel,
   getAnimeById,
   updateAnime,
   updateLightNovel,
   updateManga,
-  updateVisualNovel,
   deleteAnime,
   deleteLightNovel,
   deleteManga,
-  deleteVisualNovel,
   getMangaById,
   getLightNovelById,
   getVisualNovelById,
   searchAnime,
   getAnimes,
+  searchVisualNovel,
 } from '../controllers/media.controller';
 import { protect } from '../libs/authMiddleware';
 import { checkPermission } from '../middlewares/checkPermission';
@@ -57,24 +55,7 @@ router.delete(
   deleteLightNovel
 );
 
-router.post(
-  '/visual-novel',
-  protect,
-  checkPermission(userRoles.admin),
-  createVisualNovel
-);
-router.get('/visual-novel', getVisualNovelById);
-router.put(
-  '/visual-novel',
-  protect,
-  checkPermission(userRoles.admin),
-  updateVisualNovel
-);
-router.delete(
-  '/visual-novel',
-  protect,
-  checkPermission(userRoles.admin),
-  deleteVisualNovel
-);
+router.get('/visual-novel/:id', getVisualNovelById);
+router.get('/search-vn', searchVisualNovel);
 
 export default router;

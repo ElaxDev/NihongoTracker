@@ -3,6 +3,7 @@ import { ParamsDictionary } from 'express-serve-static-core';
 import { ILog, IEditedFields, ICreateAnimeLog } from '../types';
 import Log from '../models/log.model';
 import User from '../models/user.model';
+import ImmersionListModel from '../models/immersionList.model';
 import { PipelineStage, Types } from 'mongoose';
 import { customError } from '../middlewares/errorMiddleware';
 import updateStats from '../services/updateStats';
@@ -235,7 +236,7 @@ export async function importLogs(
   } else if (results.success.length === 0) {
     statusMessage = 'No logs to import, your logs are up to date';
   }
-  console.log(results.failed);
+  // console.log(results.failed);
   return res.status(200).json({
     message: statusMessage,
   });
@@ -247,7 +248,11 @@ export async function assignMedia(
   next: NextFunction
 ) {
   try {
-    const assignData: { logsId: string[]; mediaId: string } = req.body;
+    const assignData: {
+      logsId: string[];
+      mediaId: Types.ObjectId;
+      mediaType: 'reading' | 'anime' | 'vn' | 'video' | 'manga';
+    } = req.body;
     const updatedLogs = await Log.updateMany(
       { _id: { $in: assignData.logsId } },
       { contentId: assignData.mediaId },
@@ -258,6 +263,20 @@ export async function assignMedia(
         `Log${assignData.logsId.length > 1 || 's'} not found`,
         404
       );
+    if (!res.locals.user.immersionList) {
+      const immersionList = await ImmersionListModel.create({});
+      res.locals.user.immersionList = immersionList._id;
+      await res.locals.user.save();
+    }
+    const immersionList = await ImmersionListModel.findById(
+      res.locals.user.immersionList
+    );
+    console.log(req.body);
+    if (!immersionList) throw new customError('Immersion List not found', 404);
+    if (!immersionList[assignData.mediaType].includes(assignData.mediaId)) {
+      immersionList[assignData.mediaType].push(assignData.mediaId);
+      await immersionList.save();
+    }
     console.log('Updated Logs:', updatedLogs);
     console.log('Assign Data:', assignData);
     return res.status(200).json(updatedLogs);

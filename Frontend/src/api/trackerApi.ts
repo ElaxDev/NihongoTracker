@@ -11,6 +11,7 @@ import {
   IRankingParams,
   ILogsParams,
   IAnimeDocument,
+  IVNDocument,
 } from '../types';
 
 const BASE_URL = '/api/';
@@ -107,10 +108,23 @@ export async function searchAnimeFn(params: { title: string }) {
   return data;
 }
 
-export async function assignMediaFn(logsId: string[], mediaId: string) {
+export async function searchVNFn(params: { title: string }) {
+  const { data } = await api.get<IVNDocument[]>(`media/search-vn`, {
+    params,
+  });
+  return data;
+}
+
+export async function assignMediaFn(
+  logsId: string[],
+  mediaId: string,
+  mediaType: string
+) {
+  console.log({ logsId, mediaId, mediaType });
   const { data } = await api.put(`logs/assign-media`, {
     logsId,
     mediaId,
+    mediaType,
   });
   return data;
 }

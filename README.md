@@ -21,3 +21,9 @@
   - Hours immersed total
   - Reading speed graphs
   - Immersion quantity graphs
+
+## Used projects
+
+These are projects that were used for the creation of this project:
+
+[anime-offline-database](https://github.com/manami-project/anime-offline-database)

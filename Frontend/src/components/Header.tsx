@@ -120,7 +120,7 @@ function Header() {
         <div className="navbar-end gap-3 mx-3">
           {user ? (
             <>
-              <Link className="btn btn-primary btn-outline" to="/createlog">
+              <Link className="btn btn-primary" to="/createlog">
                 Create Log
               </Link>
               <div className="dropdown dropdown-hover dropdown-bottom dropdown-end">

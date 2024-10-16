@@ -207,6 +207,16 @@ interface AnilistSearchResult {
   };
 }
 
+export interface IVNDocument {
+  _id: string;
+  id: string;
+  lang: string;
+  title: string;
+  latin: string | null;
+  alias: string[];
+  score: number;
+}
+
 export interface IAnimeDocument {
   _id: string;
   sources?: string[];

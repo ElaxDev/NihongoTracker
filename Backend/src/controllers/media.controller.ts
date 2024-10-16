@@ -4,12 +4,13 @@ import {
   IAnimeDocument,
   ILightNovelDocument,
   IMangaDocument,
-  IVisualNovelDocument,
+  // IVisualNovelTitle,
+  // IVisualNovelDetail
 } from '../types';
 import Anime from '../models/anime.model';
 import Manga from '../models/manga.model';
 import LightNovel from '../models/lightNovel.model';
-import visualNovel from '../models/visualNovel.model';
+import visualNovel from '../models/vnTitle.model';
 import { Types } from 'mongoose';
 import { customError } from '../middlewares/errorMiddleware';
 import updateStats from '../services/updateStats';
@@ -55,7 +56,6 @@ export async function searchAnime(
     }
     if (!req.query.title) throw new customError('The title is required', 400);
     const regex = new RegExp(escapeRegex(req.query.title as string), 'gi');
-    console.log(regex);
     const foundAnime = await Anime.find({
       $or: [{ title: regex }, { synonyms: regex }],
     });
@@ -63,7 +63,6 @@ export async function searchAnime(
       throw new customError('Anime not found', 404);
     return res.status(200).json(foundAnime);
   } catch (error) {
-    console.log(error);
     return next(error as customError);
   }
 }
@@ -505,7 +504,7 @@ export async function getVisualNovelById(
   next: NextFunction
 ) {
   try {
-    const foundVisualNovel = await visualNovel.findById(req.query.id);
+    const foundVisualNovel = await visualNovel.findById(req.params.id);
     if (!foundVisualNovel) throw new customError('Visual Novel not found', 404);
     return res.status(200).json(foundVisualNovel);
   } catch (error) {
@@ -513,150 +512,45 @@ export async function getVisualNovelById(
   }
 }
 
-export async function deleteVisualNovel(
+export async function searchVisualNovel(
   req: Request,
   res: Response,
   next: NextFunction
 ) {
   try {
-    const deletedVisualNovel = await visualNovel.findByIdAndDelete(
-      new Types.ObjectId(req.params.id)
-    );
-    if (!deletedVisualNovel)
-      throw new customError('Visual Novel not found', 404);
-    return res.sendStatus(204);
-  } catch (error) {
-    return next(error as customError);
-  }
-}
-
-export async function updateVisualNovel(
-  req: Request<ParamsDictionary, any, IVisualNovelDocument>,
-  res: Response,
-  next: NextFunction
-) {
-  const {
-    title,
-    publisher,
-    description,
-    vndbScore,
-    vndbId,
-    approximatedCharCount,
-    approximatedReadingTime,
-    coverImage,
-    coverImageNSFW,
-    startedUserCount,
-    readingUserCount,
-    finishedUserCount,
-    adult,
-  } = req.body;
-
-  try {
-    const foundVisualNovel: IVisualNovelDocument | null =
-      await visualNovel.findOne({
-        vndbId: Number(req.params.id),
-      });
-
+    const titleSearch = req.query.title as string;
+    if (!titleSearch) throw new customError('Search term is required', 400);
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 10;
+    const skip = (page - 1) * limit;
+    const foundVisualNovel = await visualNovel.aggregate([
+      {
+        $match: {
+          $text: { $search: titleSearch },
+        },
+      },
+      {
+        $project: {
+          _id: 1,
+          title: 1,
+          latin: 1,
+          alias: 1,
+          id: 1,
+          score: { $meta: 'textScore' },
+        },
+      },
+      {
+        $sort: { score: { $meta: 'textScore' } },
+      },
+      {
+        $skip: skip,
+      },
+      {
+        $limit: limit,
+      },
+    ]);
     if (!foundVisualNovel) throw new customError('Visual Novel not found', 404);
-
-    foundVisualNovel.vndbId =
-      vndbId !== undefined ? vndbId : foundVisualNovel.vndbId;
-    foundVisualNovel.description =
-      description !== undefined ? description : foundVisualNovel.description;
-    foundVisualNovel.title =
-      title !== undefined ? title : foundVisualNovel.title;
-    foundVisualNovel.publisher =
-      publisher !== undefined ? publisher : foundVisualNovel.publisher;
-    foundVisualNovel.vndbScore =
-      vndbScore !== undefined ? vndbScore : foundVisualNovel.vndbScore;
-    foundVisualNovel.approximatedCharCount =
-      approximatedCharCount !== undefined
-        ? approximatedCharCount
-        : foundVisualNovel.approximatedCharCount;
-    foundVisualNovel.approximatedReadingTime =
-      approximatedReadingTime !== undefined
-        ? approximatedReadingTime
-        : foundVisualNovel.approximatedReadingTime;
-    foundVisualNovel.coverImage =
-      coverImage !== undefined ? coverImage : foundVisualNovel.coverImage;
-    foundVisualNovel.coverImageNSFW =
-      coverImageNSFW !== undefined
-        ? coverImageNSFW
-        : foundVisualNovel.coverImageNSFW;
-    foundVisualNovel.startedUserCount =
-      startedUserCount !== undefined
-        ? startedUserCount
-        : foundVisualNovel.startedUserCount;
-    foundVisualNovel.readingUserCount =
-      readingUserCount !== undefined
-        ? readingUserCount
-        : foundVisualNovel.readingUserCount;
-    foundVisualNovel.finishedUserCount =
-      finishedUserCount !== undefined
-        ? finishedUserCount
-        : foundVisualNovel.finishedUserCount;
-    foundVisualNovel.adult =
-      adult !== undefined ? adult : foundVisualNovel.adult;
-
-    const updatedVisualNovel = await foundVisualNovel.save();
-    await updateStats(res, next);
-    return res.sendStatus(200).json(updatedVisualNovel);
-  } catch (error) {
-    return next(error as customError);
-  }
-}
-
-async function createVisualNovelFunction(
-  visualNovelDetails: IVisualNovelDocument
-) {
-  const {
-    title,
-    publisher,
-    description,
-    vndbScore,
-    vndbId,
-    approximatedCharCount,
-    approximatedReadingTime,
-    coverImage,
-    coverImageNSFW,
-    startedUserCount,
-    readingUserCount,
-    finishedUserCount,
-    adult,
-  } = visualNovelDetails;
-  const newVisualNovel: IVisualNovelDocument | null = new visualNovel({
-    title,
-    publisher,
-    description,
-    vndbScore,
-    vndbId,
-    approximatedCharCount,
-    approximatedReadingTime,
-    coverImage,
-    coverImageNSFW,
-    startedUserCount,
-    readingUserCount,
-    finishedUserCount,
-    adult,
-  });
-  const savedVisualNovel = await newVisualNovel.save();
-  return savedVisualNovel;
-}
-
-export async function createVisualNovel(
-  req: Request<ParamsDictionary, any, IVisualNovelDocument>,
-  res: Response,
-  next: NextFunction
-) {
-  const { vndbId, coverImage, title } = req.body;
-
-  if (!vndbId) throw new customError('The VNDB ID is required', 400);
-  if (!coverImage) throw new customError('The cover image is required', 400);
-  if (!title) throw new customError('The title is required', 400);
-
-  try {
-    const savedVisualNovel = await createVisualNovelFunction(req.body);
-    return res.sendStatus(200).json(savedVisualNovel);
+    return res.status(200).json(foundVisualNovel);
   } catch (error) {
     return next(error as customError);
   }
