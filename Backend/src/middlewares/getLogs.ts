@@ -14,7 +14,7 @@ type manabeLogs = {
   caracteres: number;
   parametro: number;
   puntos: number;
-  timestamp: number;
+  createdAt: string;
   userId: number;
 };
 
@@ -56,7 +56,7 @@ function transformList(list: manabeLogs[]) {
         [parametro]: log.parametro,
         ...(tiempo ? { time: log.tiempo } : {}),
         ...(chars ? { chars: log.caracteres } : {}),
-        date: new Date(log.timestamp * 1000),
+        date: new Date(log.createdAt),
       };
     });
 }
@@ -76,7 +76,7 @@ export default async function getLogsFromAPI(
     }
     const response = await axios.get(apiUrl, {
       params: {
-        userId: user.discordId,
+        user: user.discordId,
         startDate: user.lastImport,
         limit: 0,
         page: 1,
