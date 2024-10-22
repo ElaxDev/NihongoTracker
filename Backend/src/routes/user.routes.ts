@@ -5,6 +5,7 @@ import {
   updateUser,
   getUsers,
   clearUserData,
+  getImmersionList,
 } from '../controllers/users.controller';
 import { getUserLogs } from '../controllers/logs.controller';
 import { protect } from '../libs/authMiddleware';
@@ -22,6 +23,8 @@ router.get('/ranking', getRanking);
 router.get('/:username', getUser);
 
 router.get('/:username/logs', getUserLogs);
+
+router.get('/:username/immersionlist', getImmersionList);
 
 router.put(
   '/',

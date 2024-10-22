@@ -1,5 +1,6 @@
 import User from '../models/user.model';
 import Log from '../models/log.model';
+import ImmersionList from '../models/immersionList.model';
 import { Request, Response, NextFunction } from 'express';
 import { updateRequest } from '../types';
 import { customError } from '../middlewares/errorMiddleware';
@@ -115,6 +116,7 @@ export async function getUser(req: Request, res: Response, next: NextFunction) {
     id: userFound._id,
     username: userFound.username,
     stats: userFound.stats,
+    ImmersionList: userFound.immersionList,
     discordId: userFound.discordId,
     avatar: userFound.avatar,
     banner: userFound.banner,
@@ -186,6 +188,50 @@ export async function clearUserData(
     await Log.deleteMany({ user: user._id });
 
     return res.status(200).json({ message: 'User data cleared' });
+  } catch (error) {
+    return next(error as customError);
+  }
+}
+
+export async function getImmersionList(
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
+  try {
+    const user = await User.findOne({ username: req.params.username });
+    if (!user) throw new customError('User not found', 404);
+    const list = await ImmersionList.aggregate([
+      { $match: { _id: user.immersionList } },
+      {
+        $lookup: {
+          from: 'animes',
+          localField: 'anime',
+          foreignField: '_id',
+          as: 'anime',
+        },
+      },
+      {
+        $lookup: {
+          from: 'vn_titles',
+          localField: 'vn',
+          foreignField: '_id',
+          as: 'vn',
+        },
+      },
+      {
+        $project: {
+          _id: 0,
+          anime: 1,
+          manga: 1,
+          vn: 1,
+          video: 1,
+          reading: 1,
+        },
+      },
+    ]);
+    if (!list) throw new customError('List not found', 404);
+    return res.status(200).json(list);
   } catch (error) {
     return next(error as customError);
   }

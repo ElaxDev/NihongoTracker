@@ -12,6 +12,7 @@ import {
   ILogsParams,
   IAnimeDocument,
   IVNDocument,
+  IImmersionList,
 } from '../types';
 
 const BASE_URL = '/api/';
@@ -19,9 +20,6 @@ const api = axios.create({
   baseURL: BASE_URL,
   withCredentials: true,
 });
-
-// authApi.defaults.headers.common['Content-Type'] =
-//   'application/x-www-form-urlencoded';
 
 export async function registerUserFn(
   user: IRegisterInput
@@ -146,5 +144,12 @@ export async function deleteLogFn(id: string) {
 
 export async function importLogsFn() {
   const { data } = await api.get(`logs/importlogs`);
+  return data;
+}
+
+export async function getImmersionListFn(username: string) {
+  const { data } = await api.get<IImmersionList[]>(
+    `users/${username}/immersionlist`
+  );
   return data;
 }

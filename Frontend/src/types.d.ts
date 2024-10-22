@@ -6,6 +6,7 @@ export interface IUser {
   clubs?: string[];
   discordId?: string;
   stats: IStats;
+  immersionList?: string;
   titles: string[];
   roles: userRoles;
   createdAt?: Date;
@@ -237,4 +238,13 @@ export interface IAnimeDocument {
   synonyms?: string[];
   relatedAnime?: string[];
   tags?: string[];
+}
+export interface IImmersionList {
+  [key: string]: string[] | IAnimeDocument[] | IVNDocument[];
+  _id: string[];
+  manga: string[];
+  anime: IAnimeDocument[];
+  vn: IVNDocument[];
+  reading: string[];
+  video: string[];
 }
