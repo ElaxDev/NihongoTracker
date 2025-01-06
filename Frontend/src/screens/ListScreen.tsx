@@ -1,4 +1,4 @@
-import { useOutletContext } from 'react-router-dom';
+import { Link, useOutletContext } from 'react-router-dom';
 import { OutletContextType } from '../types';
 import { getImmersionListFn } from '../api/trackerApi';
 import { useQuery } from '@tanstack/react-query';
@@ -6,7 +6,9 @@ import { useState } from 'react';
 
 function ListScreen() {
   const { username } = useOutletContext<OutletContextType>();
-  const [currentList, setCurrentList] = useState<string>('anime');
+  const [currentList, setCurrentList] = useState<
+    'anime' | 'manga' | 'vn' | 'video' | 'reading'
+  >('anime');
 
   const {
     data: list,
@@ -18,11 +20,11 @@ function ListScreen() {
   });
   return (
     <div>
-      <div className="card min-w-96 bg-base-100 m-10">
-        <div className="card-body w-full grid grid-cols-[20%_80%]">
-          <div className="">
+      <div className="min-w-96 m-10">
+        <div className="w-full grid grid-cols-[20%_80%] gap-4">
+          <div className="card bg-base-100 p-4">
             <div className="prose-h4">Lists</div>
-            <ul className="menu">
+            <ul className="menu card-body">
               <li className="capitalize">
                 <a onClick={() => setCurrentList('anime')}>Anime</a>
               </li>
@@ -40,24 +42,33 @@ function ListScreen() {
               </li>
             </ul>
           </div>
-          <div className="">
-            <div className="flex flex-row">
-              {list &&
-                list.map((item, index) => {
-                  return (
-                    <div key={index} className="flex flex-row gap-2">
-                      {Object.entries(item[currentList]).map(([key, value]) => (
-                        <div key={key}>
+
+          <div className="card bg-base-100 p-4 flex flex-row">
+            {list &&
+              list.map((item, index) => {
+                return (
+                  <div key={index} className="flex flex-row gap-2">
+                    {Object.entries(item[currentList]).map(([key, value]) => (
+                      <div key={key}>
+                        <Link to={`/${currentList}/${value._id}`}>
                           <img
-                            src={value.picture}
-                            className="transition hover:shadow-md rounded-sm duration-300"
+                            src={
+                              value.picture ||
+                              `https://t.vndb.org/${value.image.substring(
+                                0,
+                                2
+                              )}/${
+                                value.image.substring(2) % 100
+                              }/${value.image.substring(2)}.jpg`
+                            }
+                            className="transition hover:shadow-md rounded-md duration-300 h-52 w-full"
                           />
-                        </div>
-                      ))}
-                    </div>
-                  );
-                })}
-            </div>
+                        </Link>
+                      </div>
+                    ))}
+                  </div>
+                );
+              })}
           </div>
         </div>
       </div>

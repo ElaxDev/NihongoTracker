@@ -1,5 +1,5 @@
 import { ParamsDictionary } from 'express-serve-static-core';
-import { ICreateAnimeLog } from '../types';
+import { ICreateLog } from '../types';
 import { Router } from 'express';
 import {
   getLog,
@@ -32,7 +32,7 @@ router.get('/importlogs', protect, getLogsFromAPI, calculateXp, importLogs);
 
 router.put('/assign-media', protect, assignMedia);
 
-router.post<ParamsDictionary, any, ICreateAnimeLog>(
+router.post<ParamsDictionary, any, ICreateLog>(
   '/',
   protect,
   calculateXp,

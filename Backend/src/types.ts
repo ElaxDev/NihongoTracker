@@ -39,8 +39,14 @@ export interface IMangaDocument extends Document {
   endDate: string;
 }
 
+export interface ILightNovelTitle {
+  romaji: string;
+  english: string;
+  native: string;
+}
+
 export interface ILightNovelDocument extends Document {
-  title: string;
+  title: ILightNovelTitle;
   anilistId: number;
   description?: string;
   author?: string;
@@ -119,13 +125,24 @@ export interface IUser extends Document {
   matchPassword: (enteredPassword: string) => Promise<boolean>;
 }
 
+export interface IImmersionListItemMedia {
+  contentTitleNative: string;
+  contentTitleRomaji?: string;
+  contentImage: string;
+}
+
+export interface IImmersionListItem {
+  contentId: string;
+  contentMedia: IImmersionListItemMedia;
+}
+
 export interface IImmersionList extends Document {
   _id: Types.ObjectId;
-  manga: Types.ObjectId[];
-  anime: Types.ObjectId[];
-  vn: Types.ObjectId[];
-  reading: Types.ObjectId[];
-  video: Types.ObjectId[];
+  manga: IImmersionListItem[];
+  anime: IImmersionListItem[];
+  vn: IImmersionListItem[];
+  reading: IImmersionListItem[];
+  video: IImmersionListItem[];
 }
 
 export interface IStats {
@@ -171,12 +188,13 @@ export interface IEditedFields {
 export interface ILog extends Document {
   user: Types.ObjectId;
   type: 'reading' | 'anime' | 'vn' | 'video' | 'manga' | 'audio' | 'other';
-  contentId?: Types.ObjectId | string;
+  contentId?: string;
   xp: number;
   private: boolean;
   adult: boolean;
   image?: string;
-  description: string;
+  description?: string;
+  mediaName: string;
   editedFields?: IEditedFields | null;
   episodes?: number;
   pages?: number;
@@ -185,9 +203,13 @@ export interface ILog extends Document {
   date: Date;
 }
 
-export interface ICreateAnimeLog extends ILog {
-  anilistUrl?: string;
+export interface ICreateLog extends ILog {
+  anilistId?: string;
+  createMedia?: boolean;
+  contentMedia?: IImmersionListItemMedia;
+  mediaData?: IMangaDocument | ILightNovelDocument | IAnimeDocument;
 }
+
 export interface updateRequest {
   username?: string;
   password?: string;

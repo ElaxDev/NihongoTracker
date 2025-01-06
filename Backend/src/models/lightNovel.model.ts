@@ -1,9 +1,9 @@
 import { Schema, model } from 'mongoose';
-import { ILightNovelDocument } from '../types';
+import { ILightNovelDocument, ILightNovelTitle } from '../types';
 
 const lightNovelSchema = new Schema<ILightNovelDocument>({
   title: {
-    type: String,
+    type: {} as ILightNovelTitle,
     required: true,
   },
   author: {

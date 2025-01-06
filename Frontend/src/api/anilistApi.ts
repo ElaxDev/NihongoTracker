@@ -5,6 +5,7 @@ const query = gql`
   query (
     $search: String
     $type: MediaType
+    $format: MediaFormat
     $page: Int
     $perPage: Int
     $ids: [Int]
@@ -17,7 +18,13 @@ const query = gql`
         hasNextPage
         perPage
       }
-      media(id_in: $ids, search: $search, type: $type, sort: SEARCH_MATCH) {
+      media(
+        id_in: $ids
+        search: $search
+        type: $type
+        format: $format
+        sort: SEARCH_MATCH
+      ) {
         id
         title {
           romaji
@@ -25,6 +32,7 @@ const query = gql`
           native
         }
         type
+        format
         coverImage {
           extraLarge
           medium
@@ -39,20 +47,31 @@ const query = gql`
 
 const anilist = new GraphQLClient('https://graphql.anilist.co');
 
+interface SearchAnilistArgs {
+  search: string;
+  type?: string;
+  page?: number;
+  perPage?: number;
+  format?: string;
+  ids?: number[] | number;
+}
+
 export async function searchAnilist(
   search: string,
-  type: string,
+  type?: string,
   page: number = 1,
   perPage: number = 10,
+  format?: string,
   ids?: number[] | number
 ): Promise<AnilistSearchResult> {
-  const variables = {
+  const variables: SearchAnilistArgs = {
     search: search,
     type: type,
     page: page,
     perPage: perPage,
-    ids: ids,
   };
+  if (ids) variables['ids'] = ids;
+  if (format) variables['format'] = format;
   if (!type)
     return {
       Page: {

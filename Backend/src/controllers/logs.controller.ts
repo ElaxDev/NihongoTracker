@@ -1,6 +1,12 @@
 import { Request, Response, NextFunction } from 'express';
 import { ParamsDictionary } from 'express-serve-static-core';
-import { ILog, IEditedFields, ICreateAnimeLog } from '../types';
+import {
+  ILog,
+  IEditedFields,
+  ICreateLog,
+  IImmersionListItem,
+  IImmersionListItemMedia,
+} from '../types';
 import Log from '../models/log.model';
 import User from '../models/user.model';
 import ImmersionListModel from '../models/immersionList.model';
@@ -150,22 +156,57 @@ export async function updateLog(
 }
 
 async function createLogFunction(
-  logData: ICreateAnimeLog,
+  logData: ICreateLog,
   res: Response,
   next: NextFunction
 ) {
   const {
     type,
     contentId,
+    contentMedia,
     pages,
     episodes,
     xp,
     description,
+    mediaName,
     time,
     date,
     chars,
   } = logData;
-  const user: ILog['user'] = res.locals.user.id;
+
+  if (!type) throw new customError('Log type is required', 400);
+  if (!mediaName) throw new customError('Description is required', 400);
+
+  if (contentId && contentMedia && type !== 'audio' && type !== 'other') {
+    let immersionList = await ImmersionListModel.findById(
+      res.locals.user.immersionList
+    );
+
+    if (!res.locals.user.immersionList || !immersionList) {
+      immersionList = await ImmersionListModel.create({});
+      res.locals.user.immersionList = immersionList._id;
+      await res.locals.user.save();
+    }
+
+    console.log('Immersion List:', immersionList);
+
+    if (!immersionList) throw new customError('Immersion List not found', 404);
+
+    if (
+      contentId &&
+      !immersionList[type].some(
+        (item: IImmersionListItem) => item.contentId === contentId
+      )
+    ) {
+      immersionList[type] = [
+        ...immersionList[type],
+        { contentId: contentId, contentMedia: contentMedia },
+      ];
+      await immersionList.save();
+    }
+  }
+
+  const user: ILog['user'] = res.locals.user._id;
   const newLog: ILog | null = new Log({
     user,
     type,
@@ -174,6 +215,7 @@ async function createLogFunction(
     episodes,
     xp,
     description,
+    mediaName,
     time,
     date,
     chars,
@@ -185,7 +227,7 @@ async function createLogFunction(
 }
 
 export async function createLog(
-  req: Request<ParamsDictionary, any, ICreateAnimeLog>,
+  req: Request<ParamsDictionary, any, ICreateLog>,
   res: Response,
   next: NextFunction
 ) {
@@ -250,8 +292,9 @@ export async function assignMedia(
   try {
     const assignData: {
       logsId: string[];
-      mediaId: Types.ObjectId;
+      mediaId: string;
       mediaType: 'reading' | 'anime' | 'vn' | 'video' | 'manga';
+      contentMedia: IImmersionListItemMedia;
     } = req.body;
     const updatedLogs = await Log.updateMany(
       { _id: { $in: assignData.logsId } },
@@ -271,10 +314,18 @@ export async function assignMedia(
     const immersionList = await ImmersionListModel.findById(
       res.locals.user.immersionList
     );
-    console.log(req.body);
+
     if (!immersionList) throw new customError('Immersion List not found', 404);
-    if (!immersionList[assignData.mediaType].includes(assignData.mediaId)) {
-      immersionList[assignData.mediaType].push(assignData.mediaId);
+    if (
+      assignData.mediaId &&
+      !immersionList[assignData.mediaType].some(
+        (item: IImmersionListItem) => item.contentId === assignData.mediaId
+      )
+    ) {
+      immersionList[assignData.mediaType].push({
+        contentId: assignData.mediaId,
+        contentMedia: assignData.contentMedia,
+      });
       await immersionList.save();
     }
     console.log('Updated Logs:', updatedLogs);

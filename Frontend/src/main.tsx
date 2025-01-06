@@ -27,6 +27,7 @@ import LogScreen from './screens/LogScreen.tsx';
 import RankingScreen from './screens/RankingScreen.tsx';
 import ListScreen from './screens/ListScreen.tsx';
 import AssignMedia from './screens/AssignMedia.tsx';
+import MediaDetails from './screens/MediaDetails.tsx';
 
 const router = createBrowserRouter(
   createRoutesFromElements(
@@ -41,6 +42,7 @@ const router = createBrowserRouter(
         <Route path="stats" element={<StatsScreen />} />
         <Route path="list" element={<ListScreen />} />
       </Route>
+      <Route path="anime/:id" element={<MediaDetails />} />
       <Route element={<ProtectedRoutes />}>
         <Route index path="createlog" element={<LogScreen />} />
         <Route path="assignmedia" element={<AssignMedia />} />

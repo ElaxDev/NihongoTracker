@@ -5,11 +5,12 @@ const LogSchema = new Schema<ILog>(
   {
     user: { type: Schema.Types.ObjectId, required: true, ref: 'User' },
     type: { type: String, required: true },
-    contentId: { type: Schema.Types.ObjectId, required: false },
+    contentId: { type: String, required: false },
     xp: { type: Number, required: true },
     private: { type: Boolean, default: false },
     adult: { type: Boolean, default: false },
     image: String,
+    mediaName: String,
     description: { type: String, trim: true, required: true },
     editedFields: { type: {} as IEditedFields, default: null },
     episodes: {

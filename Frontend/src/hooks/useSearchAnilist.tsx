@@ -6,9 +6,10 @@ import { AnilistSearchResult } from '../types';
 
 export function useSearchAnilist(
   search: string,
-  type: string,
+  type?: string,
   page: number = 1,
   perPage: number = 10,
+  format?: string,
   ids?: number[] | number
 ) {
   const [debouncedSearch, setDebouncedSearch] = useState(search);
@@ -26,8 +27,17 @@ export function useSearchAnilist(
   }, [search]);
 
   return useQuery<AnilistSearchResult, Error>({
-    queryKey: ['searchAnilist', debouncedSearch, type, page, perPage, ids],
-    queryFn: () => searchAnilist(debouncedSearch, type, page, perPage, ids),
+    queryKey: [
+      'searchAnilist',
+      debouncedSearch,
+      type,
+      page,
+      perPage,
+      format,
+      ids,
+    ],
+    queryFn: () =>
+      searchAnilist(debouncedSearch, type, page, perPage, format, ids),
     enabled: debouncedSearch.trim().length > 0,
   });
 }

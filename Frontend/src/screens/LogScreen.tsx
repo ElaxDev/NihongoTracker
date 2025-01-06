@@ -9,7 +9,11 @@ import React from 'react';
 
 function LogScreen() {
   const [logType, setLogType] = useState<ILog['type'] | null>(null);
+  const [logTitleNative, setLogTitleNative] = useState<string>('');
+  const [logTitleRomaji, setLogTitleRomaji] = useState<string>('');
   const [logDescription, setLogDescription] = useState<string>('');
+  const [LogMediaName, setLogMediaName] = useState<string>('');
+  const [logId, setLogId] = useState<string>('');
   const [episodes, setEpisodes] = useState<number>(0);
   const [time, setTime] = useState<number | undefined>(0);
   const [chars, setChars] = useState<number>(0);
@@ -22,26 +26,33 @@ function LogScreen() {
   const [shouldSearch, setShouldSearch] = useState<boolean>(true);
   const [logImg, setLogImg] = useState<string>('');
   const suggestionRef = useRef<HTMLDivElement>(null);
-
+  const anilistPage = 1;
+  const anilistPerPage = 10;
   const {
     data: searchResult,
     error: searchError,
     isLoading: isSearching,
   } = useSearchAnilist(
-    shouldSearch ? logDescription : '',
+    shouldSearch ? LogMediaName : '',
     shouldSearch
       ? logType == 'anime'
         ? 'ANIME'
         : logType == 'manga'
         ? 'MANGA'
-        : ''
-      : ''
+        : logType == 'reading'
+        ? 'MANGA'
+        : undefined
+      : undefined,
+    anilistPage,
+    anilistPerPage,
+    logType == 'reading' ? 'NOVEL' : undefined
   );
 
-  const { mutate, isPending: isLogCreating } = useMutation({
+  const { mutate: createLog, isPending: isLogCreating } = useMutation({
     mutationFn: createLogFn,
     onSuccess: () => {
       setLogType(null);
+      setLogMediaName('');
       setLogDescription('');
       setLogImg('');
       setEpisodes(0);
@@ -68,7 +79,7 @@ function LogScreen() {
 
   function handleSearch(e: React.ChangeEvent<HTMLInputElement>) {
     e.preventDefault();
-    setLogDescription(e.target.value);
+    setLogMediaName(e.target.value);
   }
 
   function handleDescriptionInputBlur() {
@@ -90,9 +101,16 @@ function LogScreen() {
       await setTime(undefined);
     }
 
-    mutate({
+    createLog({
       type: logType,
+      contentId: logId,
       description: logDescription,
+      mediaName: LogMediaName,
+      contentMedia: {
+        contentTitleNative: logTitleNative,
+        contentTitleRomaji: logTitleRomaji,
+        contentImage: logImg,
+      },
       episodes,
       time: time,
       chars,
@@ -100,18 +118,28 @@ function LogScreen() {
     } as IAnimeLog);
   }
 
-  function setSelectedSuggestion(title: string, imageUrl: string) {
-    setLogDescription(title);
+  function setSelectedSuggestion(
+    titleRomaji: string,
+    titleNative: string,
+    anilistId: number,
+    imageUrl: string
+  ) {
+    setLogTitleNative(titleNative);
+    setLogTitleRomaji(titleRomaji);
+    setLogId(anilistId.toString());
     setLogImg(imageUrl);
+    setLogMediaName(titleRomaji);
   }
 
   function handleSuggestionClick(
-    title: string,
-    anilistLink: string
+    titleRomaji: string,
+    titleNative: string,
+    anilistId: number,
+    imageUrl: string
   ): React.MouseEventHandler<HTMLLIElement> | undefined {
     return (event: React.MouseEvent<HTMLLIElement, MouseEvent>) => {
       event.stopPropagation();
-      setSelectedSuggestion(title, anilistLink);
+      setSelectedSuggestion(titleRomaji, titleNative, anilistId, imageUrl);
       setIsSuggestionsOpen(false);
     };
   }
@@ -120,10 +148,10 @@ function LogScreen() {
     if (searchError) {
       toast.error(`Error: ${searchError.message}`);
     }
-    if (logDescription && logType) {
+    if (LogMediaName && logType) {
       setShouldSearch(true);
     }
-  }, [searchError, logDescription, logType]);
+  }, [searchError, LogMediaName, logType]);
 
   return (
     <div className="pt-32 py-16 flex justify-center items-center bg-base-300 min-h-screen">
@@ -159,17 +187,17 @@ function LogScreen() {
                   <div>
                     <div className="label">
                       <span className="label-text">
-                        Write a log description
+                        Write the name of the media
                       </span>
                     </div>
                     <input
                       type="text"
-                      placeholder="Log description"
+                      placeholder="Media name"
                       className="input input-bordered w-full max-w-xs peer"
                       onFocus={() => setIsSuggestionsOpen(true)}
                       onBlur={handleDescriptionInputBlur}
                       onChange={handleSearch}
-                      value={logDescription}
+                      value={LogMediaName}
                       tabIndex={0}
                     />
                     <div
@@ -196,6 +224,8 @@ function LogScreen() {
                             key={i}
                             onClick={handleSuggestionClick(
                               group.title.romaji,
+                              group.title.native,
+                              group.id,
                               group.coverImage.large
                             )}
                           >
@@ -204,6 +234,19 @@ function LogScreen() {
                         ))}
                       </ul>
                     </div>
+                    <div className="label">
+                      <span className="label-text">
+                        Any additional information?
+                      </span>
+                    </div>
+                    <input
+                      type="text"
+                      placeholder="Description"
+                      className="input input-bordered w-full max-w-xs peer"
+                      onChange={(e) => setLogDescription(e.target.value)}
+                      value={logDescription}
+                      tabIndex={0}
+                    />
                   </div>
                   {logType === 'anime' ? (
                     <div>
@@ -330,7 +373,7 @@ function LogScreen() {
               <figure>
                 <img src={logImg} />
               </figure>
-              <p className="font-bold text-lg">{logDescription}</p>
+              <p className="font-bold text-lg">{logTitleRomaji}</p>
             </div>
           ) : null}
         </div>

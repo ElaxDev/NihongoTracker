@@ -145,20 +145,28 @@ export interface updateLogRequest {
   chars?: number;
 }
 
+export interface IImmersionListItemMedia {
+  contentTitleNative: string;
+  contentTitleRomaji?: string;
+  contentImage: string;
+}
+
 export interface IAnimeLog extends ILog {
   anilistUrl?: string;
+  contentMedia: IImmersionListItemMedia;
 }
 
 export interface ILog {
   _id: string;
   user: string;
   type: 'reading' | 'anime' | 'vn' | 'video' | 'manga' | 'audio' | 'other';
-  contentId?: number;
+  contentId?: string;
   xp: number;
   private: boolean;
   adult: boolean;
   image?: string;
   description: string;
+  mediaName: string;
   editedFields?: IEditedFields | null;
   episodes?: number;
   pages?: number;
@@ -215,6 +223,7 @@ export interface IVNDocument {
   title: string;
   latin: string | null;
   alias: string[];
+  image: string;
   score: number;
 }
 
