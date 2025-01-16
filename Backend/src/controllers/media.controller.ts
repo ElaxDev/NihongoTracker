@@ -536,6 +536,7 @@ export async function searchVisualNovel(
           latin: 1,
           alias: 1,
           id: 1,
+          image: 1,
           score: { $meta: 'textScore' },
         },
       },

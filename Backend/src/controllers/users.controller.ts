@@ -201,35 +201,7 @@ export async function getImmersionList(
   try {
     const user = await User.findOne({ username: req.params.username });
     if (!user) throw new customError('User not found', 404);
-    const list = await ImmersionList.aggregate([
-      { $match: { _id: user.immersionList } },
-      {
-        $lookup: {
-          from: 'animes',
-          localField: 'anime',
-          foreignField: '_id',
-          as: 'anime',
-        },
-      },
-      {
-        $lookup: {
-          from: 'vn_titles',
-          localField: 'vn',
-          foreignField: '_id',
-          as: 'vn',
-        },
-      },
-      {
-        $project: {
-          _id: 0,
-          anime: 1,
-          manga: 1,
-          vn: 1,
-          video: 1,
-          reading: 1,
-        },
-      },
-    ]);
+    const list = await ImmersionList.findById(user.immersionList);
     if (!list) throw new customError('List not found', 404);
     return res.status(200).json(list);
   } catch (error) {

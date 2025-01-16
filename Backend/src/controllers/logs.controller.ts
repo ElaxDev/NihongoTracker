@@ -188,8 +188,6 @@ async function createLogFunction(
       await res.locals.user.save();
     }
 
-    console.log('Immersion List:', immersionList);
-
     if (!immersionList) throw new customError('Immersion List not found', 404);
 
     if (
@@ -231,12 +229,18 @@ export async function createLog(
   res: Response,
   next: NextFunction
 ) {
-  const { type, description } = req.body;
-
-  if (!type) throw new customError('Log type is required', 400);
-  if (!description) throw new customError('Description is required', 400);
+  const { type, description, mediaName } = req.body;
 
   try {
+    if (!type) throw new customError('Log type is required', 400);
+    if (!mediaName && !description) {
+      if (type === 'audio' || type === 'other') {
+        req.body.mediaName = 'Audio/Other';
+      }
+      if (!mediaName && !description) {
+        throw new customError('Description is required', 400);
+      }
+    }
     const savedLog = await createLogFunction(req.body, res, next);
     return res.status(200).json(savedLog);
   } catch (error) {
@@ -328,8 +332,7 @@ export async function assignMedia(
       });
       await immersionList.save();
     }
-    console.log('Updated Logs:', updatedLogs);
-    console.log('Assign Data:', assignData);
+
     return res.status(200).json(updatedLogs);
   } catch (error) {
     return next(error as customError);

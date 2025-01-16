@@ -194,7 +194,7 @@ export interface ILog extends Document {
   adult: boolean;
   image?: string;
   description?: string;
-  mediaName: string;
+  mediaName?: string;
   editedFields?: IEditedFields | null;
   episodes?: number;
   pages?: number;

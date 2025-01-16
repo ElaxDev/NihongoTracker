@@ -5,16 +5,22 @@ import {
   IImmersionListItemMedia,
 } from '../types';
 
-const ImmersionListItemMediaSchema = new Schema<IImmersionListItemMedia>({
-  contentTitleNative: { type: String, required: true },
-  contentTitleRomaji: { type: String },
-  contentImage: { type: String, required: true },
-});
+const ImmersionListItemMediaSchema = new Schema<IImmersionListItemMedia>(
+  {
+    contentTitleNative: { type: String, required: true },
+    contentTitleRomaji: { type: String },
+    contentImage: { type: String, required: true },
+  },
+  { _id: false }
+);
 
-const ImmersionListItemSchema = new Schema<IImmersionListItem>({
-  contentId: { type: String, required: true },
-  contentMedia: { type: ImmersionListItemMediaSchema, required: true },
-});
+const ImmersionListItemSchema = new Schema<IImmersionListItem>(
+  {
+    contentId: { type: String, required: true },
+    contentMedia: { type: ImmersionListItemMediaSchema, required: true },
+  },
+  { _id: false }
+);
 
 const ImmersionListSchema = new Schema<IImmersionList>({
   manga: { type: [ImmersionListItemSchema], default: [] },

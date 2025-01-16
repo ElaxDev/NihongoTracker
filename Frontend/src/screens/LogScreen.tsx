@@ -1,16 +1,34 @@
+import React from 'react';
 import { useEffect, useRef, useState } from 'react';
-import { ILog, IAnimeLog } from '../types';
+import { ILog, IAnimeLog, IVNDocument } from '../types';
 import { createLogFn } from '../api/trackerApi';
 import { useSearchAnilist } from '../hooks/useSearchAnilist';
 import { toast } from 'react-toastify';
 import { AxiosError } from 'axios';
-import { useMutation } from '@tanstack/react-query';
-import React from 'react';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useSearchVN } from '../hooks/useSearchVN';
+
+interface anilistSuggestion {
+  id: number;
+  title: {
+    romaji: string;
+    english: string;
+    native: string;
+  };
+  type: string;
+  coverImage: {
+    extraLarge: string;
+    medium: string;
+    large: string;
+    color: string;
+  };
+  siteUrl: string;
+}
 
 function LogScreen() {
   const [logType, setLogType] = useState<ILog['type'] | null>(null);
   const [logTitleNative, setLogTitleNative] = useState<string>('');
-  const [logTitleRomaji, setLogTitleRomaji] = useState<string>('');
+  const [logTitleRomaji, setLogTitleRomaji] = useState<string | null>('');
   const [logDescription, setLogDescription] = useState<string>('');
   const [LogMediaName, setLogMediaName] = useState<string>('');
   const [logId, setLogId] = useState<string>('');
@@ -23,18 +41,19 @@ function LogScreen() {
   const [showTime, setShowTime] = useState<boolean>(false);
   const [showChars, setShowChars] = useState<boolean>(false);
   const [isSuggestionsOpen, setIsSuggestionsOpen] = useState(false);
-  const [shouldSearch, setShouldSearch] = useState<boolean>(true);
+  const [shouldAnilistSearch, setShouldAnilistSearch] = useState<boolean>(true);
+  const [shouldVNSearch, setShouldVNSearch] = useState<boolean>(true);
   const [logImg, setLogImg] = useState<string>('');
   const suggestionRef = useRef<HTMLDivElement>(null);
   const anilistPage = 1;
   const anilistPerPage = 10;
   const {
-    data: searchResult,
-    error: searchError,
-    isLoading: isSearching,
+    data: anilistSearchResult,
+    error: anilistSearchError,
+    isLoading: isSearchingAnilist,
   } = useSearchAnilist(
-    shouldSearch ? LogMediaName : '',
-    shouldSearch
+    shouldAnilistSearch ? LogMediaName : '',
+    shouldAnilistSearch
       ? logType == 'anime'
         ? 'ANIME'
         : logType == 'manga'
@@ -48,6 +67,14 @@ function LogScreen() {
     logType == 'reading' ? 'NOVEL' : undefined
   );
 
+  const {
+    data: VNSearchResult,
+    error: VNSearchError,
+    isLoading: isSearchingVN,
+  } = useSearchVN(shouldVNSearch ? LogMediaName : '');
+
+  const queryClient = useQueryClient();
+
   const { mutate: createLog, isPending: isLogCreating } = useMutation({
     mutationFn: createLogFn,
     onSuccess: () => {
@@ -59,7 +86,12 @@ function LogScreen() {
       setTime(0);
       setChars(0);
       setPages(0);
-      setShouldSearch(false);
+      setShouldAnilistSearch(false);
+      queryClient.invalidateQueries({
+        predicate: (query) => {
+          return ['logs', 'user'].includes(query.queryKey[0] as string);
+        },
+      });
       toast.success('Log created successfully!');
     },
     onError: (error) => {
@@ -118,40 +150,54 @@ function LogScreen() {
     } as IAnimeLog);
   }
 
-  function setSelectedSuggestion(
-    titleRomaji: string,
-    titleNative: string,
-    anilistId: number,
-    imageUrl: string
-  ) {
-    setLogTitleNative(titleNative);
-    setLogTitleRomaji(titleRomaji);
-    setLogId(anilistId.toString());
-    setLogImg(imageUrl);
-    setLogMediaName(titleRomaji);
+  function setSelectedSuggestion(group: anilistSuggestion | IVNDocument) {
+    if (logType == 'anime' || logType == 'manga' || logType == 'reading') {
+      const suggestion = group as anilistSuggestion;
+      setLogTitleNative(suggestion.title.native);
+      setLogTitleRomaji(suggestion.title.romaji);
+      setLogId(suggestion.id.toString());
+      setLogImg(suggestion.coverImage.large);
+      setLogMediaName(suggestion.title.romaji);
+    } else if (logType == 'vn') {
+      const suggestion = group as IVNDocument;
+      setLogTitleNative(suggestion.title);
+      setLogTitleRomaji(suggestion.latin);
+      setLogId(suggestion.id);
+      setLogMediaName(suggestion.latin ?? suggestion.title);
+      setLogImg(
+        `https://t.vndb.org/${suggestion.image.substring(0, 2)}/${
+          parseInt(suggestion.image.substring(2)) % 100
+        }/${suggestion.image.substring(2)}.jpg`
+      );
+    }
   }
 
   function handleSuggestionClick(
-    titleRomaji: string,
-    titleNative: string,
-    anilistId: number,
-    imageUrl: string
+    group: anilistSuggestion | IVNDocument
   ): React.MouseEventHandler<HTMLLIElement> | undefined {
     return (event: React.MouseEvent<HTMLLIElement, MouseEvent>) => {
       event.stopPropagation();
-      setSelectedSuggestion(titleRomaji, titleNative, anilistId, imageUrl);
+      setSelectedSuggestion(group);
       setIsSuggestionsOpen(false);
     };
   }
 
   useEffect(() => {
-    if (searchError) {
-      toast.error(`Error: ${searchError.message}`);
+    if (anilistSearchError) {
+      toast.error(`Error: ${anilistSearchError.message}`);
     }
-    if (LogMediaName && logType) {
-      setShouldSearch(true);
+    if (VNSearchError) {
+      toast.error(`Error: ${VNSearchError.message}`);
     }
-  }, [searchError, LogMediaName, logType]);
+    if (
+      LogMediaName &&
+      (logType == 'anime' || logType == 'manga' || logType == 'reading')
+    ) {
+      setShouldAnilistSearch(true);
+    } else if (LogMediaName && logType == 'vn') {
+      setShouldVNSearch(true);
+    }
+  }, [anilistSearchError, LogMediaName, logType, VNSearchError]);
 
   return (
     <div className="pt-32 py-16 flex justify-center items-center bg-base-300 min-h-screen">
@@ -203,33 +249,34 @@ function LogScreen() {
                     <div
                       ref={suggestionRef}
                       className={`dropdown dropdown-open ${
-                        isSuggestionsOpen && searchResult ? 'block' : 'hidden'
+                        isSuggestionsOpen &&
+                        (anilistSearchResult || VNSearchResult)
+                          ? 'block'
+                          : 'hidden'
                       }`}
                     >
                       <ul
                         tabIndex={0}
                         className="dropdown-content menu bg-base-200 rounded-box w-full shadow-lg mt-2"
                       >
-                        {isSearching ? (
+                        {isSearchingAnilist || isSearchingVN ? (
                           <li>
                             <a>Loading...</a>
                           </li>
-                        ) : searchResult?.Page?.media.length === 0 ? (
+                        ) : anilistSearchResult?.Page?.media.length === 0 ||
+                          VNSearchResult?.length === 0 ? (
                           <li>
                             <a>No results found</a>
                           </li>
                         ) : null}
-                        {searchResult?.Page?.media.map((group, i) => (
-                          <li
-                            key={i}
-                            onClick={handleSuggestionClick(
-                              group.title.romaji,
-                              group.title.native,
-                              group.id,
-                              group.coverImage.large
-                            )}
-                          >
+                        {anilistSearchResult?.Page?.media.map((group, i) => (
+                          <li key={i} onClick={handleSuggestionClick(group)}>
                             <a>{group.title.romaji}</a>
+                          </li>
+                        ))}
+                        {VNSearchResult?.map((group, i) => (
+                          <li key={i} onClick={handleSuggestionClick(group)}>
+                            <a>{group.title}</a>
                           </li>
                         ))}
                       </ul>

@@ -165,8 +165,8 @@ export interface ILog {
   private: boolean;
   adult: boolean;
   image?: string;
-  description: string;
-  mediaName: string;
+  description?: string;
+  mediaName?: string;
   editedFields?: IEditedFields | null;
   episodes?: number;
   pages?: number;
@@ -219,7 +219,6 @@ interface AnilistSearchResult {
 export interface IVNDocument {
   _id: string;
   id: string;
-  lang: string;
   title: string;
   latin: string | null;
   alias: string[];
@@ -248,12 +247,24 @@ export interface IAnimeDocument {
   relatedAnime?: string[];
   tags?: string[];
 }
+
+export interface IImmersionListItemMedia {
+  contentTitleNative: string;
+  contentTitleRomaji?: string;
+  contentImage: string;
+}
+
+export interface IImmersionListItem {
+  contentId: string;
+  contentMedia: IImmersionListItemMedia;
+}
+
 export interface IImmersionList {
-  [key: string]: string[] | IAnimeDocument[] | IVNDocument[];
-  _id: string[];
-  manga: string[];
-  anime: IAnimeDocument[];
-  vn: IVNDocument[];
-  reading: string[];
-  video: string[];
+  [key: string]: string | IImmersionListItem[];
+  _id: string;
+  manga: IImmersionListItem[];
+  anime: IImmersionListItem[];
+  vn: IImmersionListItem[];
+  reading: IImmersionListItem[];
+  video: IImmersionListItem[];
 }

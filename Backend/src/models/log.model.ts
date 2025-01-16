@@ -1,6 +1,17 @@
 import { Schema, model } from 'mongoose';
 import { ILog, IEditedFields } from '../types';
 
+const editedFieldsSchema = new Schema<IEditedFields>(
+  {
+    episodes: { type: Number },
+    pages: { type: Number },
+    chars: { type: Number },
+    time: { type: Number },
+    xp: { type: Number },
+  },
+  { _id: false }
+);
+
 const LogSchema = new Schema<ILog>(
   {
     user: { type: Schema.Types.ObjectId, required: true, ref: 'User' },
@@ -9,10 +20,22 @@ const LogSchema = new Schema<ILog>(
     xp: { type: Number, required: true },
     private: { type: Boolean, default: false },
     adult: { type: Boolean, default: false },
-    image: String,
-    mediaName: String,
-    description: { type: String, trim: true, required: true },
-    editedFields: { type: {} as IEditedFields, default: null },
+    image: { type: String, default: null },
+    mediaName: {
+      type: String,
+      trim: true,
+      required: function (this: ILog) {
+        return this.description ? false : true;
+      },
+    },
+    description: {
+      type: String,
+      trim: true,
+      required: function (this: ILog) {
+        return this.mediaName ? false : true;
+      },
+    },
+    editedFields: { type: editedFieldsSchema, default: null },
     episodes: {
       type: Number,
       required: function (this: ILog) {

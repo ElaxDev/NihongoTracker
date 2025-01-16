@@ -18,6 +18,7 @@ function ListScreen() {
     queryKey: ['list', username],
     queryFn: () => getImmersionListFn(username as string),
   });
+  console.log(list);
   return (
     <div>
       <div className="min-w-96 m-10">
@@ -44,31 +45,19 @@ function ListScreen() {
           </div>
 
           <div className="card bg-base-100 p-4 flex flex-row">
-            {list &&
-              list.map((item, index) => {
-                return (
-                  <div key={index} className="flex flex-row gap-2">
-                    {Object.entries(item[currentList]).map(([key, value]) => (
-                      <div key={key}>
-                        <Link to={`/${currentList}/${value._id}`}>
-                          <img
-                            src={
-                              value.picture ||
-                              `https://t.vndb.org/${value.image.substring(
-                                0,
-                                2
-                              )}/${
-                                value.image.substring(2) % 100
-                              }/${value.image.substring(2)}.jpg`
-                            }
-                            className="transition hover:shadow-md rounded-md duration-300 h-52 w-full"
-                          />
-                        </Link>
-                      </div>
-                    ))}
+            <div className="flex flex-row gap-2">
+              {list &&
+                list[currentList].map((item, index) => (
+                  <div key={index}>
+                    <Link to={`/${currentList}/${item.contentId}`}>
+                      <img
+                        src={item.contentMedia.contentImage}
+                        className="transition hover:shadow-md rounded-md duration-300 h-52 w-full"
+                      />
+                    </Link>
                   </div>
-                );
-              })}
+                ))}
+            </div>
           </div>
         </div>
       </div>

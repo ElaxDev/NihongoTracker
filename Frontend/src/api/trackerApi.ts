@@ -106,7 +106,9 @@ export async function searchAnimeFn(params: { title: string }) {
   return data;
 }
 
-export async function searchVNFn(params: { title: string }) {
+export async function searchVNFn(params: {
+  title: string;
+}): Promise<IVNDocument[]> {
   const { data } = await api.get<IVNDocument[]>(`media/search-vn`, {
     params,
   });
@@ -148,7 +150,7 @@ export async function importLogsFn() {
 }
 
 export async function getImmersionListFn(username: string) {
-  const { data } = await api.get<IImmersionList[]>(
+  const { data } = await api.get<IImmersionList>(
     `users/${username}/immersionlist`
   );
   return data;
