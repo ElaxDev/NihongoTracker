@@ -1,10 +1,10 @@
 import { Request, Response, NextFunction } from 'express';
 
 export class customError extends Error {
-  statusCode?: number;
+  statusCode: number;
   kind?: string;
 
-  constructor(message: string, statusCode?: number, kind?: string) {
+  constructor(message: string, statusCode: number, kind?: string) {
     super(message);
     this.statusCode = statusCode;
     this.kind = kind;
@@ -13,13 +13,13 @@ export class customError extends Error {
 
 export function notFoundHandler(
   req: Request,
-  res: Response,
+  _res: Response,
   next: NextFunction
 ) {
   const error: customError = new customError(
-    `Not Found - ${req.originalUrl.toString()}`
+    `Not Found - ${req.originalUrl.toString()}`,
+    404
   );
-  res.status(404);
   return next(error);
 }
 
@@ -29,7 +29,11 @@ export function errorHandler(
   res: Response,
   _next: NextFunction
 ) {
-  let statusCode = res.statusCode === 200 ? 500 : res.statusCode;
+  let statusCode = err.statusCode
+    ? err.statusCode === 200
+      ? 500
+      : err.statusCode
+    : 500;
   let message = err.message ? err.message : 'Internal Server Error';
 
   if (err.name === 'CastError' && err.kind === 'ObjectId') {
