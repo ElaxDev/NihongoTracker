@@ -23,7 +23,7 @@ function RankingScreen() {
   });
 
   return (
-    <div className="pt-32 py-16 flex justify-center items-center bg-base-300 min-h-screen">
+    <div className="pt-32 py-16 flex justify-center items-center bg-base-200 min-h-screen">
       <div className="card min-w-96 bg-base-100">
         <div className="card-body w-full">
           <h2 className="card-title font-bold text-2xl">Ranking</h2>

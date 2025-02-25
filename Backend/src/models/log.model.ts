@@ -1,4 +1,4 @@
-import { Schema, model } from 'mongoose';
+import { Schema, Types, model } from 'mongoose';
 import { ILog, IEditedFields } from '../types';
 
 const editedFieldsSchema = new Schema<IEditedFields>(
@@ -16,24 +16,14 @@ const LogSchema = new Schema<ILog>(
   {
     user: { type: Schema.Types.ObjectId, required: true, ref: 'User' },
     type: { type: String, required: true },
-    contentId: { type: String, required: false },
+    mediaId: { type: Types.ObjectId, required: false, ref: 'Media' },
     xp: { type: Number, required: true },
     private: { type: Boolean, default: false },
     adult: { type: Boolean, default: false },
-    image: { type: String, default: null },
-    mediaName: {
-      type: String,
-      trim: true,
-      required: function (this: ILog) {
-        return this.description ? false : true;
-      },
-    },
     description: {
       type: String,
       trim: true,
-      required: function (this: ILog) {
-        return this.mediaName ? false : true;
-      },
+      required: true,
     },
     editedFields: { type: editedFieldsSchema, default: null },
     episodes: {
@@ -77,18 +67,5 @@ const LogSchema = new Schema<ILog>(
   },
   { timestamps: true }
 );
-
-LogSchema.virtual('media', {
-  ref: function (this: ILog) {
-    if (this.type === 'anime') return 'Anime';
-    if (this.type === 'manga') return 'Manga';
-    if (this.type === 'reading') return 'LightNovel';
-    if (this.type === 'vn') return 'VisualNovel';
-    return null;
-  },
-  localField: 'contentId',
-  foreignField: '_id',
-  justOne: true,
-});
 
 export default model<ILog>('Log', LogSchema);

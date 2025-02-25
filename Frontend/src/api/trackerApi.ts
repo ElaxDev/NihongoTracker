@@ -4,14 +4,13 @@ import {
   IRegisterInput,
   ILoginInput,
   updateLogRequest,
-  createLogRequest,
+  ICreateLog,
   ILog,
   IUser,
   IRankingResponse,
   IRankingParams,
   ILogsParams,
-  IAnimeDocument,
-  IVNDocument,
+  IMediaDocument,
   IImmersionList,
 } from '../types';
 
@@ -92,40 +91,31 @@ export async function updateLogFn(id: string, updateValues: updateLogRequest) {
   return data;
 }
 
-export async function getAnimesFn() {
-  const { data } = await api.get<
-    Pick<IAnimeDocument, '_id' | 'title' | 'synonyms'>[]
-  >(`media/anime`);
-  return data;
-}
-
-export async function searchAnimeFn(params: { title: string }) {
-  const { data } = await api.get<IAnimeDocument[]>(`media/search-anime`, {
+export async function searchMediaFn(params: {
+  type: string;
+  search: string;
+  ids?: number[];
+  page?: number;
+  perPage?: number;
+}): Promise<IMediaDocument[]> {
+  const { data } = await api.get<IMediaDocument[]>(`media/search`, {
     params,
   });
+  return data || [];
+}
+
+export async function getMediaFn(mediaId: string): Promise<IMediaDocument> {
+  const { data } = await api.get<IMediaDocument>(`media/${mediaId}`);
   return data;
 }
 
-export async function searchVNFn(params: {
-  title: string;
-}): Promise<IVNDocument[]> {
-  const { data } = await api.get<IVNDocument[]>(`media/search-vn`, {
-    params,
-  });
-  return data;
+interface IAssignData {
+  logsId: string[];
+  contentMedia: IMediaDocument;
 }
 
-export async function assignMediaFn(
-  logsId: string[],
-  mediaId: string,
-  mediaType: string
-) {
-  console.log({ logsId, mediaId, mediaType });
-  const { data } = await api.put(`logs/assign-media`, {
-    logsId,
-    mediaId,
-    mediaType,
-  });
+export async function assignMediaFn(assignData: Array<IAssignData>) {
+  const { data } = await api.put(`logs/assign-media`, assignData);
   return data;
 }
 
@@ -134,7 +124,7 @@ export async function getUserLogsFn(username: string, params?: ILogsParams) {
   return data;
 }
 
-export async function createLogFn(logValues: createLogRequest) {
+export async function createLogFn(logValues: ICreateLog) {
   const { data } = await api.post<ILog>(`logs`, logValues);
   return data;
 }

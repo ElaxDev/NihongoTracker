@@ -1,37 +1,22 @@
 import React from 'react';
 import { useEffect, useRef, useState } from 'react';
-import { ILog, IAnimeLog, IVNDocument } from '../types';
+import { ILog, ICreateLog, IMediaDocument } from '../types';
 import { createLogFn } from '../api/trackerApi';
-import { useSearchAnilist } from '../hooks/useSearchAnilist';
 import { toast } from 'react-toastify';
 import { AxiosError } from 'axios';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { useSearchVN } from '../hooks/useSearchVN';
-
-interface anilistSuggestion {
-  id: number;
-  title: {
-    romaji: string;
-    english: string;
-    native: string;
-  };
-  type: string;
-  coverImage: {
-    extraLarge: string;
-    medium: string;
-    large: string;
-    color: string;
-  };
-  siteUrl: string;
-}
+import useSearch from '../hooks/useSearch';
 
 function LogScreen() {
   const [logType, setLogType] = useState<ILog['type'] | null>(null);
   const [logTitleNative, setLogTitleNative] = useState<string>('');
   const [logTitleRomaji, setLogTitleRomaji] = useState<string | null>('');
-  const [logDescription, setLogDescription] = useState<string>('');
+  const [logDescription, setLogDescription] = useState<string | null>(null);
+  const [mediaDescription, setmediaDescription] = useState<string | undefined>(
+    undefined
+  );
   const [LogMediaName, setLogMediaName] = useState<string>('');
-  const [logId, setLogId] = useState<string>('');
+  const [mediaId, setMediaId] = useState<string>('');
   const [episodes, setEpisodes] = useState<number>(0);
   const [time, setTime] = useState<number | undefined>(0);
   const [chars, setChars] = useState<number>(0);
@@ -42,36 +27,18 @@ function LogScreen() {
   const [showChars, setShowChars] = useState<boolean>(false);
   const [isSuggestionsOpen, setIsSuggestionsOpen] = useState(false);
   const [shouldAnilistSearch, setShouldAnilistSearch] = useState<boolean>(true);
-  const [shouldVNSearch, setShouldVNSearch] = useState<boolean>(true);
   const [logImg, setLogImg] = useState<string>('');
+  const [logCover, setLogCover] = useState<string>('');
   const suggestionRef = useRef<HTMLDivElement>(null);
-  const anilistPage = 1;
-  const anilistPerPage = 10;
-  const {
-    data: anilistSearchResult,
-    error: anilistSearchError,
-    isLoading: isSearchingAnilist,
-  } = useSearchAnilist(
-    shouldAnilistSearch ? LogMediaName : '',
-    shouldAnilistSearch
-      ? logType == 'anime'
-        ? 'ANIME'
-        : logType == 'manga'
-        ? 'MANGA'
-        : logType == 'reading'
-        ? 'MANGA'
-        : undefined
-      : undefined,
-    anilistPage,
-    anilistPerPage,
-    logType == 'reading' ? 'NOVEL' : undefined
-  );
 
   const {
-    data: VNSearchResult,
-    error: VNSearchError,
-    isLoading: isSearchingVN,
-  } = useSearchVN(shouldVNSearch ? LogMediaName : '');
+    data: searchResult,
+    error: searchError,
+    isLoading: isSearching,
+  } = useSearch(
+    shouldAnilistSearch ? logType ?? '' : '',
+    shouldAnilistSearch ? LogMediaName : ''
+  );
 
   const queryClient = useQueryClient();
 
@@ -80,8 +47,13 @@ function LogScreen() {
     onSuccess: () => {
       setLogType(null);
       setLogMediaName('');
-      setLogDescription('');
+      setLogDescription(null);
+      setmediaDescription(undefined);
+      setLogTitleNative('');
+      setLogTitleRomaji(null);
+      setMediaId('');
       setLogImg('');
+      setLogCover('');
       setEpisodes(0);
       setTime(0);
       setChars(0);
@@ -135,45 +107,36 @@ function LogScreen() {
 
     createLog({
       type: logType,
-      contentId: logId,
-      description: logDescription,
-      mediaName: LogMediaName,
-      contentMedia: {
+      mediaId: mediaId,
+      description: logDescription ?? LogMediaName,
+      mediaData: {
         contentTitleNative: logTitleNative,
         contentTitleRomaji: logTitleRomaji,
         contentImage: logImg,
+        coverImage: logCover,
+        description: mediaDescription,
       },
       episodes,
       time: time,
       chars,
       pages,
-    } as IAnimeLog);
+    } as ICreateLog);
   }
 
-  function setSelectedSuggestion(group: anilistSuggestion | IVNDocument) {
-    if (logType == 'anime' || logType == 'manga' || logType == 'reading') {
-      const suggestion = group as anilistSuggestion;
-      setLogTitleNative(suggestion.title.native);
-      setLogTitleRomaji(suggestion.title.romaji);
-      setLogId(suggestion.id.toString());
-      setLogImg(suggestion.coverImage.large);
-      setLogMediaName(suggestion.title.romaji);
-    } else if (logType == 'vn') {
-      const suggestion = group as IVNDocument;
-      setLogTitleNative(suggestion.title);
-      setLogTitleRomaji(suggestion.latin);
-      setLogId(suggestion.id);
-      setLogMediaName(suggestion.latin ?? suggestion.title);
-      setLogImg(
-        `https://t.vndb.org/${suggestion.image.substring(0, 2)}/${
-          parseInt(suggestion.image.substring(2)) % 100
-        }/${suggestion.image.substring(2)}.jpg`
-      );
-    }
+  function setSelectedSuggestion(group: IMediaDocument) {
+    setLogTitleNative(group.title.contentTitleNative);
+    setLogTitleRomaji(group.title.contentTitleRomaji ?? null);
+    setMediaId(group.contentId);
+    setLogCover(group.coverImage ?? '');
+    setLogMediaName(
+      group.title.contentTitleRomaji ?? group.title.contentTitleNative
+    );
+    setLogImg(group.contentImage);
+    setmediaDescription(group.description);
   }
 
   function handleSuggestionClick(
-    group: anilistSuggestion | IVNDocument
+    group: IMediaDocument
   ): React.MouseEventHandler<HTMLLIElement> | undefined {
     return (event: React.MouseEvent<HTMLLIElement, MouseEvent>) => {
       event.stopPropagation();
@@ -183,24 +146,24 @@ function LogScreen() {
   }
 
   useEffect(() => {
-    if (anilistSearchError) {
-      toast.error(`Error: ${anilistSearchError.message}`);
-    }
-    if (VNSearchError) {
-      toast.error(`Error: ${VNSearchError.message}`);
+    if (searchError) {
+      toast.error(`Error: ${searchError.message}`);
     }
     if (
       LogMediaName &&
-      (logType == 'anime' || logType == 'manga' || logType == 'reading')
+      (logType == 'anime' ||
+        logType == 'manga' ||
+        logType == 'reading' ||
+        logType == 'vn')
     ) {
       setShouldAnilistSearch(true);
     } else if (LogMediaName && logType == 'vn') {
-      setShouldVNSearch(true);
+      return;
     }
-  }, [anilistSearchError, LogMediaName, logType, VNSearchError]);
+  }, [searchError, LogMediaName, logType]);
 
   return (
-    <div className="pt-32 py-16 flex justify-center items-center bg-base-300 min-h-screen">
+    <div className="pt-32 py-16 flex justify-center items-center bg-base-200 min-h-screen">
       <div className="card min-w-96 bg-base-100">
         <div className="card-body flex-row gap-12">
           <div className="w-80">
@@ -249,34 +212,25 @@ function LogScreen() {
                     <div
                       ref={suggestionRef}
                       className={`dropdown dropdown-open ${
-                        isSuggestionsOpen &&
-                        (anilistSearchResult || VNSearchResult)
-                          ? 'block'
-                          : 'hidden'
+                        isSuggestionsOpen && searchResult ? 'block' : 'hidden'
                       }`}
                     >
                       <ul
                         tabIndex={0}
                         className="dropdown-content menu bg-base-200 rounded-box w-full shadow-lg mt-2"
                       >
-                        {isSearchingAnilist || isSearchingVN ? (
+                        {isSearching ? (
                           <li>
                             <a>Loading...</a>
                           </li>
-                        ) : anilistSearchResult?.Page?.media.length === 0 ||
-                          VNSearchResult?.length === 0 ? (
+                        ) : searchResult?.length === 0 ? (
                           <li>
                             <a>No results found</a>
                           </li>
                         ) : null}
-                        {anilistSearchResult?.Page?.media.map((group, i) => (
+                        {searchResult?.map((group, i) => (
                           <li key={i} onClick={handleSuggestionClick(group)}>
-                            <a>{group.title.romaji}</a>
-                          </li>
-                        ))}
-                        {VNSearchResult?.map((group, i) => (
-                          <li key={i} onClick={handleSuggestionClick(group)}>
-                            <a>{group.title}</a>
+                            <a>{group.title.contentTitleRomaji}</a>
                           </li>
                         ))}
                       </ul>
@@ -291,7 +245,7 @@ function LogScreen() {
                       placeholder="Description"
                       className="input input-bordered w-full max-w-xs peer"
                       onChange={(e) => setLogDescription(e.target.value)}
-                      value={logDescription}
+                      value={logDescription ?? ''}
                       tabIndex={0}
                     />
                   </div>
@@ -380,7 +334,12 @@ function LogScreen() {
                         onInput={preventNegativeValues}
                         placeholder="Chars count"
                         className="input input-bordered w-full max-w-xs"
-                        onChange={(e) => setChars(Number(e.target.value))}
+                        onChange={(e) => {
+                          const value = e.target.value;
+                          if (value === '' || !isNaN(Number(value))) {
+                            setChars(value === '' ? 0 : Number(value));
+                          }
+                        }}
                         value={chars}
                       />
                     </div>

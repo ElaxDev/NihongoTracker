@@ -8,6 +8,7 @@ const VisualNovelTitleSchema = new Schema<IVisualNovelTitle>(
     official: { type: Boolean, required: true },
     title: { type: String, required: true },
     latin: { type: String },
+    image: { type: String },
   },
   { collection: 'vn_titles' }
 );

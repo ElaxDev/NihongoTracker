@@ -1,15 +1,9 @@
 import { Request, Response, NextFunction } from 'express';
 import { ParamsDictionary } from 'express-serve-static-core';
-import {
-  ILog,
-  IEditedFields,
-  ICreateLog,
-  IImmersionListItem,
-  IImmersionListItemMedia,
-} from '../types';
+import Media from '../models/media.model';
+import { ILog, IEditedFields, ICreateLog, IMediaDocument } from '../types';
 import Log from '../models/log.model';
 import User from '../models/user.model';
-import ImmersionListModel from '../models/immersionList.model';
 import { PipelineStage, Types } from 'mongoose';
 import { customError } from '../middlewares/errorMiddleware';
 import updateStats from '../services/updateStats';
@@ -109,8 +103,7 @@ export async function updateLog(
   res: Response,
   next: NextFunction
 ) {
-  const { description, time, date, contentId, episodes, pages, chars } =
-    req.body;
+  const { description, time, date, mediaId, episodes, pages, chars } = req.body;
 
   try {
     const log: ILog | null = await Log.findOne({
@@ -140,7 +133,7 @@ export async function updateLog(
     log.description = description !== undefined ? description : log.description;
     log.time = time !== undefined ? time : log.time;
     log.date = date !== undefined ? date : log.date;
-    log.contentId = contentId !== undefined ? contentId : log.contentId;
+    log.mediaId = mediaId !== undefined ? mediaId : log.mediaId;
     log.episodes = episodes !== undefined ? episodes : log.episodes;
     log.pages = pages !== undefined ? pages : log.pages;
     log.chars = chars !== undefined ? chars : log.chars;
@@ -162,58 +155,57 @@ async function createLogFunction(
 ) {
   const {
     type,
-    contentId,
-    contentMedia,
+    mediaId,
+    description,
     pages,
     episodes,
     xp,
-    description,
-    mediaName,
     time,
     date,
     chars,
+    mediaData,
   } = logData;
 
-  if (!type) throw new customError('Log type is required', 400);
-  if (!mediaName) throw new customError('Description is required', 400);
+  const logMedia = await Media.findOne({ contentId: mediaId });
 
-  if (contentId && contentMedia && type !== 'audio' && type !== 'other') {
-    let immersionList = await ImmersionListModel.findById(
-      res.locals.user.immersionList
-    );
-
-    if (!res.locals.user.immersionList || !immersionList) {
-      immersionList = await ImmersionListModel.create({});
-      res.locals.user.immersionList = immersionList._id;
-      await res.locals.user.save();
-    }
-
-    if (!immersionList) throw new customError('Immersion List not found', 404);
-
-    if (
-      contentId &&
-      !immersionList[type].some(
-        (item: IImmersionListItem) => item.contentId === contentId
-      )
-    ) {
-      immersionList[type] = [
-        ...immersionList[type],
-        { contentId: contentId, contentMedia: contentMedia },
-      ];
-      await immersionList.save();
-    }
+  if (
+    !logMedia &&
+    type !== 'audio' &&
+    type !== 'other' &&
+    mediaId &&
+    mediaData
+  ) {
+    await Media.create({
+      contentId: mediaId,
+      title: {
+        contentTitleNative: mediaData.contentTitleNative,
+        contentTitleEnglish: mediaData.contentTitleEnglish,
+        contentTitleRomaji: mediaData.contentTitleRomaji,
+      },
+      contentImage: mediaData.contentImage,
+      coverImage: mediaData.coverImage,
+      type,
+      description: mediaData.description,
+    });
   }
+
+  const newLogMedia = await Media.findOne({
+    contentId: mediaId,
+  });
 
   const user: ILog['user'] = res.locals.user._id;
   const newLog: ILog | null = new Log({
     user,
     type,
-    contentId,
+    mediaId: logMedia
+      ? logMedia._id
+      : newLogMedia
+        ? newLogMedia._id
+        : undefined,
     pages,
     episodes,
     xp,
     description,
-    mediaName,
     time,
     date,
     chars,
@@ -229,18 +221,12 @@ export async function createLog(
   res: Response,
   next: NextFunction
 ) {
-  const { type, description, mediaName } = req.body;
+  const { type, description } = req.body;
 
   try {
     if (!type) throw new customError('Log type is required', 400);
-    if (!mediaName && !description) {
-      if (type === 'audio' || type === 'other') {
-        req.body.mediaName = 'Audio/Other';
-      }
-      if (!mediaName && !description) {
-        throw new customError('Description is required', 400);
-      }
-    }
+    if (!description) throw new customError('Description is required', 400);
+
     const savedLog = await createLogFunction(req.body, res, next);
     return res.status(200).json(savedLog);
   } catch (error) {
@@ -282,7 +268,6 @@ export async function importLogs(
   } else if (results.success.length === 0) {
     statusMessage = 'No logs to import, your logs are up to date';
   }
-  // console.log(results.failed);
   return res.status(200).json({
     message: statusMessage,
   });
@@ -293,47 +278,33 @@ export async function assignMedia(
   res: Response,
   next: NextFunction
 ) {
+  interface IAssignData {
+    logsId: string[];
+    contentMedia: IMediaDocument;
+  }
   try {
-    const assignData: {
-      logsId: string[];
-      mediaId: string;
-      mediaType: 'reading' | 'anime' | 'vn' | 'video' | 'manga';
-      contentMedia: IImmersionListItemMedia;
-    } = req.body;
-    const updatedLogs = await Log.updateMany(
-      { _id: { $in: assignData.logsId } },
-      { contentId: assignData.mediaId },
-      { new: true }
-    );
-    if (!updatedLogs)
-      throw new customError(
-        `Log${assignData.logsId.length > 1 || 's'} not found`,
-        404
-      );
-    if (!res.locals.user.immersionList) {
-      const immersionList = await ImmersionListModel.create({});
-      res.locals.user.immersionList = immersionList._id;
-      await res.locals.user.save();
-    }
-    const immersionList = await ImmersionListModel.findById(
-      res.locals.user.immersionList
-    );
-
-    if (!immersionList) throw new customError('Immersion List not found', 404);
-    if (
-      assignData.mediaId &&
-      !immersionList[assignData.mediaType].some(
-        (item: IImmersionListItem) => item.contentId === assignData.mediaId
-      )
-    ) {
-      immersionList[assignData.mediaType].push({
-        contentId: assignData.mediaId,
-        contentMedia: assignData.contentMedia,
+    const assignData: Array<IAssignData> = req.body;
+    assignData.forEach(async (logsData) => {
+      let media = await Media.findOne({
+        contentId: logsData.contentMedia.contentId,
       });
-      await immersionList.save();
-    }
+      if (!media) {
+        media = await Media.create(logsData.contentMedia);
+      }
+      const updatedLogs = await Log.updateMany(
+        {
+          _id: { $in: logsData.logsId },
+        },
+        { mediaId: media._id }
+      );
+      if (!updatedLogs)
+        throw new customError(
+          `Log${logsData.logsId.length > 1 || 's'} not found`,
+          404
+        );
 
-    return res.status(200).json(updatedLogs);
+      return res.status(200).json(updatedLogs);
+    });
   } catch (error) {
     return next(error as customError);
   }

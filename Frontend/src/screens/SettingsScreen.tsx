@@ -98,7 +98,7 @@ function SettingsScreen() {
   }
 
   return (
-    <div className="pt-32 py-16 flex justify-center items-center bg-base-300 min-h-screen">
+    <div className="pt-32 py-16 flex justify-center items-center bg-base-200 min-h-screen">
       <dialog id="my_modal_2" className="modal">
         <div className="modal-box">
           <h3 className="font-bold text-lg">Are you sure?</h3>

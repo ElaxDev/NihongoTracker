@@ -4,7 +4,7 @@ import { getUserFn } from '../api/trackerApi';
 import { AxiosError } from 'axios';
 import { useQuery } from '@tanstack/react-query';
 import { toast } from 'react-toastify';
-import { OutletContextType } from '../types';
+import { OutletProfileContextType } from '../types';
 
 export default function ProfileHeader() {
   const { username } = useParams<{ username: string }>();
@@ -30,7 +30,7 @@ export default function ProfileHeader() {
   }
 
   return (
-    <div className="flex flex-col justify-center bg-base-300 text-base-content">
+    <div className="flex flex-col justify-center bg-base-200 text-base-content">
       <div
         className={`h-96 w-full bg-cover bg-center bg-no-repeat ${
           isLoadingUser ? 'skeleton' : ''
@@ -60,7 +60,7 @@ export default function ProfileHeader() {
       </div>
 
       <ProfileNavbar username={user?.username} />
-      <Outlet context={{ user, username } satisfies OutletContextType} />
+      <Outlet context={{ user, username } satisfies OutletProfileContextType} />
     </div>
   );
 }

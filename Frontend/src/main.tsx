@@ -26,8 +26,9 @@ import ProtectedRoutes from './contexts/protectedRoute.tsx';
 import LogScreen from './screens/LogScreen.tsx';
 import RankingScreen from './screens/RankingScreen.tsx';
 import ListScreen from './screens/ListScreen.tsx';
-import AssignMedia from './screens/AssignMedia.tsx';
+import MatchMedia from './screens/MatchMedia.tsx';
 import MediaDetails from './screens/MediaDetails.tsx';
+import MediaHeader from './components/MediaHeader.tsx';
 
 const router = createBrowserRouter(
   createRoutesFromElements(
@@ -42,11 +43,14 @@ const router = createBrowserRouter(
         <Route path="stats" element={<StatsScreen />} />
         <Route path="list" element={<ListScreen />} />
       </Route>
-      <Route path="anime/:id" element={<MediaDetails />} />
       <Route element={<ProtectedRoutes />}>
         <Route index path="createlog" element={<LogScreen />} />
-        <Route path="assignmedia" element={<AssignMedia />} />
+        <Route path="matchmedia" element={<MatchMedia />} />
       </Route>
+      <Route path=":mediaType/:mediaId" element={<MediaHeader />}>
+        <Route index element={<MediaDetails />} />
+      </Route>
+      <Route path="404" element={<NotFound />} />
       <Route path="*" element={<NotFound />} />
     </Route>
   )

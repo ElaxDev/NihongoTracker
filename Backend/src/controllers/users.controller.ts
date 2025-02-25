@@ -1,6 +1,5 @@
 import User from '../models/user.model';
 import Log from '../models/log.model';
-import ImmersionList from '../models/immersionList.model';
 import { Request, Response, NextFunction } from 'express';
 import { updateRequest } from '../types';
 import { customError } from '../middlewares/errorMiddleware';
@@ -116,7 +115,6 @@ export async function getUser(req: Request, res: Response, next: NextFunction) {
     id: userFound._id,
     username: userFound.username,
     stats: userFound.stats,
-    ImmersionList: userFound.immersionList,
     discordId: userFound.discordId,
     avatar: userFound.avatar,
     banner: userFound.banner,
@@ -193,6 +191,11 @@ export async function clearUserData(
   }
 }
 
+interface ImmersionGroup {
+  _id: 'anime' | 'manga' | 'reading' | 'vn' | 'video';
+  media: any[];
+}
+
 export async function getImmersionList(
   req: Request,
   res: Response,
@@ -201,9 +204,49 @@ export async function getImmersionList(
   try {
     const user = await User.findOne({ username: req.params.username });
     if (!user) throw new customError('User not found', 404);
-    const list = await ImmersionList.findById(user.immersionList);
-    if (!list) throw new customError('List not found', 404);
-    return res.status(200).json(list);
+
+    const immersionList: ImmersionGroup[] = await Log.aggregate([
+      { $match: { user: user._id } },
+      {
+        $group: {
+          _id: '$mediaId',
+        },
+      },
+      {
+        $lookup: {
+          from: 'media', // The name of the Media collection
+          localField: '_id',
+          foreignField: '_id',
+          as: 'mediaDetails',
+        },
+      },
+      { $unwind: '$mediaDetails' },
+      {
+        $replaceRoot: { newRoot: '$mediaDetails' },
+      },
+      {
+        $group: {
+          _id: '$type',
+          media: { $push: '$$ROOT' },
+        },
+      },
+    ]);
+
+    const result: { [key in ImmersionGroup['_id']]: any[] } = {
+      anime: [],
+      manga: [],
+      reading: [],
+      vn: [],
+      video: [],
+    };
+
+    immersionList.forEach((group) => {
+      if (result[group._id]) {
+        result[group._id] = group.media;
+      }
+    });
+
+    return res.status(200).json(result);
   } catch (error) {
     return next(error as customError);
   }

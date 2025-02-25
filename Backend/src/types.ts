@@ -7,6 +7,7 @@ export interface IVisualNovelTitle extends Document {
   official: boolean;
   title: string;
   latin: string;
+  image: string;
 }
 export interface IVisualNovelDetail extends Document {
   id: string;
@@ -116,7 +117,6 @@ export interface IUser extends Document {
   discordId?: string;
   clubs?: Types.ObjectId[];
   stats: IStats;
-  immersionList: Types.ObjectId;
   titles: string[];
   roles: userRoles[];
   lastImport?: Date;
@@ -125,24 +125,19 @@ export interface IUser extends Document {
   matchPassword: (enteredPassword: string) => Promise<boolean>;
 }
 
-export interface IImmersionListItemMedia {
+export interface IMediaTitle {
   contentTitleNative: string;
   contentTitleRomaji?: string;
-  contentImage: string;
+  contentTitleEnglish?: string;
 }
 
-export interface IImmersionListItem {
+export interface IMediaDocument extends Document {
   contentId: string;
-  contentMedia: IImmersionListItemMedia;
-}
-
-export interface IImmersionList extends Document {
-  _id: Types.ObjectId;
-  manga: IImmersionListItem[];
-  anime: IImmersionListItem[];
-  vn: IImmersionListItem[];
-  reading: IImmersionListItem[];
-  video: IImmersionListItem[];
+  title: IMediaTitle;
+  contentImage?: string;
+  coverImage?: string;
+  description?: string;
+  type: 'anime' | 'manga' | 'reading' | 'vn' | 'video';
 }
 
 export interface IStats {
@@ -188,13 +183,11 @@ export interface IEditedFields {
 export interface ILog extends Document {
   user: Types.ObjectId;
   type: 'reading' | 'anime' | 'vn' | 'video' | 'manga' | 'audio' | 'other';
-  contentId?: string;
+  mediaId?: Types.ObjectId;
   xp: number;
   private: boolean;
   adult: boolean;
-  image?: string;
   description?: string;
-  mediaName?: string;
   editedFields?: IEditedFields | null;
   episodes?: number;
   pages?: number;
@@ -203,11 +196,20 @@ export interface ILog extends Document {
   date: Date;
 }
 
+export interface IContentMedia {
+  contentId: string;
+  contentImage: string;
+  coverImage: string;
+  contentTitleNative: string;
+  contentTitleRomaji?: string;
+  contentTitleEnglish: string;
+  description?: string;
+  type: 'anime' | 'manga' | 'reading' | 'vn' | 'video';
+}
+
 export interface ICreateLog extends ILog {
-  anilistId?: string;
   createMedia?: boolean;
-  contentMedia?: IImmersionListItemMedia;
-  mediaData?: IMangaDocument | ILightNovelDocument | IAnimeDocument;
+  mediaData?: IContentMedia;
 }
 
 export interface updateRequest {

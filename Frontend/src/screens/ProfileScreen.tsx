@@ -4,11 +4,11 @@ import ProgressBar from '../components/ProgressBar';
 import React from 'react';
 import { useInfiniteQuery } from '@tanstack/react-query';
 import { getUserLogsFn } from '../api/trackerApi';
-import { OutletContextType } from '../types';
+import { OutletProfileContextType } from '../types';
 
 function ProfileScreen() {
   const limit = 10;
-  const { user, username } = useOutletContext<OutletContextType>();
+  const { user, username } = useOutletContext<OutletProfileContextType>();
   const accent = 'primary';
 
   const {
@@ -20,9 +20,9 @@ function ProfileScreen() {
     queryKey: ['logs', username],
     queryFn: ({ pageParam }) =>
       getUserLogsFn(username as string, { limit, page: pageParam as number }),
-    getNextPageParam: (lastPage, _allPages, lastPageParam) => {
-      if (lastPage.length < limit) return undefined;
-      return lastPageParam + 1;
+    getNextPageParam: (lastPage, allPages) => {
+      if (!lastPage || lastPage.length < limit) return undefined;
+      return allPages.length + 1;
     },
     initialPageParam: 1,
     staleTime: Infinity,
@@ -104,13 +104,17 @@ function ProfileScreen() {
           </div>
 
           <div className="flex flex-col gap-5 items-center">
-            {logs?.pages.map((page, index) => (
-              <React.Fragment key={index}>
-                {page.map((log) => (
-                  <LogCard key={log._id} log={log} />
-                ))}
-              </React.Fragment>
-            ))}
+            {logs && logs?.pages ? (
+              logs.pages.map((page, index) => (
+                <React.Fragment key={index}>
+                  {page.map((log) => (
+                    <LogCard key={log._id} log={log} />
+                  ))}
+                </React.Fragment>
+              ))
+            ) : (
+              <p>No logs available</p>
+            )}
             <button
               className="btn btn-wide bg-base-100"
               onClick={() => fetchNextPage()}

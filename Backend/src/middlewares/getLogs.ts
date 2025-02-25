@@ -7,6 +7,7 @@ type manabeLogs = {
   _id: string;
   anilistAccount: string;
   anilistId: number;
+  timestamp: number;
   descripcion: string;
   id: number;
   medio: string;
@@ -15,6 +16,8 @@ type manabeLogs = {
   parametro: number;
   puntos: number;
   createdAt: string;
+  officialId: string;
+  bonus: boolean;
   userId: number;
 };
 
@@ -24,6 +27,7 @@ interface LogTypeMap {
     parametro: string;
     tiempo?: boolean;
     chars?: boolean;
+    officialId?: boolean;
   };
 }
 
@@ -34,6 +38,7 @@ function transformList(list: manabeLogs[]) {
       parametro: 'episodes',
       tiempo: true,
       chars: true,
+      officialId: true,
     },
     MANGA: { logType: 'manga', parametro: 'pages', tiempo: true, chars: true },
     LECTURA: { logType: 'reading', parametro: 'chars', tiempo: true },
@@ -48,7 +53,8 @@ function transformList(list: manabeLogs[]) {
   return list
     .filter((log) => logTypeMap.hasOwnProperty(log.medio))
     .map((log) => {
-      const { logType, parametro, tiempo, chars } = logTypeMap[log.medio];
+      const { logType, parametro, tiempo, chars, officialId } =
+        logTypeMap[log.medio];
 
       return {
         description: log.descripcion,
@@ -56,6 +62,7 @@ function transformList(list: manabeLogs[]) {
         [parametro]: log.parametro,
         ...(tiempo ? { time: log.tiempo } : {}),
         ...(chars ? { chars: log.caracteres } : {}),
+        ...(officialId ? { contentId: log.officialId } : {}),
         date: new Date(log.createdAt),
       };
     });
@@ -84,7 +91,6 @@ export default async function getLogsFromAPI(
     });
     const logs = transformList(response.data);
     req.body = logs;
-    console.log(response.data);
     return next();
   } catch (error) {
     return next(error as customError);

@@ -7,7 +7,7 @@ import { toast } from 'react-toastify';
 import { AxiosError } from 'axios';
 import { logoutResponseType } from '../types';
 import Loader from './Loader';
-import QuickLog from './QuickLog';
+// import QuickLog from './QuickLog';
 import { IconContext } from 'react-icons';
 
 function Header() {
@@ -62,9 +62,7 @@ function Header() {
                 tabIndex={0}
                 className="menu menu-sm dropdown-content mt-3 z-[1] p-2 shadow rounded-box w-52"
               >
-                <li>
-                  <QuickLog />
-                </li>
+                <li>{/* <QuickLog /> */}</li>
               </ul>
             ) : (
               <ul

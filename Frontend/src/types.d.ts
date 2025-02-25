@@ -6,7 +6,6 @@ export interface IUser {
   clubs?: string[];
   discordId?: string;
   stats: IStats;
-  immersionList?: string;
   titles: string[];
   roles: userRoles;
   createdAt?: Date;
@@ -20,9 +19,14 @@ enum userRoles {
   mod = 'mod',
 }
 
-export type OutletContextType = {
+export type OutletProfileContextType = {
   user: IUser | undefined;
   username: string | undefined;
+};
+
+export type OutletMediaContextType = {
+  mediaDocument: IMediaDocument | undefined;
+  mediaType: string | undefined;
 };
 
 export interface IStats {
@@ -145,28 +149,31 @@ export interface updateLogRequest {
   chars?: number;
 }
 
-export interface IImmersionListItemMedia {
+export interface IContentMedia {
+  contentId: string;
+  contentImage: string;
+  coverImage: string;
   contentTitleNative: string;
   contentTitleRomaji?: string;
-  contentImage: string;
+  contentTitleEnglish: string;
+  description?: string;
 }
 
-export interface IAnimeLog extends ILog {
-  anilistUrl?: string;
-  contentMedia: IImmersionListItemMedia;
+export interface ICreateLog
+  extends Omit<ILog, '_id' | 'user' | 'xp' | 'editedFields'> {
+  createMedia?: boolean;
+  mediaData?: IContentMedia;
 }
 
 export interface ILog {
   _id: string;
   user: string;
   type: 'reading' | 'anime' | 'vn' | 'video' | 'manga' | 'audio' | 'other';
-  contentId?: string;
+  mediaId?: string;
   xp: number;
   private: boolean;
   adult: boolean;
-  image?: string;
-  description?: string;
-  mediaName?: string;
+  description: string;
   editedFields?: IEditedFields | null;
   episodes?: number;
   pages?: number;
@@ -176,11 +183,6 @@ export interface ILog {
   createdAt: Date;
   updatedAt: Date;
 }
-
-export type createLogRequest = Omit<
-  ILog,
-  '_id' | 'user' | 'xp' | 'editedFields'
->;
 
 export interface IRankingResponse {
   username: string;
@@ -204,14 +206,17 @@ interface AnilistSearchResult {
         english: string;
         native: string;
       };
-      type: string;
+      format: 'NOVEL' | 'MANGA' | 'ONE_SHOT';
+      type: 'ANIME' | 'MANGA';
       coverImage: {
         extraLarge: string;
         medium: string;
         large: string;
         color: string;
       };
+      bannerImage: string;
       siteUrl: string;
+      description: string;
     }[];
   };
 }
@@ -248,23 +253,25 @@ export interface IAnimeDocument {
   tags?: string[];
 }
 
-export interface IImmersionListItemMedia {
+export interface IMediaTitle {
   contentTitleNative: string;
   contentTitleRomaji?: string;
-  contentImage: string;
-}
-
-export interface IImmersionListItem {
-  contentId: string;
-  contentMedia: IImmersionListItemMedia;
+  contentTitleEnglish?: string;
 }
 
 export interface IImmersionList {
-  [key: string]: string | IImmersionListItem[];
-  _id: string;
-  manga: IImmersionListItem[];
-  anime: IImmersionListItem[];
-  vn: IImmersionListItem[];
-  reading: IImmersionListItem[];
-  video: IImmersionListItem[];
+  anime: IMediaDocument[];
+  manga: IMediaDocument[];
+  reading: IMediaDocument[];
+  vn: IMediaDocument[];
+  video: IMediaDocument[];
+}
+export interface IMediaDocument {
+  _id?: string;
+  contentId: string;
+  title: IMediaTitle;
+  contentImage: string;
+  coverImage?: string;
+  description?: string;
+  type: 'anime' | 'manga' | 'reading' | 'vn' | 'video';
 }

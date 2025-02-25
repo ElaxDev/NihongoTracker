@@ -1,10 +1,11 @@
-import { IVNDocument, ILog } from '../types';
-import { useState, useMemo, useEffect, useCallback } from 'react';
+import { ILog, IMediaDocument } from '../types';
+import { useState, useMemo, useCallback } from 'react';
 import { fuzzy } from 'fast-fuzzy';
-import { useMutation, useQuery } from '@tanstack/react-query';
-import { assignMediaFn, searchVNFn } from '../api/trackerApi';
+import { useMutation } from '@tanstack/react-query';
+import { assignMediaFn } from '../api/trackerApi';
 import { toast } from 'react-toastify';
 import { AxiosError } from 'axios';
+import useSearch from '../hooks/useSearch';
 
 interface VNLogsProps {
   logs: ILog[] | undefined;
@@ -12,24 +13,20 @@ interface VNLogsProps {
 
 function VNLogs({ logs }: VNLogsProps) {
   const [searchQuery, setSearchQuery] = useState<string>('');
-  const [selectedVN, setSelectedVN] = useState<IVNDocument | undefined>(
+  const [selectedVN, setSelectedVN] = useState<IMediaDocument | undefined>(
     undefined
   );
   const [selectedLogs, setSelectedLogs] = useState<ILog[]>([]);
   const [assignedLogs, setAssignedLogs] = useState<ILog[]>([]);
 
   const {
-    data: VNResult,
-    error: searchVNError,
-    refetch: searchVN,
-  } = useQuery({
-    queryKey: ['VN', searchQuery],
-    queryFn: () => searchVNFn({ title: searchQuery }),
-    enabled: false,
-  });
+    data: searchResult,
+    error: searchError,
+    isLoading: isSearching,
+  } = useSearch('vn', searchQuery);
 
-  if (searchVNError && searchVNError instanceof AxiosError) {
-    toast.error(searchVNError.response?.data.message);
+  if (searchError && searchError instanceof AxiosError) {
+    toast.error(searchError.response?.data.message);
   }
 
   const handleCheckboxChange = useCallback((log: ILog) => {
@@ -54,17 +51,11 @@ function VNLogs({ logs }: VNLogsProps) {
       .trim();
   }, []);
 
-  useEffect(() => {
-    if (searchQuery) {
-      searchVN();
-    }
-  }, [searchQuery, searchVN]);
-
   const groupedLogs = useMemo(() => {
     if (!logs) return [];
     const groupedLogs = new Map<string, ILog[]>();
     logs.forEach((log) => {
-      if (!log.description || log.type !== 'vn' || log.contentId) return;
+      if (!log.description || log.type !== 'vn' || log.mediaId) return;
       let foundGroup = false;
       for (const [key, group] of groupedLogs) {
         if (fuzzy(key, log.description) > 0.8) {
@@ -93,11 +84,12 @@ function VNLogs({ logs }: VNLogsProps) {
   }, [groupedLogs, assignedLogs, logs]);
 
   const { mutate: assignMedia } = useMutation({
-    mutationFn: (data: {
-      logsId: string[];
-      mediaId: string;
-      mediaType: string;
-    }) => assignMediaFn(data.logsId, data.mediaId, data.mediaType),
+    mutationFn: (
+      data: {
+        logsId: string[];
+        contentMedia: IMediaDocument;
+      }[]
+    ) => assignMediaFn(data),
     onSuccess: () => {
       toast.success('Media assigned successfully');
       setAssignedLogs((prev) => [...prev, ...selectedLogs]);
@@ -119,11 +111,12 @@ function VNLogs({ logs }: VNLogsProps) {
       toast.error('You need to select at least one log!');
       return;
     }
-    assignMedia({
-      logsId: selectedLogs.map((log) => log._id),
-      mediaId: selectedVN._id,
-      mediaType: 'vn',
-    });
+    assignMedia([
+      {
+        logsId: selectedLogs.map((log) => log._id),
+        contentMedia: selectedVN,
+      },
+    ]);
   }, [selectedVN, selectedLogs, assignMedia]);
 
   return (
@@ -131,6 +124,11 @@ function VNLogs({ logs }: VNLogsProps) {
       <div className="w-full grid grid-cols-[50%_50%]">
         <div className="h-full max-h-screen">
           <div className="overflow-y-auto h-full">
+            {isSearching ? (
+              <li>
+                <a>Loading...</a>
+              </li>
+            ) : null}
             <div>
               <div className="join join-vertical">
                 {filteredGroupedLogs.map((group, i) => (
@@ -197,9 +195,9 @@ function VNLogs({ logs }: VNLogsProps) {
               </svg>
             </label>
             <div className="overflow-y-auto h-full">
-              {VNResult ? (
+              {searchResult ? (
                 <div>
-                  {VNResult.map((VN, i) => (
+                  {searchResult.map((VN, i) => (
                     <div
                       className="flex items-center gap-4 py-2 content-center"
                       key={i}
@@ -215,7 +213,9 @@ function VNLogs({ logs }: VNLogsProps) {
                       </label>
                       <div className="flex-grow">
                         <h2 className="text-lg inline-block font-medium align-middle">
-                          {VN.latin ? VN.latin : VN.title}
+                          {VN.title.contentTitleRomaji
+                            ? VN.title.contentTitleRomaji
+                            : VN.title.contentTitleNative}
                         </h2>
                       </div>
                     </div>

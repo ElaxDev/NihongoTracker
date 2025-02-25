@@ -1,10 +1,12 @@
-import { IAnimeDocument, ILog } from '../types';
-import { useState, useMemo, useEffect, useCallback } from 'react';
+import { ILog, IMediaDocument } from '../types';
+import { useState, useMemo, useCallback } from 'react';
 import { fuzzy } from 'fast-fuzzy';
-import { useMutation, useQuery } from '@tanstack/react-query';
-import { assignMediaFn, searchAnimeFn } from '../api/trackerApi';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { assignMediaFn } from '../api/trackerApi';
 import { toast } from 'react-toastify';
 import { AxiosError } from 'axios';
+import useSearch from '../hooks/useSearch';
+import { useUserDataStore } from '../store/userData';
 
 interface AnimeLogsProps {
   logs: ILog[] | undefined;
@@ -13,20 +15,22 @@ interface AnimeLogsProps {
 function AnimeLogs({ logs }: AnimeLogsProps) {
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [selectedAnime, setSelectedAnime] = useState<
-    IAnimeDocument | undefined
+    IMediaDocument | undefined
   >(undefined);
   const [selectedLogs, setSelectedLogs] = useState<ILog[]>([]);
   const [assignedLogs, setAssignedLogs] = useState<ILog[]>([]);
+  const [shouldAnilistSearch, setShouldAnilistSearch] = useState<boolean>(true);
+
+  const { user } = useUserDataStore();
+  const username = user?.username;
 
   const {
     data: animeResult,
     error: searchAnimeError,
-    refetch: searchAnime,
-  } = useQuery({
-    queryKey: ['anime', searchQuery],
-    queryFn: () => searchAnimeFn({ title: searchQuery }),
-    enabled: false,
-  });
+    isLoading: isSearchingAnilist,
+  } = useSearch('anime', shouldAnilistSearch ? searchQuery : '');
+
+  const queryClient = useQueryClient();
 
   if (searchAnimeError && searchAnimeError instanceof AxiosError) {
     toast.error(searchAnimeError.response?.data.message);
@@ -43,6 +47,7 @@ function AnimeLogs({ logs }: AnimeLogsProps) {
   const handleOpenGroup = useCallback((group: ILog[], title: string) => {
     setSelectedLogs(group);
     setSearchQuery(title);
+    setShouldAnilistSearch(true);
   }, []);
 
   const stripSymbols = useCallback((description: string) => {
@@ -54,17 +59,11 @@ function AnimeLogs({ logs }: AnimeLogsProps) {
       .trim();
   }, []);
 
-  useEffect(() => {
-    if (searchQuery) {
-      searchAnime();
-    }
-  }, [searchQuery, searchAnime]);
-
   const groupedLogs = useMemo(() => {
     if (!logs) return [];
     const groupedLogs = new Map<string, ILog[]>();
     logs.forEach((log) => {
-      if (!log.description || log.type !== 'anime' || log.contentId) return;
+      if (!log.description || log.type !== 'anime' || log.mediaId) return;
       let foundGroup = false;
       for (const [key, group] of groupedLogs) {
         if (fuzzy(key, log.description) > 0.8) {
@@ -93,13 +92,20 @@ function AnimeLogs({ logs }: AnimeLogsProps) {
   }, [groupedLogs, assignedLogs, logs]);
 
   const { mutate: assignMedia } = useMutation({
-    mutationFn: (data: {
-      logsId: string[];
-      mediaId: string;
-      mediaType: string;
-    }) => assignMediaFn(data.logsId, data.mediaId, data.mediaType),
+    mutationFn: (
+      data: {
+        logsId: string[];
+        contentMedia: IMediaDocument;
+      }[]
+    ) => assignMediaFn(data),
     onSuccess: () => {
       toast.success('Media assigned successfully');
+      queryClient.invalidateQueries({
+        queryKey: ['logsAssign'],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ['logs', username],
+      });
       setAssignedLogs((prev) => [...prev, ...selectedLogs]);
       setSelectedLogs([]);
       setSelectedAnime(undefined);
@@ -119,11 +125,24 @@ function AnimeLogs({ logs }: AnimeLogsProps) {
       toast.error('You need to select at least one log!');
       return;
     }
-    assignMedia({
-      logsId: selectedLogs.map((log) => log._id),
-      mediaId: selectedAnime._id,
-      mediaType: 'anime',
-    });
+    assignMedia([
+      {
+        logsId: selectedLogs.map((log) => log._id),
+        contentMedia: {
+          contentId: selectedAnime.contentId,
+          contentImage: selectedAnime.contentImage,
+          coverImage: selectedAnime.coverImage,
+          description: selectedAnime.description,
+          type: 'anime',
+          title: {
+            contentTitleNative: selectedAnime.title.contentTitleNative,
+            contentTitleEnglish: selectedAnime.title.contentTitleEnglish,
+            contentTitleRomaji: selectedAnime.title.contentTitleRomaji,
+          },
+        },
+      },
+    ]);
+    setShouldAnilistSearch(false);
   }, [selectedAnime, selectedLogs, assignMedia]);
 
   return (
@@ -144,12 +163,16 @@ function AnimeLogs({ logs }: AnimeLogsProps) {
                       onChange={() =>
                         handleOpenGroup(
                           group,
-                          stripSymbols(group[0].description)
+                          stripSymbols(
+                            group[0].description ? group[0].description : ''
+                          )
                         )
                       }
                     />
                     <div className="collapse-title text-xl font-medium">
-                      {stripSymbols(group[0].description)}
+                      {stripSymbols(
+                        group[0].description ? group[0].description : ''
+                      )}
                     </div>
                     <div className="collapse-content">
                       {group.map((log, i) => (
@@ -197,6 +220,11 @@ function AnimeLogs({ logs }: AnimeLogsProps) {
               </svg>
             </label>
             <div className="overflow-y-auto h-full">
+              {isSearchingAnilist ? (
+                <li>
+                  <a>Loading...</a>
+                </li>
+              ) : null}
               {animeResult ? (
                 <div>
                   {animeResult.map((anime, i) => (
@@ -209,13 +237,16 @@ function AnimeLogs({ logs }: AnimeLogsProps) {
                           type="radio"
                           className="radio"
                           name="anime"
-                          checked={selectedAnime?.title === anime.title}
+                          checked={
+                            selectedAnime?.title.contentTitleRomaji ===
+                            anime.title.contentTitleRomaji
+                          }
                           onChange={() => setSelectedAnime(anime)}
                         />
                       </label>
                       <div className="flex-grow">
                         <h2 className="text-lg inline-block font-medium align-middle">
-                          {anime.title}
+                          {anime.title.contentTitleRomaji}
                         </h2>
                       </div>
                     </div>

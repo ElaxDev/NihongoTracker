@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react';
-import { ILog } from '../types';
+import { ICreateLog, ILog } from '../types';
 import { createLogFn } from '../api/trackerApi';
-import { useSearchAnilist } from '../hooks/useSearchAnilist';
+import useSearch from '../hooks/useSearch';
 import { toast } from 'react-toastify';
 import { AxiosError } from 'axios';
 import { useMutation } from '@tanstack/react-query';
@@ -25,12 +25,7 @@ function QuickLog() {
     data: searchResult,
     // error: searchError,
     isLoading: isSearching,
-  } = useSearchAnilist(
-    logDescription,
-    logType == 'anime' ? 'ANIME' : logType == 'manga' ? 'MANGA' : '',
-    1,
-    5
-  );
+  } = useSearch(logType ?? '', logDescription);
 
   const { mutate } = useMutation({
     mutationFn: createLogFn,
@@ -79,7 +74,7 @@ function QuickLog() {
       contentId,
       chars,
       pages,
-    } as ILog);
+    } as ICreateLog);
   }
 
   function handleDescriptionInputBlur() {

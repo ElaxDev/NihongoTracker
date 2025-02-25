@@ -1,5 +1,5 @@
 import { gql, GraphQLClient } from 'graphql-request';
-import { AnilistSearchResult } from '../types';
+import { AnilistSearchResult, IMediaDocument } from '../types';
 
 const query = gql`
   query (
@@ -39,7 +39,9 @@ const query = gql`
           large
           color
         }
+        bannerImage
         siteUrl
+        description
       }
     }
   }
@@ -63,7 +65,7 @@ export async function searchAnilist(
   perPage: number = 10,
   format?: string,
   ids?: number[] | number
-): Promise<AnilistSearchResult> {
+): Promise<IMediaDocument[]> {
   const variables: SearchAnilistArgs = {
     search: search,
     type: type,
@@ -72,18 +74,26 @@ export async function searchAnilist(
   };
   if (ids) variables['ids'] = ids;
   if (format) variables['format'] = format;
-  if (!type)
-    return {
-      Page: {
-        pageInfo: {
-          total: 0,
-          currentPage: 0,
-          lastPage: 0,
-          hasNextPage: false,
-          perPage: 0,
-        },
-        media: [],
-      },
-    };
-  return anilist.request(query, variables);
+  if (!type) return [];
+
+  const data: AnilistSearchResult = await anilist.request(query, variables);
+
+  const media = data.Page.media.map((media) => ({
+    contentId: media.id.toString(),
+    title: {
+      contentTitleNative: media.title.native,
+      contentTitleRomaji: media.title.romaji,
+      contentTitleEnglish: media.title.english,
+    },
+    contentImage: media.coverImage.large,
+    coverImage: media.bannerImage,
+    description: media.description,
+    type: ((media.type.toLowerCase() as 'anime' | 'manga') === 'anime'
+      ? 'anime'
+      : media.format === 'MANGA' || media.format === 'ONE_SHOT'
+      ? 'manga'
+      : 'reading') as 'anime' | 'manga' | 'reading',
+  }));
+
+  return media;
 }
