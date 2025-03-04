@@ -190,7 +190,7 @@ export interface IRankingResponse {
   stats: Pick<IStats, filterTypes>;
 }
 
-interface AnilistSearchResult {
+export interface AnilistSearchResult {
   Page: {
     pageInfo: {
       total: number;

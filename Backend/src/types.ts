@@ -140,6 +140,11 @@ export interface IMediaDocument extends Document {
   type: 'anime' | 'manga' | 'reading' | 'vn' | 'video';
 }
 
+export interface IImportLogs {
+  forced: boolean;
+  logs: ILog[];
+}
+
 export interface IStats {
   userLevel: number;
   userXp: number;
@@ -153,23 +158,6 @@ export interface IStats {
   listeningLevel: number;
   listeningXpToNextLevel: number;
   listeningXpToCurrentLevel: number;
-  charCountVn: number;
-  charCountLn: number;
-  readingTimeVn: number;
-  charCountReading: number;
-  pageCountLn: number;
-  readingTimeLn: number;
-  pageCountManga: number;
-  pageCountReading: number;
-  charCountManga: number;
-  readingTimeManga: number;
-  mangaPages: number;
-  listeningTime: number;
-  audioListeningTime: number;
-  readingTime: number;
-  animeEpisodes: number;
-  animeWatchingTime: number;
-  videoWatchingTime: number;
 }
 
 export interface IEditedFields {
@@ -178,6 +166,37 @@ export interface IEditedFields {
   chars?: number;
   time?: number;
   xp?: number;
+}
+
+export interface AnilistSearchResult {
+  Page: {
+    pageInfo: {
+      total: number;
+      currentPage: number;
+      lastPage: number;
+      hasNextPage: boolean;
+      perPage: number;
+    };
+    media: {
+      id: number;
+      title: {
+        romaji: string;
+        english: string;
+        native: string;
+      };
+      format: 'NOVEL' | 'MANGA' | 'ONE_SHOT';
+      type: 'ANIME' | 'MANGA';
+      coverImage: {
+        extraLarge: string;
+        medium: string;
+        large: string;
+        color: string;
+      };
+      bannerImage: string;
+      siteUrl: string;
+      description: string;
+    }[];
+  };
 }
 
 export interface ILog extends Document {

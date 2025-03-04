@@ -31,7 +31,7 @@ interface LogTypeMap {
   };
 }
 
-function transformList(list: manabeLogs[]) {
+function transformList(list: manabeLogs[], user: Omit<IUser, 'password'>) {
   const logTypeMap: LogTypeMap = {
     ANIME: {
       logType: 'anime',
@@ -57,12 +57,13 @@ function transformList(list: manabeLogs[]) {
         logTypeMap[log.medio];
 
       return {
+        user: user._id,
         description: log.descripcion,
         type: logType,
         [parametro]: log.parametro,
         ...(tiempo ? { time: log.tiempo } : {}),
         ...(chars ? { chars: log.caracteres } : {}),
-        ...(officialId ? { contentId: log.officialId } : {}),
+        ...(officialId ? { mediaId: log.officialId } : {}),
         date: new Date(log.createdAt),
       };
     });
@@ -74,6 +75,7 @@ export default async function getLogsFromAPI(
   next: NextFunction
 ) {
   try {
+    console.time('getLogsFromAPI');
     const user: Omit<IUser, 'password'> = res.locals.user;
     if (!user) throw new customError('User not found', 404);
     if (!user.discordId) throw new customError('Discord ID not set', 400);
@@ -89,8 +91,9 @@ export default async function getLogsFromAPI(
         page: 1,
       },
     });
-    const logs = transformList(response.data);
-    req.body = logs;
+    const logs = transformList(response.data, user);
+    req.body.logs = logs;
+    console.timeEnd('getLogsFromAPI');
     return next();
   } catch (error) {
     return next(error as customError);

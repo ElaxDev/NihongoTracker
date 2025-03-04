@@ -1,5 +1,5 @@
 import { Response, NextFunction } from 'express';
-import { ILog, IStats, IUser } from '../types';
+import { IEditedFields, ILog, IStats, IUser } from '../types';
 import { calculateLevel, calculateXp } from './calculateLevel';
 import { customError } from '../middlewares/errorMiddleware';
 import User from '../models/user.model';
@@ -26,14 +26,28 @@ export default async function updateStats(
   next: NextFunction
 ): Promise<void | IStats> {
   try {
+    console.time('updateStats');
     const user: IUser | null = await User.findById(res.locals.user.id);
     if (!user || !user.stats) {
       throw new customError('User does not have stats', 404);
     }
-
+    let type: string,
+      xp: number,
+      editedFields: IEditedFields | null | undefined;
+    let log: ILog | null;
     const userStats = user.stats;
-    const log = res.locals.log as ILog;
-    const { type, xp, editedFields, episodes, time, chars, pages } = log;
+    if (res.locals.importedStats) {
+      type = 'imported';
+      xp =
+        res.locals.importedStats.listeningXp +
+        res.locals.importedStats.readingXp;
+      log = null;
+    } else {
+      log = res.locals.log as ILog;
+      type = log.type;
+      xp = log.xp;
+      editedFields = log.editedFields;
+    }
 
     // Update XP fields
     const xpUpdate = updateField(xp, editedFields?.xp);
@@ -41,55 +55,29 @@ export default async function updateStats(
 
     switch (type) {
       case 'anime':
-        userStats.listeningXp += xpUpdate;
-        userStats.listeningTime += time
-          ? updateField(time, editedFields?.time)
-          : updateField(episodes, editedFields?.episodes) * 24;
-        userStats.animeWatchingTime += time
-          ? updateField(time, editedFields?.time)
-          : updateField(episodes, editedFields?.episodes) * 24;
-        userStats.animeEpisodes += updateField(
-          episodes,
-          editedFields?.episodes
-        );
-        break;
       case 'video':
-        userStats.listeningXp += xpUpdate;
-        userStats.listeningTime += updateField(time, editedFields?.time);
-        userStats.videoWatchingTime += updateField(time, editedFields?.time);
-        break;
-      case 'manga':
-        userStats.readingXp += xpUpdate;
-        userStats.mangaPages += updateField(pages, editedFields?.pages);
-        userStats.charCountManga += updateField(chars, editedFields?.chars);
-        userStats.readingTime += updateField(time, editedFields?.time);
-        userStats.readingTimeManga += updateField(time, editedFields?.time);
-        break;
-      case 'reading':
-        userStats.readingXp += xpUpdate;
-        userStats.readingTime += updateField(time, editedFields?.time);
-        userStats.charCountReading += updateField(chars, editedFields?.chars);
-        userStats.pageCountReading += updateField(pages, editedFields?.pages);
-        break;
-      case 'vn':
-        userStats.readingXp += xpUpdate;
-        userStats.readingTime += updateField(time, editedFields?.time);
-        userStats.readingTimeVn += updateField(time, editedFields?.time);
-        userStats.charCountVn += updateField(chars, editedFields?.chars);
-        break;
       case 'audio':
         userStats.listeningXp += xpUpdate;
-        userStats.listeningTime += updateField(time, editedFields?.time);
-        userStats.audioListeningTime += updateField(time, editedFields?.time);
+        break;
+      case 'manga':
+      case 'reading':
+      case 'vn':
+        userStats.readingXp += xpUpdate;
         break;
       case 'other':
+        break;
+      case 'imported':
+        userStats.listeningXp += res.locals.importedStats.listeningXp;
+        userStats.readingXp += res.locals.importedStats.readingXp;
         break;
       default:
         throw new customError('Invalid content type', 400);
     }
 
-    log.editedFields = null;
-    await log.save();
+    if (log) {
+      log.editedFields = null;
+      await log.save();
+    }
 
     // Update levels and XP
     updateLevelAndXp(userStats, 'listening');
@@ -99,6 +87,7 @@ export default async function updateStats(
     user.markModified('stats');
     await user.save();
 
+    console.timeEnd('updateStats');
     return userStats as IStats;
   } catch (error) {
     return next(error as customError);

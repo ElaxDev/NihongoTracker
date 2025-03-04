@@ -28,7 +28,7 @@ const router = Router();
 //   importLogs
 // );
 
-router.get('/importlogs', protect, getLogsFromAPI, calculateXp, importLogs);
+router.post('/importlogs', protect, getLogsFromAPI, calculateXp, importLogs);
 
 router.put('/assign-media', protect, assignMedia);
 

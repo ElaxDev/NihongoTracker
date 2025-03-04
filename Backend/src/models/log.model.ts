@@ -1,4 +1,4 @@
-import { Schema, Types, model } from 'mongoose';
+import { Schema, model } from 'mongoose';
 import { ILog, IEditedFields } from '../types';
 
 const editedFieldsSchema = new Schema<IEditedFields>(
@@ -16,7 +16,7 @@ const LogSchema = new Schema<ILog>(
   {
     user: { type: Schema.Types.ObjectId, required: true, ref: 'User' },
     type: { type: String, required: true },
-    mediaId: { type: Types.ObjectId, required: false, ref: 'Media' },
+    mediaId: { type: String, required: false },
     xp: { type: Number, required: true },
     private: { type: Boolean, default: false },
     adult: { type: Boolean, default: false },
@@ -67,5 +67,12 @@ const LogSchema = new Schema<ILog>(
   },
   { timestamps: true }
 );
+
+LogSchema.virtual('media', {
+  ref: 'Media',
+  localField: 'mediaId',
+  foreignField: 'contentId',
+  justOne: true,
+});
 
 export default model<ILog>('Log', LogSchema);

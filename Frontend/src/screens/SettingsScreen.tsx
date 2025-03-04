@@ -15,6 +15,7 @@ function SettingsScreen() {
   const [newPassword, setNewPassword] = useState('');
   const [newPasswordConfirm, setPasswordConfirm] = useState('');
   const [discordId, setDiscordId] = useState(user?.discordId || '');
+  const [forcedImport] = useState(false);
 
   const { mutate: updateUser, isPending } = useMutation({
     mutationFn: updateUserFn,
@@ -64,7 +65,7 @@ function SettingsScreen() {
 
   async function handleSyncLogs(e: React.FormEvent) {
     e.preventDefault();
-    syncLogs();
+    syncLogs(forcedImport);
   }
 
   async function handleClearData(e: React.FormEvent) {

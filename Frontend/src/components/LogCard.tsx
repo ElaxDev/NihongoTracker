@@ -13,22 +13,10 @@ const logTypeText = {
 };
 
 function LogCard({ log }: { log: ILog }) {
-  const {
-    description,
-    mediaName,
-    xp,
-    date,
-    type,
-    episodes,
-    pages,
-    time,
-    chars,
-  } = log;
+  const { description, xp, date, type, episodes, pages, time, chars } = log;
   const relativeDate = date ? DateTime.fromISO(date).toRelative() : date;
 
-  const logTitle = mediaName
-    ? `${mediaName}${description ? ` (${description})` : ''}`
-    : description || '';
+  const logTitle = `${description}`;
 
   function renderQuantity() {
     if (type === 'anime') {
@@ -66,7 +54,7 @@ function LogCard({ log }: { log: ILog }) {
   }
 
   return (
-    <div className="card card-side h-full w-full min-h-8 bg-base-100 text-base-content">
+    <div className="card card-side h-full w-full min-h-8 max-w-[450px] bg-base-100 text-base-content">
       <div className="card-body w-full">
         <h2 className="card-title">{logTitle}</h2>
         <p>Type: {logTypeText[type]}</p>

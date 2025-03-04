@@ -48,7 +48,8 @@ export default function MediaHeader() {
   }
 
   const renderDescription = (description: string) => {
-    return description.split('\n').map((line, index) => (
+    const cleanedDescription = description.replace(/<br\s*\/?>/gi, '');
+    return cleanedDescription.split('\n').map((line, index) => (
       <p key={index}>
         {line}
         <br />
@@ -71,14 +72,22 @@ export default function MediaHeader() {
 
       <div className="min-h-12 bg-base-100">
         <div className="grid grid-cols-[215px_auto] min-w-80 px-5 md:px-7 lg:max-w-6xl lg:px-12 2xl:px-24 mx-auto w-full">
-          <div className="w-52 -mt-32">
-            <img src={media?.contentImage ? media.contentImage : ''} />
+          <div>
+            <div className="w-52 -mt-32">
+              <img
+                className="drop-shadow-md"
+                src={media?.contentImage ? media.contentImage : ''}
+              />
+            </div>
+            <button className="btn btn-block btn-primary mt-2">Log</button>
           </div>
           <div className="py-22px px-25px">
             <h1 className="text-xl font-bold inline-block text-base-content">
               {media?.title.contentTitleNative}
             </h1>
-            {media?.description && renderDescription(media.description)}
+            <div className="text-base-content text-opacity-75 mt-2">
+              {media?.description && renderDescription(media.description)}
+            </div>
           </div>
         </div>
       </div>

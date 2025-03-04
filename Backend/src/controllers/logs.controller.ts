@@ -165,8 +165,11 @@ async function createLogFunction(
     chars,
     mediaData,
   } = logData;
-
-  const logMedia = await Media.findOne({ contentId: mediaId });
+  console.time('createLogFunction');
+  let logMedia;
+  if (mediaId) {
+    logMedia = await Media.findOne({ contentId: mediaId });
+  }
 
   if (
     !logMedia &&
@@ -212,6 +215,7 @@ async function createLogFunction(
   });
   const savedLog = await newLog.save();
   res.locals.log = savedLog;
+  console.timeEnd('createLogFunction');
   await updateStats(res, next);
   return savedLog;
 }
@@ -234,9 +238,9 @@ export async function createLog(
   }
 }
 
-interface Results {
-  success: ILog[];
-  failed: { log: ILog; error: string }[];
+interface IImportStats {
+  listeningXp: number;
+  readingXp: number;
 }
 
 export async function importLogs(
@@ -244,33 +248,58 @@ export async function importLogs(
   res: Response,
   next: NextFunction
 ) {
-  const logs: ILog[] = req.body;
-  const results: Results = { success: [], failed: [] };
-  for (const log of logs) {
-    try {
-      const savedLog = await createLogFunction(log, res, next);
-      results.success.push(savedLog);
-    } catch (error) {
-      results.failed.push({ log, error: (error as customError).message });
+  const logs: ILog[] = req.body.logs;
+  try {
+    console.time('importLogs');
+    const importStats: IImportStats = logs.reduce(
+      (acc, log) => {
+        if (
+          log.type === 'video' ||
+          log.type === 'audio' ||
+          log.type === 'anime'
+        ) {
+          acc.listeningXp += log.xp;
+        } else if (
+          log.type === 'reading' ||
+          log.type === 'manga' ||
+          log.type === 'vn'
+        ) {
+          acc.readingXp += log.xp;
+        }
+        return acc;
+      },
+      { listeningXp: 0, readingXp: 0 }
+    );
+
+    res.locals.importedStats = importStats;
+    const insertedLogs = await Log.insertMany(logs, {
+      ordered: false,
+    });
+    await updateStats(res, next);
+
+    const user = await User.findById(res.locals.user.id);
+    if (!user) throw new customError('User not found', 404);
+    user.lastImport = new Date();
+    user.save();
+
+    let statusMessage = `${insertedLogs.length} log${
+      insertedLogs.length > 1 ? 's' : ''
+    } imported successfully`;
+
+    if (insertedLogs.length < logs.length) {
+      statusMessage += `\n${logs.length - insertedLogs.length} log${
+        logs.length - insertedLogs.length > 1 ? 's' : ''
+      } failed to import`;
+    } else if (logs.length === 0) {
+      statusMessage = 'No logs to import, your logs are up to date';
     }
+    console.timeEnd('importLogs');
+    return res.status(200).json({
+      message: statusMessage,
+    });
+  } catch (error) {
+    return next(error as customError);
   }
-  const user = await User.findById(res.locals.user.id);
-  if (!user) throw new customError('User not found', 404);
-  user.lastImport = new Date();
-  user.save();
-  let statusMessage = `${results.success.length} log${
-    results.success.length > 1 ? 's' : ''
-  } imported successfully`;
-  if (results.failed.length) {
-    statusMessage += `\n${results.failed.length} log${
-      results.failed.length > 1 ? 's' : ''
-    } failed to import`;
-  } else if (results.success.length === 0) {
-    statusMessage = 'No logs to import, your logs are up to date';
-  }
-  return res.status(200).json({
-    message: statusMessage,
-  });
 }
 
 export async function assignMedia(

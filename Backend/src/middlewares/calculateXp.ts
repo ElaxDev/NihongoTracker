@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { ParamsDictionary } from 'express-serve-static-core';
 import Log from '../models/log.model';
-import { ILog } from '../types';
+import { IImportLogs, ILog } from '../types';
 import { customError } from './errorMiddleware';
 
 const XP_FACTOR_TIME = 5;
@@ -60,21 +60,27 @@ async function calculateXpForLog(log: ILog, req: Request): Promise<ILog> {
   return log;
 }
 
+function isImportLogs(body: any): body is IImportLogs {
+  return body.logs && Array.isArray(body.logs);
+}
+
 export async function calculateXp(
-  req: Request<ParamsDictionary, any, ILog | ILog[]>,
+  req: Request<ParamsDictionary, any, ILog | IImportLogs>,
   _res: Response,
   next: NextFunction
 ) {
   try {
-    if (Array.isArray(req.body)) {
+    console.time('calculateXp');
+    if (isImportLogs(req.body)) {
       const modifiedLogs = await Promise.all(
-        req.body.map((log) => calculateXpForLog(log, req))
+        req.body.logs.map((log) => calculateXpForLog(log, req))
       );
-      req.body = modifiedLogs;
+      req.body.logs = modifiedLogs;
     } else {
       const modifiedLog = await calculateXpForLog(req.body, req);
       req.body = modifiedLog;
     }
+    console.timeEnd('calculateXp');
     return next();
   } catch (error) {
     return next(error as customError);

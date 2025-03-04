@@ -134,8 +134,8 @@ export async function deleteLogFn(id: string) {
   return data;
 }
 
-export async function importLogsFn() {
-  const { data } = await api.get(`logs/importlogs`);
+export async function importLogsFn(forced: boolean) {
+  const { data } = await api.post(`logs/importlogs`, { forced });
   return data;
 }
 
