@@ -22,8 +22,8 @@
   - Reading speed graphs
   - Immersion quantity graphs
 
-## Used projects
+## Credits
 
-These are projects that were used for the creation of this project:
+This project comes to you, thanks to these amazing projects:
 
 [anime-offline-database](https://github.com/manami-project/anime-offline-database)
