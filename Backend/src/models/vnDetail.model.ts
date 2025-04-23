@@ -1,5 +1,5 @@
 import { Schema, model } from 'mongoose';
-import { IVisualNovelDetail } from '../types';
+import { IVisualNovelDetail } from '../types.js';
 
 const VisualNovelDetailSchema = new Schema<IVisualNovelDetail>(
   {

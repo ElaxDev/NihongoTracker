@@ -1,5 +1,5 @@
 import { Schema, Types, model } from 'mongoose';
-import { IRanking } from '../types';
+import { IRanking } from '../types.js';
 
 const RankingSchema = new Schema<IRanking>(
   {

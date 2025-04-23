@@ -1,5 +1,5 @@
 import { Schema, model } from 'mongoose';
-import { ILightNovelDocument, ILightNovelTitle } from '../types';
+import { ILightNovelDocument, ILightNovelTitle } from '../types.js';
 
 const lightNovelSchema = new Schema<ILightNovelDocument>({
   title: {

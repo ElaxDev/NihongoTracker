@@ -1,9 +1,9 @@
-import User from '../models/user.model';
-import Log from '../models/log.model';
+import User from '../models/user.model.js';
+import Log from '../models/log.model.js';
 import { Request, Response, NextFunction } from 'express';
-import { updateRequest } from '../types';
-import { customError } from '../middlewares/errorMiddleware';
-import uploadFile from '../services/uploadFile';
+import { updateRequest } from '../types.js';
+import { customError } from '../middlewares/errorMiddleware.js';
+import uploadFile from '../services/uploadFile.js';
 
 export async function updateUser(
   req: Request,

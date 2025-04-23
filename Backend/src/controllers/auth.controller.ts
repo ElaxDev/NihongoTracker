@@ -1,8 +1,8 @@
-import User from '../models/user.model';
+import User from '../models/user.model.js';
 import { Request, Response, NextFunction } from 'express';
-import generateToken from '../libs/jwt';
-import { ILogin, IRegister } from '../types';
-import { customError } from '../middlewares/errorMiddleware';
+import generateToken from '../libs/jwt.js';
+import { ILogin, IRegister } from '../types.js';
+import { customError } from '../middlewares/errorMiddleware.js';
 
 export async function register(
   req: Request,

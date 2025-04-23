@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
-import Media from '../models/media.model';
-import { customError } from '../middlewares/errorMiddleware';
+import Media from '../models/media.model.js';
+import { customError } from '../middlewares/errorMiddleware.js';
 
 export async function getMedia(
   req: Request,

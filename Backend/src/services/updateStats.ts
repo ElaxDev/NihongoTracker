@@ -1,8 +1,8 @@
 import { Response, NextFunction } from 'express';
-import { IEditedFields, ILog, IStats, IUser } from '../types';
-import { calculateLevel, calculateXp } from './calculateLevel';
-import { customError } from '../middlewares/errorMiddleware';
-import User from '../models/user.model';
+import { IEditedFields, ILog, IStats, IUser } from '../types.js';
+import { calculateLevel, calculateXp } from './calculateLevel.js';
+import { customError } from '../middlewares/errorMiddleware.js';
+import User from '../models/user.model.js';
 
 function updateField(
   newValue: number | undefined,

@@ -1,5 +1,5 @@
 import { Schema, model } from 'mongoose';
-import { ILog, IEditedFields } from '../types';
+import { ILog, IEditedFields } from '../types.js';
 
 const editedFieldsSchema = new Schema<IEditedFields>(
   {

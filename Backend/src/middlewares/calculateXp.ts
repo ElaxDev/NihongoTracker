@@ -1,8 +1,8 @@
 import { Request, Response, NextFunction } from 'express';
 import { ParamsDictionary } from 'express-serve-static-core';
-import Log from '../models/log.model';
-import { IImportLogs, ILog } from '../types';
-import { customError } from './errorMiddleware';
+import Log from '../models/log.model.js';
+import { IImportLogs, ILog } from '../types.js';
+import { customError } from './errorMiddleware.js';
 
 const XP_FACTOR_TIME = 5;
 const XP_FACTOR_PAGES = 5;

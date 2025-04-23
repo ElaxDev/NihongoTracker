@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { getMedia, searchMedia } from '../controllers/media.controller';
+import { getMedia, searchMedia } from '../controllers/media.controller.js';
 
 const router = Router();
 

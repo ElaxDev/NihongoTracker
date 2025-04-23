@@ -1,7 +1,7 @@
-import User from '../models/user.model';
+import User from '../models/user.model.js';
 import { Request, Response, NextFunction } from 'express';
-import { IUser } from '../types';
-import { customError } from '../middlewares/errorMiddleware';
+import { IUser } from '../types.js';
+import { customError } from '../middlewares/errorMiddleware.js';
 
 export async function deleteUserById(
   req: Request,

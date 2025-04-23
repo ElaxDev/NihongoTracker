@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import axios from 'axios';
-import { customError } from './errorMiddleware';
-import { IUser } from '../types';
+import { customError } from './errorMiddleware.js';
+import { IUser } from '../types.js';
 
 type manabeLogs = {
   _id: string;

@@ -1,5 +1,5 @@
 import { ParamsDictionary } from 'express-serve-static-core';
-import { ICreateLog } from '../types';
+import { ICreateLog } from '../types.js';
 import { Router } from 'express';
 import {
   getLog,
@@ -8,12 +8,13 @@ import {
   updateLog,
   importLogs,
   assignMedia,
-} from '../controllers/logs.controller';
-import { calculateXp } from '../middlewares/calculateXp';
-import { protect } from '../libs/authMiddleware';
+  createImportedMedia,
+} from '../controllers/logs.controller.js';
+import { calculateXp } from '../middlewares/calculateXp.js';
+import { protect } from '../libs/authMiddleware.js';
 // import multer from 'multer';
 // import { csvToArray } from '../middlewares/csvToArray';
-import getLogsFromAPI from '../middlewares/getLogs';
+import getLogsFromAPI from '../middlewares/getLogs.js';
 
 const router = Router();
 // const upload = multer();
@@ -28,6 +29,7 @@ const router = Router();
 //   importLogs
 // );
 
+router.post('/test', createImportedMedia);
 router.post('/importlogs', protect, getLogsFromAPI, calculateXp, importLogs);
 
 router.put('/assign-media', protect, assignMedia);

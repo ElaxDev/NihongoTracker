@@ -1,6 +1,6 @@
 import jwt from 'jsonwebtoken';
 import { Response } from 'express';
-import { customError } from '../middlewares/errorMiddleware';
+import { customError } from '../middlewares/errorMiddleware.js';
 
 export default function generateToken(res: Response, id: string) {
   const privateKey = process.env.TOKEN_SECRET;

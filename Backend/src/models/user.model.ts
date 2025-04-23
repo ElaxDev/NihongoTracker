@@ -1,8 +1,8 @@
 import { Schema, model } from 'mongoose';
-import { IUser, userRoles } from '../types';
+import { IUser, userRoles } from '../types.js';
 import bcrypt from 'bcryptjs';
-import Log from './log.model';
-import { calculateXp } from '../services/calculateLevel';
+import Log from './log.model.js';
+import { calculateXp } from '../services/calculateLevel.js';
 
 const UserSchema = new Schema<IUser>(
   {

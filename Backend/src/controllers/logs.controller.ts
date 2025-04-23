@@ -1,12 +1,13 @@
 import { Request, Response, NextFunction } from 'express';
 import { ParamsDictionary } from 'express-serve-static-core';
-import Media from '../models/media.model';
-import { ILog, IEditedFields, ICreateLog, IMediaDocument } from '../types';
-import Log from '../models/log.model';
-import User from '../models/user.model';
+import Media from '../models/media.model.js';
+import { ILog, IEditedFields, ICreateLog, IMediaDocument } from '../types.js';
+import Log from '../models/log.model.js';
+import User from '../models/user.model.js';
 import { PipelineStage, Types } from 'mongoose';
-import { customError } from '../middlewares/errorMiddleware';
-import updateStats from '../services/updateStats';
+import { customError } from '../middlewares/errorMiddleware.js';
+import updateStats from '../services/updateStats.js';
+import { searchAnilist } from '../services/searchAnilist.js';
 
 export async function getUserLogs(
   req: Request,
@@ -213,9 +214,9 @@ async function createLogFunction(
     date,
     chars,
   });
+  if (!newLog) throw new customError('Log could not be created', 500);
   const savedLog = await newLog.save();
   res.locals.log = savedLog;
-  console.timeEnd('createLogFunction');
   await updateStats(res, next);
   return savedLog;
 }
@@ -241,6 +242,30 @@ export async function createLog(
 interface IImportStats {
   listeningXp: number;
   readingXp: number;
+  logsMediaId: string[];
+}
+
+export async function createImportedMedia(
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
+  const { logsMediaId } = req.body;
+  try {
+    const mediaData = await searchAnilist(
+      undefined,
+      undefined,
+      undefined,
+      logsMediaId
+    );
+    if (mediaData.length === 0) {
+      throw new customError('No media found', 404);
+    }
+    const media = await Media.insertMany(mediaData);
+    return res.status(200).json(media);
+  } catch (error) {
+    return next(error as customError);
+  }
 }
 
 export async function importLogs(
@@ -251,7 +276,7 @@ export async function importLogs(
   const logs: ILog[] = req.body.logs;
   try {
     console.time('importLogs');
-    const importStats: IImportStats = logs.reduce(
+    const importStats: IImportStats = logs.reduce<IImportStats>(
       (acc, log) => {
         if (
           log.type === 'video' ||
@@ -266,9 +291,12 @@ export async function importLogs(
         ) {
           acc.readingXp += log.xp;
         }
+        if (log.mediaId) {
+          acc.logsMediaId.push(log.mediaId);
+        }
         return acc;
       },
-      { listeningXp: 0, readingXp: 0 }
+      { listeningXp: 0, readingXp: 0, logsMediaId: [] }
     );
 
     res.locals.importedStats = importStats;
@@ -280,7 +308,8 @@ export async function importLogs(
     const user = await User.findById(res.locals.user.id);
     if (!user) throw new customError('User not found', 404);
     user.lastImport = new Date();
-    user.save();
+    const savedUser = await user.save();
+    if (!savedUser) throw new customError('User could not be updated', 500);
 
     let statusMessage = `${insertedLogs.length} log${
       insertedLogs.length > 1 ? 's' : ''

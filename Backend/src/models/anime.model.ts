@@ -1,5 +1,5 @@
 import { Schema, model } from 'mongoose';
-import { IAnimeDocument } from '../types';
+import { IAnimeDocument } from '../types.js';
 
 const AnimeSchema = new Schema<IAnimeDocument>({
   sources: {

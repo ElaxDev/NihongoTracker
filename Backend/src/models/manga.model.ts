@@ -1,5 +1,5 @@
 import { Schema, model } from 'mongoose';
-import { IMangaDocument } from '../types';
+import { IMangaDocument } from '../types.js';
 
 const mangaSchema = new Schema<IMangaDocument>({
   title: {

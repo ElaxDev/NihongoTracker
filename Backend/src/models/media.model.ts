@@ -1,5 +1,5 @@
 import { Schema, model } from 'mongoose';
-import { IMediaDocument, IMediaTitle } from '../types';
+import { IMediaDocument, IMediaTitle } from '../types.js';
 
 const MediaTitle = new Schema<IMediaTitle>(
   {
