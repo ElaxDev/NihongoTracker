@@ -1,14 +1,14 @@
 import { Router } from 'express';
 import { ParamsDictionary } from 'express-serve-static-core';
-import { ILog, userRoles } from '../types';
+import { ILog, userRoles } from '../types.js';
 import {
   updateUserById,
   deleteUserById,
-} from '../controllers/admin.controller';
-import { deleteLog, updateLog } from '../controllers/logs.controller';
-import { protect } from '../libs/authMiddleware';
-import { checkPermission } from '../middlewares/checkPermission';
-import { calculateXp } from '../middlewares/calculateXp';
+} from '../controllers/admin.controller.js';
+import { deleteLog, updateLog } from '../controllers/logs.controller.js';
+import { protect } from '../libs/authMiddleware.js';
+import { checkPermission } from '../middlewares/checkPermission.js';
+import { calculateXp } from '../middlewares/calculateXp.js';
 
 const router = Router();
 
