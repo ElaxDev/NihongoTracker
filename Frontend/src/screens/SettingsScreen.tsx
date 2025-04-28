@@ -3,7 +3,7 @@ import { updateUserFn, importLogsFn, clearUserDataFn } from '../api/trackerApi';
 import { toast } from 'react-toastify';
 import { AxiosError } from 'axios';
 import { ILoginResponse } from '../types';
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useUserDataStore } from '../store/userData';
 import Loader from '../components/Loader';
 import ThemeSwitcher from '../components/ThemeSwitcher';
@@ -33,10 +33,17 @@ function SettingsScreen() {
     },
   });
 
+  const queryClient = useQueryClient();
+
   const { mutate: syncLogs, isPending: isSyncPending } = useMutation({
     mutationFn: importLogsFn,
     onSuccess: (data) => {
       toast.success(data.message);
+      queryClient.invalidateQueries({
+        predicate: (query) => {
+          return ['logs', 'user'].includes(query.queryKey[0] as string);
+        },
+      });
     },
     onError: (error) => {
       console.log(error);
@@ -52,6 +59,11 @@ function SettingsScreen() {
     mutationFn: clearUserDataFn,
     onSuccess: (data) => {
       toast.success(data.message);
+      queryClient.invalidateQueries({
+        predicate: (query) => {
+          return ['logs', 'user'].includes(query.queryKey[0] as string);
+        },
+      });
     },
     onError: (error) => {
       console.log(error);

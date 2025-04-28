@@ -6,8 +6,8 @@
   "node": ">=18",
   "type": "module",
   "scripts": {
-    "dev": "tsx src/index.ts",
-    "tsc": "tsc",
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc",
     "start": "node build/index.js"
   },
   "author": "ElaxDev",

@@ -12,7 +12,7 @@ const MediaTitle = new Schema<IMediaTitle>(
 
 const MediaSchema = new Schema<IMediaDocument>({
   title: { type: MediaTitle, required: true },
-  contentId: { type: String, required: true },
+  contentId: { type: String, required: true, unique: true },
   contentImage: { type: String },
   coverImage: { type: String },
   description: { type: String },

@@ -8,7 +8,6 @@ import {
   updateLog,
   importLogs,
   assignMedia,
-  createImportedMedia,
 } from '../controllers/logs.controller.js';
 import { calculateXp } from '../middlewares/calculateXp.js';
 import { protect } from '../libs/authMiddleware.js';
@@ -29,7 +28,6 @@ const router = Router();
 //   importLogs
 // );
 
-router.post('/test', createImportedMedia);
 router.post('/importlogs', protect, getLogsFromAPI, calculateXp, importLogs);
 
 router.put('/assign-media', protect, assignMedia);

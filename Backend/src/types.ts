@@ -160,6 +160,24 @@ export interface IStats {
   listeningXpToCurrentLevel: number;
 }
 
+export interface SearchAnilistArgs {
+  search?: string | null;
+  ids?: number[] | null;
+  type?: 'ANIME' | 'MANGA' | null;
+  format?:
+    | 'TV'
+    | 'TV_SHORT'
+    | 'MOVIE'
+    | 'SPECIAL'
+    | 'OVA'
+    | 'ONA'
+    | 'MUSIC'
+    | 'MANGA'
+    | 'NOVEL'
+    | 'ONE_SHOT'
+    | null;
+}
+
 export interface IEditedFields {
   episodes?: number;
   pages?: number;
@@ -202,7 +220,7 @@ export interface AnilistSearchResult {
 export interface ILog extends Document {
   user: Types.ObjectId;
   type: 'reading' | 'anime' | 'vn' | 'video' | 'manga' | 'audio' | 'other';
-  mediaId?: Types.ObjectId;
+  mediaId?: string;
   xp: number;
   private: boolean;
   adult: boolean;

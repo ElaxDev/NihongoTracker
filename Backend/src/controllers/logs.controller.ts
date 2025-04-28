@@ -4,7 +4,7 @@ import Media from '../models/media.model.js';
 import { ILog, IEditedFields, ICreateLog, IMediaDocument } from '../types.js';
 import Log from '../models/log.model.js';
 import User from '../models/user.model.js';
-import { PipelineStage, Types } from 'mongoose';
+import { ObjectId, PipelineStage, Types } from 'mongoose';
 import { customError } from '../middlewares/errorMiddleware.js';
 import updateStats from '../services/updateStats.js';
 import { searchAnilist } from '../services/searchAnilist.js';
@@ -242,30 +242,36 @@ export async function createLog(
 interface IImportStats {
   listeningXp: number;
   readingXp: number;
-  logsMediaId: string[];
+  anilistMediaId: number[];
 }
 
-export async function createImportedMedia(
-  req: Request,
-  res: Response,
-  next: NextFunction
-) {
-  const { logsMediaId } = req.body;
-  try {
-    const mediaData = await searchAnilist(
-      undefined,
-      undefined,
-      undefined,
-      logsMediaId
-    );
-    if (mediaData.length === 0) {
-      throw new customError('No media found', 404);
-    }
-    const media = await Media.insertMany(mediaData);
-    return res.status(200).json(media);
-  } catch (error) {
-    return next(error as customError);
+async function createImportedMedia(userId: ObjectId, mediaIds?: number[]) {
+  let logsMediaId: number[] | undefined;
+  logsMediaId = mediaIds?.filter((mediaId) => {
+    return mediaId !== undefined && mediaId !== null;
+  });
+  if (!logsMediaId) {
+    const userLogs = await Log.find({ user: userId });
+    logsMediaId = userLogs
+      .map((log) => log.mediaId ?? '')
+      .filter(Boolean)
+      .map((mediaId) => parseInt(mediaId as string, 10));
   }
+  const uniqueMediaId = [...new Set(logsMediaId)];
+
+  if (uniqueMediaId.length === 0) {
+    throw new customError('No media to import', 404);
+  }
+  const mediaData = await searchAnilist({ ids: uniqueMediaId });
+
+  if (mediaData.length === 0) {
+    throw new customError('No media found', 404);
+  }
+  const media = await Media.insertMany(mediaData, { ordered: false });
+  if (!media) {
+    throw new customError('Media could not be created', 500);
+  }
+  return media;
 }
 
 export async function importLogs(
@@ -291,12 +297,16 @@ export async function importLogs(
         ) {
           acc.readingXp += log.xp;
         }
-        if (log.mediaId) {
-          acc.logsMediaId.push(log.mediaId);
+        if (
+          (log.mediaId && log.type === 'anime') ||
+          log.type === 'manga' ||
+          log.type === 'reading'
+        ) {
+          acc.anilistMediaId.push(parseInt(log.mediaId as string, 10));
         }
         return acc;
       },
-      { listeningXp: 0, readingXp: 0, logsMediaId: [] }
+      { listeningXp: 0, readingXp: 0, anilistMediaId: [] }
     );
 
     res.locals.importedStats = importStats;
@@ -311,6 +321,11 @@ export async function importLogs(
     const savedUser = await user.save();
     if (!savedUser) throw new customError('User could not be updated', 500);
 
+    const createdMedia = await createImportedMedia(
+      res.locals.user._id,
+      importStats.anilistMediaId
+    );
+
     let statusMessage = `${insertedLogs.length} log${
       insertedLogs.length > 1 ? 's' : ''
     } imported successfully`;
@@ -321,6 +336,12 @@ export async function importLogs(
       } failed to import`;
     } else if (logs.length === 0) {
       statusMessage = 'No logs to import, your logs are up to date';
+    }
+
+    if (createdMedia.length > 0) {
+      statusMessage += `\n${createdMedia.length} media${
+        createdMedia.length > 1 ? 's' : ''
+      } imported successfully`;
     }
     console.timeEnd('importLogs');
     return res.status(200).json({

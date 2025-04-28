@@ -216,7 +216,7 @@ export async function getImmersionList(
         $lookup: {
           from: 'media', // The name of the Media collection
           localField: '_id',
-          foreignField: '_id',
+          foreignField: 'contentId',
           as: 'mediaDetails',
         },
       },
