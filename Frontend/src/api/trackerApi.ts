@@ -12,6 +12,7 @@ import {
   ILogsParams,
   IMediaDocument,
   IImmersionList,
+  IAverageColor,
 } from '../types';
 
 const BASE_URL = '/api/';
@@ -143,5 +144,13 @@ export async function getImmersionListFn(username: string) {
   const { data } = await api.get<IImmersionList>(
     `users/${username}/immersionlist`
   );
+  return data;
+}
+
+export async function getAverageColorFn(imageUrl?: string) {
+  if (!imageUrl) return null;
+  const { data } = await api.get<IAverageColor>(`media/utils/avgcolor`, {
+    params: { imageUrl },
+  });
   return data;
 }

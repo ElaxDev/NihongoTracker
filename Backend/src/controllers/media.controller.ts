@@ -1,6 +1,31 @@
 import { Request, Response, NextFunction } from 'express';
 import Media from '../models/media.model.js';
 import { customError } from '../middlewares/errorMiddleware.js';
+import fac from 'fast-average-color-node';
+
+export async function getAverageColor(
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
+  try {
+    const { imageUrl } = req.query as { imageUrl: string };
+    if (!imageUrl) {
+      throw new customError('Image URL is required', 400);
+    }
+
+    const color = await fac.getAverageColor(imageUrl, {
+      algorithm: 'simple',
+      mode: 'speed',
+      width: 50,
+      height: 50,
+    });
+
+    return res.status(200).json(color);
+  } catch (error) {
+    return next(error as customError);
+  }
+}
 
 export async function getMedia(
   req: Request,
@@ -15,7 +40,6 @@ export async function getMedia(
       return res.status(400).json({ message: 'Invalid query parameters' });
     const media = await Media.findOne(idQuery);
     if (!media) return res.status(404).json({ message: 'Media not found' });
-    console.log(media);
     return res.status(200).json(media);
   } catch (error) {
     return next(error as customError);

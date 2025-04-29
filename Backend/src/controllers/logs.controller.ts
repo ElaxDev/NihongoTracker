@@ -166,7 +166,6 @@ async function createLogFunction(
     chars,
     mediaData,
   } = logData;
-  console.time('createLogFunction');
   let logMedia;
   if (mediaId) {
     logMedia = await Media.findOne({ contentId: mediaId });
@@ -247,10 +246,13 @@ interface IImportStats {
 
 async function createImportedMedia(userId: ObjectId, mediaIds?: number[]) {
   let logsMediaId: number[] | undefined;
+
   logsMediaId = mediaIds?.filter((mediaId) => {
     return mediaId !== undefined && mediaId !== null;
   });
-  if (!logsMediaId) {
+
+  if (logsMediaId && logsMediaId.length === 0) {
+    console.log('No mediaId provided, fetching from logs');
     const userLogs = await Log.find({ user: userId });
     logsMediaId = userLogs
       .map((log) => log.mediaId ?? '')
@@ -260,18 +262,31 @@ async function createImportedMedia(userId: ObjectId, mediaIds?: number[]) {
   const uniqueMediaId = [...new Set(logsMediaId)];
 
   if (uniqueMediaId.length === 0) {
-    throw new customError('No media to import', 404);
+    return [];
   }
   const mediaData = await searchAnilist({ ids: uniqueMediaId });
-
   if (mediaData.length === 0) {
-    throw new customError('No media found', 404);
+    return [];
   }
-  const media = await Media.insertMany(mediaData, { ordered: false });
-  if (!media) {
-    throw new customError('Media could not be created', 500);
+
+  const existingMedia = await Media.find({
+    contentId: { $in: mediaData.map((media) => media.contentId) },
+  }).select('contentId');
+
+  const existingContentIds = new Set(
+    existingMedia.map((media) => media.contentId)
+  );
+
+  const newMediaData = mediaData.filter(
+    (media) => !existingContentIds.has(media.contentId)
+  );
+
+  if (newMediaData.length > 0) {
+    const media = await Media.insertMany(newMediaData, { ordered: false });
+    return media;
   }
-  return media;
+
+  return [];
 }
 
 export async function importLogs(
@@ -281,7 +296,6 @@ export async function importLogs(
 ) {
   const logs: ILog[] = req.body.logs;
   try {
-    console.time('importLogs');
     const importStats: IImportStats = logs.reduce<IImportStats>(
       (acc, log) => {
         if (
@@ -298,17 +312,19 @@ export async function importLogs(
           acc.readingXp += log.xp;
         }
         if (
-          (log.mediaId && log.type === 'anime') ||
-          log.type === 'manga' ||
-          log.type === 'reading'
+          log.mediaId &&
+          (log.type === 'anime' ||
+            log.type === 'manga' ||
+            log.type === 'reading')
         ) {
-          acc.anilistMediaId.push(parseInt(log.mediaId as string, 10));
+          if (!acc.anilistMediaId.includes(parseInt(log.mediaId))) {
+            acc.anilistMediaId.push(parseInt(log.mediaId));
+          }
         }
         return acc;
       },
       { listeningXp: 0, readingXp: 0, anilistMediaId: [] }
     );
-
     res.locals.importedStats = importStats;
     const insertedLogs = await Log.insertMany(logs, {
       ordered: false,
@@ -343,7 +359,6 @@ export async function importLogs(
         createdMedia.length > 1 ? 's' : ''
       } imported successfully`;
     }
-    console.timeEnd('importLogs');
     return res.status(200).json({
       message: statusMessage,
     });

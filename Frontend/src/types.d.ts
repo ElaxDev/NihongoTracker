@@ -275,3 +275,14 @@ export interface IMediaDocument {
   description?: string;
   type: 'anime' | 'manga' | 'reading' | 'vn' | 'video';
 }
+
+export interface IAverageColor {
+  rgb: string;
+  rgba: string;
+  hex: string;
+  hexa: string;
+  value: [number, number, number, number];
+  isDark: boolean;
+  isLight: boolean;
+  error?: Error;
+}

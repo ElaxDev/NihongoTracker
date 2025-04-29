@@ -43,7 +43,7 @@ function transformList(list: manabeLogs[], user: Omit<IUser, 'password'>) {
     MANGA: { logType: 'manga', parametro: 'pages', tiempo: true, chars: true },
     LECTURA: { logType: 'reading', parametro: 'chars', tiempo: true },
     TIEMPOLECTURA: { logType: 'reading', parametro: 'time', chars: true },
-    VN: { logType: 'vn', parametro: 'chars', tiempo: true },
+    VN: { logType: 'vn', parametro: 'chars', tiempo: true, officialId: true },
     VIDEO: { logType: 'video', parametro: 'time' },
     AUDIO: { logType: 'audio', parametro: 'time' },
     OUTPUT: { logType: 'other', parametro: 'time' },
@@ -75,7 +75,6 @@ export default async function getLogsFromAPI(
   next: NextFunction
 ) {
   try {
-    console.time('getLogsFromAPI');
     const user: Omit<IUser, 'password'> = res.locals.user;
     if (!user) throw new customError('User not found', 404);
     if (!user.discordId) throw new customError('Discord ID not set', 400);
@@ -93,7 +92,6 @@ export default async function getLogsFromAPI(
     });
     const logs = transformList(response.data, user);
     req.body.logs = logs;
-    console.timeEnd('getLogsFromAPI');
     return next();
   } catch (error) {
     return next(error as customError);

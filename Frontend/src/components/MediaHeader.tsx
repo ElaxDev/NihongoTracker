@@ -1,11 +1,11 @@
 import MediaNavbar from './MediaNavbar';
 import { Outlet, useNavigate, useParams } from 'react-router-dom';
-import { getMediaFn } from '../api/trackerApi';
+import { getMediaFn, getAverageColorFn } from '../api/trackerApi';
 import { AxiosError } from 'axios';
 import { useQuery } from '@tanstack/react-query';
 import { toast } from 'react-toastify';
 import { OutletMediaContextType } from '../types';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 
 export default function MediaHeader() {
   const { mediaType, mediaId } = useParams<{
@@ -13,18 +13,7 @@ export default function MediaHeader() {
     mediaId: string;
   }>();
   const navigate = useNavigate();
-
-  useEffect(() => {
-    if (
-      mediaType !== 'anime' &&
-      mediaType !== 'manga' &&
-      mediaType !== 'vn' &&
-      mediaType !== 'video' &&
-      mediaType !== 'reading'
-    ) {
-      navigate('/404');
-    }
-  }, [mediaType, navigate]);
+  const [averageColor, setAverageColor] = useState<string>('#ffffff');
 
   const {
     data: media,
@@ -57,6 +46,32 @@ export default function MediaHeader() {
     ));
   };
 
+  useEffect(() => {
+    if (
+      mediaType !== 'anime' &&
+      mediaType !== 'manga' &&
+      mediaType !== 'vn' &&
+      mediaType !== 'video' &&
+      mediaType !== 'reading'
+    ) {
+      navigate('/404');
+    }
+  }, [mediaType, navigate, media]);
+
+  useEffect(() => {
+    async function getAvgColor() {
+      if (media?.contentImage) {
+        const color = await getAverageColorFn(media?.contentImage);
+        console.log(color);
+        if (color) {
+          return setAverageColor(color.hex);
+        }
+        setAverageColor('#ffffff');
+      }
+    }
+    getAvgColor();
+  }, [media]);
+
   return (
     <div className="flex flex-col justify-center bg-base-200 text-base-content">
       <div
@@ -65,9 +80,14 @@ export default function MediaHeader() {
         }`}
         style={{
           backgroundImage: `url(${!isLoadingMedia ? media?.coverImage : ''})`,
+          backgroundColor: averageColor,
         }}
       >
-        <div className="flex flex-col justify-end size-full bg-gradient-to-t from-shadow/[0.6] to-40% bg-cover" />
+        {media?.coverImage ? (
+          <div className="flex flex-col justify-end size-full bg-gradient-to-t from-shadow/[0.6] to-40% bg-cover" />
+        ) : (
+          <></>
+        )}
       </div>
 
       <div className="min-h-12 bg-base-100">
