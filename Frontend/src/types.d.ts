@@ -160,7 +160,10 @@ export interface IContentMedia {
 }
 
 export interface ICreateLog
-  extends Omit<ILog, '_id' | 'user' | 'xp' | 'editedFields'> {
+  extends Omit<
+    ILog,
+    '_id' | 'user' | 'xp' | 'editedFields' | 'createdAt' | 'updatedAt'
+  > {
   createMedia?: boolean;
   mediaData?: IContentMedia;
 }
@@ -172,7 +175,7 @@ export interface ILog {
   mediaId?: string;
   xp: number;
   private: boolean;
-  adult: boolean;
+  isAdult: boolean;
   description: string;
   editedFields?: IEditedFields | null;
   episodes?: number;
@@ -214,6 +217,12 @@ export interface AnilistSearchResult {
         large: string;
         color: string;
       };
+      synonyms: string[];
+      episodes?: number;
+      duration?: number;
+      chapters?: number;
+      volumes?: number;
+      isAdult: boolean;
       bannerImage: string;
       siteUrl: string;
       description: string;
@@ -278,7 +287,7 @@ export interface IMediaDocument extends Document {
   chapters?: number;
   volumes?: number;
   synonyms?: string[];
-  adult: boolean;
+  isAdult: boolean;
 }
 
 export interface IAverageColor {

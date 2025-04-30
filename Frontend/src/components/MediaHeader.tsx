@@ -93,7 +93,7 @@ export default function MediaHeader() {
         }}
       >
         {media?.coverImage ? (
-          <div className="flex flex-col justify-end size-full bg-gradient-to-t from-shadow/[0.6] to-40% bg-cover" />
+          <div className="flex flex-col justify-end size-full bg-linear-to-t from-shadow/[0.6] to-40% bg-cover" />
         ) : (
           <></>
         )}

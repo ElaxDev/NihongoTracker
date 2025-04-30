@@ -139,7 +139,14 @@ function AnimeLogs({ logs }: AnimeLogsProps) {
             contentTitleEnglish: selectedAnime.title.contentTitleEnglish,
             contentTitleRomaji: selectedAnime.title.contentTitleRomaji,
           },
-        },
+          isAdult: selectedAnime.isAdult,
+          ...(selectedAnime.episodes && {
+            episodes: selectedAnime.episodes,
+          }),
+          ...(selectedAnime.duration && {
+            duration: selectedAnime.duration,
+          }),
+        } as IMediaDocument,
       },
     ]);
     setShouldAnilistSearch(false);
@@ -188,7 +195,7 @@ function AnimeLogs({ logs }: AnimeLogsProps) {
                               onChange={() => handleCheckboxChange(log)}
                             />
                           </label>
-                          <div className="flex-grow">
+                          <div className="grow">
                             <h2 className="text-lg inline-block font-medium align-middle">
                               {log.description}
                             </h2>
@@ -244,7 +251,7 @@ function AnimeLogs({ logs }: AnimeLogsProps) {
                           onChange={() => setSelectedAnime(anime)}
                         />
                       </label>
-                      <div className="flex-grow">
+                      <div className="grow">
                         <h2 className="text-lg inline-block font-medium align-middle">
                           {anime.title.contentTitleRomaji}
                         </h2>

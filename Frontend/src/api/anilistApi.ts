@@ -2,15 +2,8 @@ import { gql, GraphQLClient } from 'graphql-request';
 import { AnilistSearchResult, IMediaDocument } from '../types';
 
 const query = gql`
-  query (
-    $search: String
-    $type: MediaType
-    $format: MediaFormat
-    $page: Int
-    $perPage: Int
-    $ids: [Int]
-  ) {
-    Page(page: $page, perPage: $perPage) {
+  query ($search: String, $ids: [Int], $type: MediaType, $format: MediaFormat) {
+    Page {
       pageInfo {
         total
         currentPage
@@ -34,13 +27,14 @@ const query = gql`
         type
         format
         coverImage {
-          extraLarge
-          medium
           large
-          color
         }
+        episodes
+        duration
+        chapters
+        volumes
+        synonyms
         bannerImage
-        siteUrl
         description
       }
     }
@@ -88,12 +82,30 @@ export async function searchAnilist(
     contentImage: media.coverImage.large,
     coverImage: media.bannerImage,
     description: media.description,
-    type: ((media.type.toLowerCase() as 'anime' | 'manga') === 'anime'
-      ? 'anime'
-      : media.format === 'MANGA' || media.format === 'ONE_SHOT'
-      ? 'manga'
-      : 'reading') as 'anime' | 'manga' | 'reading',
-  }));
+    type: determineMediaType(media.type, media.format),
+    ...(media.synonyms.length && {
+      synonyms: media.synonyms.map((synonym) => synonym.trim()),
+    }),
+    ...(media.type === 'ANIME' && {
+      episodes: media.episodes,
+      episodeDuration: media.duration,
+    }),
+    ...(media.type === 'MANGA' && {
+      chapters: media.chapters,
+      volumes: media.volumes,
+    }),
+    isAdult: media.isAdult,
+  })) as IMediaDocument[];
 
   return media;
+}
+
+function determineMediaType(
+  type: string,
+  format: string
+): 'anime' | 'manga' | 'reading' {
+  if (type.toLowerCase() === 'anime' || type.toLowerCase() === 'music')
+    return 'anime';
+  if (format === 'MANGA' || format === 'ONE_SHOT') return 'manga';
+  return 'reading';
 }

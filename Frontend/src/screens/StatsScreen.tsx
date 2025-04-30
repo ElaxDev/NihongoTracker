@@ -1,14 +1,14 @@
 import { useQuery } from '@tanstack/react-query';
 import { getUserLogsFn } from '../api/trackerApi';
 import { useOutletContext } from 'react-router-dom';
-import { OutletContextType } from '../types';
+import { OutletProfileContextType } from '../types';
 import { ILog } from '../types';
 import PieChart from '../components/PieChart';
 import LineChart from '../components/LineChart';
 import { ChartArea, ScriptableContext } from 'chart.js';
 
 function StatsScreen() {
-  const { user, username } = useOutletContext<OutletContextType>();
+  const { user, username } = useOutletContext<OutletProfileContextType>();
 
   const totalHours =
     user &&
@@ -315,7 +315,7 @@ function StatsScreen() {
   };
 
   return (
-    <div className="2xl:max-w-screen-2xl 2xl:min-w-[50%] min-w-full 2xl:px-0 px-10 mb-24 mt-4">
+    <div className="2xl:max-w-(--breakpoint-2xl) 2xl:min-w-[50%] min-w-full 2xl:px-0 px-10 mb-24 mt-4">
       <div className="grid lg:grid-cols-[20%_80%] gap-5">
         <div className="hidden lg:block">
           <h2>Sidebar</h2>

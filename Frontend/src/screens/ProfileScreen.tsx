@@ -56,7 +56,7 @@ function ProfileScreen() {
     (readingProgressXP / totalReadingXpToLevelUp) * 100;
   return (
     <div className="flex flex-col items-center py-8">
-      <div className="2xl:max-w-screen-2xl 2xl:min-w-[50%] min-w-full 2xl:px-0 px-10">
+      <div className="2xl:max-w-(--breakpoint-2xl) 2xl:min-w-[50%] min-w-full 2xl:px-0 px-10">
         <div className="grid grid-cols-2 gap-10">
           <div className="flex flex-col shrink gap-5">
             <div className="card w-full bg-base-100">

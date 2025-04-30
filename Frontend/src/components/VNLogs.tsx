@@ -163,7 +163,7 @@ function VNLogs({ logs }: VNLogsProps) {
                               onChange={() => handleCheckboxChange(log)}
                             />
                           </label>
-                          <div className="flex-grow">
+                          <div className="grow">
                             <h2 className="text-lg inline-block font-medium align-middle">
                               {log.description}
                             </h2>
@@ -211,7 +211,7 @@ function VNLogs({ logs }: VNLogsProps) {
                           onChange={() => setSelectedVN(VN)}
                         />
                       </label>
-                      <div className="flex-grow">
+                      <div className="grow">
                         <h2 className="text-lg inline-block font-medium align-middle">
                           {VN.title.contentTitleRomaji
                             ? VN.title.contentTitleRomaji

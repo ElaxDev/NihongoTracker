@@ -193,6 +193,7 @@ function SettingsScreen() {
                   placeholder="Username"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
+                  autoComplete="new-off"
                 />
               </label>
             </div>
@@ -206,6 +207,7 @@ function SettingsScreen() {
                   placeholder="Password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
+                  autoComplete="new-password"
                 />
               </label>
             </div>

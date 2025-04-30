@@ -23,7 +23,7 @@ const MediaBaseSchema = new Schema<IMediaDocument>(
       enum: ['anime', 'manga', 'reading', 'vn', 'video'],
     },
     synonyms: { type: [String] },
-    adult: { type: Boolean, default: false },
+    isAdult: { type: Boolean, default: false },
   },
   { discriminatorKey: 'type', collection: 'media' }
 );

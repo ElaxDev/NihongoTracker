@@ -39,8 +39,8 @@ export default function ProfileHeader() {
           backgroundImage: `url(${!isLoadingUser ? user?.banner : ''})`,
         }}
       >
-        <div className="flex flex-col justify-end size-full bg-gradient-to-t from-shadow/[0.6] to-40% bg-cover">
-          <div className="flex items-end min-w-80 px-5 2xl:max-w-screen-2xl 2xl:px-24 mx-auto w-full mb-2">
+        <div className="flex flex-col justify-end size-full bg-linear-to-t from-shadow/[0.6] to-40% bg-cover">
+          <div className="flex items-end min-w-80 px-5 2xl:max-w-(--breakpoint-2xl) 2xl:px-24 mx-auto w-full mb-2">
             {isLoadingUser ? (
               <div className="skeleton h-24 w-24 shrink-0 rounded-full"></div>
             ) : (

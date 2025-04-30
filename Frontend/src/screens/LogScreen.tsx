@@ -131,7 +131,7 @@ function LogScreen() {
     setLogMediaName(
       group.title.contentTitleRomaji ?? group.title.contentTitleNative
     );
-    setLogImg(group.contentImage);
+    setLogImg(group.contentImage ?? '');
     setmediaDescription(group.description);
   }
 

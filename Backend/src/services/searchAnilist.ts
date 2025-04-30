@@ -38,6 +38,7 @@ const query = gql`
         chapters
         volumes
         synonyms
+        isAdult
         bannerImage
         description
       }

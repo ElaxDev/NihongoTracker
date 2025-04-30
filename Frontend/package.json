@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@fontsource/roboto": "^5.0.12",
+    "@tailwindcss/vite": "^4.1.5",
     "@tanstack/react-query": "^5.29.2",
     "axios": "^1.6.8",
     "chart.js": "^4.4.3",
@@ -35,7 +36,6 @@
   },
   "devDependencies": {
     "@stylistic/eslint-plugin-js": "^3.0.1",
-    "@tailwindcss/typography": "^0.5.12",
     "@types/lodash": "^4.17.6",
     "@types/luxon": "^3.4.2",
     "@types/react": "^18.2.56",
@@ -43,13 +43,11 @@
     "@typescript-eslint/eslint-plugin": "^7.0.2",
     "@typescript-eslint/parser": "^7.0.2",
     "@vitejs/plugin-react-swc": "^3.5.0",
-    "autoprefixer": "^10.4.19",
-    "daisyui": "^4.10.1",
+    "daisyui": "^5.0.32",
     "eslint": "^8.56.0",
     "eslint-plugin-react-hooks": "^4.6.0",
     "eslint-plugin-react-refresh": "^0.4.5",
-    "postcss": "^8.4.38",
-    "tailwindcss": "^3.4.3",
+    "tailwindcss": "^4.1.5",
     "typescript": "^5.2.2",
     "vite": "^5.1.4"
   }

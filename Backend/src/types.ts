@@ -143,7 +143,7 @@ export interface IMediaDocument extends Document {
   chapters?: number;
   volumes?: number;
   synonyms?: string[];
-  adult: boolean;
+  isAdult: boolean;
 }
 
 export interface IImportLogs {
@@ -221,6 +221,7 @@ export interface AnilistSearchResult {
       duration?: number;
       chapters?: number;
       volumes?: number;
+      isAdult: boolean;
       bannerImage: string;
       siteUrl: string;
       description: string;
@@ -234,14 +235,14 @@ export interface ILog extends Document {
   mediaId?: string;
   xp: number;
   private: boolean;
-  adult: boolean;
+  isAdult: boolean;
   description?: string;
   editedFields?: IEditedFields | null;
   episodes?: number;
   pages?: number;
   chars?: number;
   time?: number;
-  date: Date;
+  date?: Date;
 }
 
 export interface IContentMedia {

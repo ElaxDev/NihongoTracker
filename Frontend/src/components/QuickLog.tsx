@@ -16,7 +16,7 @@ function QuickLog() {
   const [pages, setPages] = useState<number>(0);
   const [hours, setHours] = useState<number>(0);
   const [minutes, setMinutes] = useState<number>(0);
-  const [contentId, setcontentId] = useState<number | undefined>(undefined);
+  const [contentId, setcontentId] = useState<string | undefined>(undefined);
   const [showTime, setShowTime] = useState<boolean>(false);
   const [isSuggestionsOpen, setIsSuggestionsOpen] = useState(false);
   const suggestionRef = useRef<HTMLDivElement>(null);
@@ -74,6 +74,9 @@ function QuickLog() {
       contentId,
       chars,
       pages,
+      date: new Date().toDateString(),
+      private: false,
+      isAdult: false,
     } as ICreateLog);
   }
 
@@ -88,18 +91,18 @@ function QuickLog() {
     }, 10);
   }
 
-  function setSelectedSuggestion(title: string, id: number) {
+  function setSelectedSuggestion(title: string, contentId: string) {
     setLogDescription(title);
-    setcontentId(id);
+    setcontentId(contentId);
   }
 
   function handleSuggestionClick(
     title: string,
-    id: number
+    contentId: string
   ): React.MouseEventHandler<HTMLLIElement> | undefined {
     return (event: React.MouseEvent<HTMLLIElement, MouseEvent>) => {
       event.stopPropagation();
-      setSelectedSuggestion(title, id);
+      setSelectedSuggestion(title, contentId);
       setIsSuggestionsOpen(false);
     };
   }
@@ -116,7 +119,7 @@ function QuickLog() {
         </div>
         <ul
           tabIndex={0}
-          className="dropdown-content z-[1] menu p-2 shadow bg-base-100 text-base-content rounded-box w-auto min-w-64"
+          className="dropdown-content z-1 menu p-2 shadow-sm bg-base-100 text-base-content rounded-box w-auto min-w-64"
         >
           <form onSubmit={logSubmit}>
             <label className="form-control w-full max-w-xs">
@@ -172,20 +175,20 @@ function QuickLog() {
                           <li>
                             <a>Loading...</a>
                           </li>
-                        ) : searchResult?.Page?.media.length === 0 ? (
+                        ) : searchResult?.length === 0 ? (
                           <li>
                             <a>No results found</a>
                           </li>
                         ) : null}
-                        {searchResult?.Page?.media.map((group, i) => (
+                        {searchResult?.map((group, i) => (
                           <li
                             key={i}
                             onClick={handleSuggestionClick(
-                              group.title.romaji,
-                              group.id
+                              group.title.contentTitleNative,
+                              group.contentId
                             )}
                           >
-                            <a>{group.title.romaji}</a>
+                            <a>{group.title.contentTitleNative}</a>
                           </li>
                         ))}
                       </ul>
