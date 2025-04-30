@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import Media from '../models/media.model.js';
+import { MediaBase } from '../models/media.model.js';
 import { customError } from '../middlewares/errorMiddleware.js';
 import fac from 'fast-average-color-node';
 
@@ -38,7 +38,7 @@ export async function getMedia(
       : {};
     if (idQuery.contentId === undefined)
       return res.status(400).json({ message: 'Invalid query parameters' });
-    const media = await Media.findOne(idQuery);
+    const media = await MediaBase.findOne(idQuery);
     if (!media) return res.status(404).json({ message: 'Media not found' });
     return res.status(200).json(media);
   } catch (error) {
@@ -61,7 +61,7 @@ export async function searchMedia(
     if (!title || !type)
       return res.status(400).json({ message: 'Invalid query parameters' });
 
-    const media = await Media.aggregate([
+    const media = await MediaBase.aggregate([
       {
         $match: {
           $text: { $search: title },

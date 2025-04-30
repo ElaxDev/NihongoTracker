@@ -1,7 +1,7 @@
 import User from '../models/user.model.js';
 import Log from '../models/log.model.js';
 import { Request, Response, NextFunction } from 'express';
-import { updateRequest } from '../types.js';
+import { IUpdateRequest } from '../types.js';
 import { customError } from '../middlewares/errorMiddleware.js';
 import uploadFile from '../services/uploadFile.js';
 
@@ -11,7 +11,7 @@ export async function updateUser(
   next: NextFunction
 ) {
   const { username, newPassword, newPasswordConfirm, password, discordId } =
-    req.body as updateRequest;
+    req.body as IUpdateRequest;
 
   try {
     const user = await User.findById(res.locals.user._id);

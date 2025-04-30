@@ -6,6 +6,7 @@ import { useQuery } from '@tanstack/react-query';
 import { toast } from 'react-toastify';
 import { OutletMediaContextType } from '../types';
 import { useEffect, useState } from 'react';
+import DOMPurify from 'dompurify';
 
 export default function MediaHeader() {
   const { mediaType, mediaId } = useParams<{
@@ -37,13 +38,21 @@ export default function MediaHeader() {
   }
 
   const renderDescription = (description: string) => {
-    const cleanedDescription = description.replace(/<br\s*\/?>/gi, '');
-    return cleanedDescription.split('\n').map((line, index) => (
-      <p key={index}>
-        {line}
-        <br />
-      </p>
-    ));
+    if (!/<[a-z][\s\S]*>/i.test(description)) {
+      // No HTML tags, render as plain text
+      return description.split('\n').map((line, index) => (
+        <p key={index}>
+          {line}
+          <br />
+        </p>
+      ));
+    }
+
+    // Render HTML safely
+    const sanitizedDescription = DOMPurify.sanitize(
+      description.replace(/<br\s*\/?>/gi, '<br />')
+    );
+    return <div dangerouslySetInnerHTML={{ __html: sanitizedDescription }} />;
   };
 
   useEffect(() => {

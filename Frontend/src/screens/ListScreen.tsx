@@ -1,5 +1,5 @@
 import { Link, useOutletContext } from 'react-router-dom';
-import { IImmersionList, OutletContextType } from '../types';
+import { IImmersionList, OutletProfileContextType } from '../types';
 import { getImmersionListFn } from '../api/trackerApi';
 import { useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
@@ -7,7 +7,7 @@ import { toast } from 'react-toastify';
 import Loader from '../components/Loader';
 
 function ListScreen() {
-  const { username } = useOutletContext<OutletContextType>();
+  const { username } = useOutletContext<OutletProfileContextType>();
   const [currentList, setCurrentList] = useState<keyof IImmersionList>('anime');
 
   const {

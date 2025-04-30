@@ -70,7 +70,6 @@ export async function calculateXp(
   next: NextFunction
 ) {
   try {
-    console.time('calculateXp');
     if (isImportLogs(req.body)) {
       const modifiedLogs = await Promise.all(
         req.body.logs.map((log) => calculateXpForLog(log, req))
@@ -80,7 +79,6 @@ export async function calculateXp(
       const modifiedLog = await calculateXpForLog(req.body, req);
       req.body = modifiedLog;
     }
-    console.timeEnd('calculateXp');
     return next();
   } catch (error) {
     return next(error as customError);

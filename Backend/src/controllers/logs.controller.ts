@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { ParamsDictionary } from 'express-serve-static-core';
-import Media from '../models/media.model.js';
+import { MediaBase, Anime, Manga, Reading } from '../models/media.model.js';
 import { ILog, IEditedFields, ICreateLog, IMediaDocument } from '../types.js';
 import Log from '../models/log.model.js';
 import User from '../models/user.model.js';
@@ -168,7 +168,7 @@ async function createLogFunction(
   } = logData;
   let logMedia;
   if (mediaId) {
-    logMedia = await Media.findOne({ contentId: mediaId });
+    logMedia = await MediaBase.findOne({ contentId: mediaId });
   }
 
   if (
@@ -178,7 +178,7 @@ async function createLogFunction(
     mediaId &&
     mediaData
   ) {
-    await Media.create({
+    await MediaBase.create({
       contentId: mediaId,
       title: {
         contentTitleNative: mediaData.contentTitleNative,
@@ -192,7 +192,7 @@ async function createLogFunction(
     });
   }
 
-  const newLogMedia = await Media.findOne({
+  const newLogMedia = await MediaBase.findOne({
     contentId: mediaId,
   });
 
@@ -241,52 +241,95 @@ export async function createLog(
 interface IImportStats {
   listeningXp: number;
   readingXp: number;
-  anilistMediaId: number[];
+  anilistMediaId: {
+    anime: number[];
+    manga: number[];
+    reading: number[];
+  };
 }
 
-async function createImportedMedia(userId: ObjectId, mediaIds?: number[]) {
-  let logsMediaId: number[] | undefined;
+async function createImportedMedia(
+  userId: ObjectId,
+  mediaIds?: IImportStats['anilistMediaId']
+) {
+  let logsMediaId: IImportStats['anilistMediaId'] | undefined;
+  let createdMediaCount = 0;
 
-  logsMediaId = mediaIds?.filter((mediaId) => {
-    return mediaId !== undefined && mediaId !== null;
-  });
+  logsMediaId = mediaIds;
 
-  if (logsMediaId && logsMediaId.length === 0) {
+  if (
+    logsMediaId &&
+    (logsMediaId.anime.length > 0 ||
+      logsMediaId.manga.length > 0 ||
+      logsMediaId.reading.length > 0)
+  ) {
     console.log('No mediaId provided, fetching from logs');
     const userLogs = await Log.find({ user: userId });
-    logsMediaId = userLogs
-      .map((log) => log.mediaId ?? '')
-      .filter(Boolean)
-      .map((mediaId) => parseInt(mediaId as string, 10));
-  }
-  const uniqueMediaId = [...new Set(logsMediaId)];
-
-  if (uniqueMediaId.length === 0) {
-    return [];
-  }
-  const mediaData = await searchAnilist({ ids: uniqueMediaId });
-  if (mediaData.length === 0) {
-    return [];
-  }
-
-  const existingMedia = await Media.find({
-    contentId: { $in: mediaData.map((media) => media.contentId) },
-  }).select('contentId');
-
-  const existingContentIds = new Set(
-    existingMedia.map((media) => media.contentId)
-  );
-
-  const newMediaData = mediaData.filter(
-    (media) => !existingContentIds.has(media.contentId)
-  );
-
-  if (newMediaData.length > 0) {
-    const media = await Media.insertMany(newMediaData, { ordered: false });
-    return media;
+    if (!userLogs) return 0;
+    const logsMediaId = userLogs.reduce<IImportStats['anilistMediaId']>(
+      (acc, log) => {
+        if (log.mediaId) {
+          if (log.type === 'anime') {
+            acc.anime.push(parseInt(log.mediaId));
+          } else if (log.type === 'manga') {
+            acc.manga.push(parseInt(log.mediaId));
+          } else if (log.type === 'reading') {
+            acc.reading.push(parseInt(log.mediaId));
+          }
+        }
+        return acc;
+      },
+      { anime: [], manga: [], reading: [] }
+    );
+    if (logsMediaId.anime.length > 0) {
+      logsMediaId.anime = [...new Set(logsMediaId.anime)];
+    }
+    if (logsMediaId.manga.length > 0) {
+      logsMediaId.manga = [...new Set(logsMediaId.manga)];
+    }
+    if (logsMediaId.reading.length > 0) {
+      logsMediaId.reading = [...new Set(logsMediaId.reading)];
+    }
   }
 
-  return [];
+  for (const type in logsMediaId) {
+    if (logsMediaId[type as keyof IImportStats['anilistMediaId']].length > 0) {
+      const existingMedia = await MediaBase.find({
+        contentId: {
+          $in: logsMediaId[type as keyof IImportStats['anilistMediaId']].map(
+            (id) => id.toString()
+          ),
+        },
+      }).select('contentId');
+      const existingContentIds = new Set(
+        existingMedia.map((media) => media.contentId)
+      );
+      const newMediaId = logsMediaId[
+        type as keyof IImportStats['anilistMediaId']
+      ].filter((id) => !existingContentIds.has(id.toString()));
+      const mediaData = await searchAnilist({
+        ids: newMediaId,
+        type: type === 'anime' ? 'ANIME' : 'MANGA',
+      });
+      if (mediaData.length > 0) {
+        if (type === 'anime') {
+          Anime.insertMany(mediaData, {
+            ordered: false,
+          });
+        } else if (type === 'manga') {
+          Manga.insertMany(mediaData, {
+            ordered: false,
+          });
+        } else if (type === 'reading') {
+          Reading.insertMany(mediaData, {
+            ordered: false,
+          });
+        }
+        return (createdMediaCount += mediaData.length);
+      }
+    }
+  }
+  return createdMediaCount;
 }
 
 export async function importLogs(
@@ -317,13 +360,17 @@ export async function importLogs(
             log.type === 'manga' ||
             log.type === 'reading')
         ) {
-          if (!acc.anilistMediaId.includes(parseInt(log.mediaId))) {
-            acc.anilistMediaId.push(parseInt(log.mediaId));
+          if (!acc.anilistMediaId[log.type].includes(parseInt(log.mediaId))) {
+            acc.anilistMediaId[log.type].push(parseInt(log.mediaId));
           }
         }
         return acc;
       },
-      { listeningXp: 0, readingXp: 0, anilistMediaId: [] }
+      {
+        listeningXp: 0,
+        readingXp: 0,
+        anilistMediaId: { anime: [], manga: [], reading: [] },
+      }
     );
     res.locals.importedStats = importStats;
     const insertedLogs = await Log.insertMany(logs, {
@@ -354,9 +401,9 @@ export async function importLogs(
       statusMessage = 'No logs to import, your logs are up to date';
     }
 
-    if (createdMedia.length > 0) {
-      statusMessage += `\n${createdMedia.length} media${
-        createdMedia.length > 1 ? 's' : ''
+    if (createdMedia > 0) {
+      statusMessage += `\n${createdMedia} media${
+        createdMedia > 1 ? 's' : ''
       } imported successfully`;
     }
     return res.status(200).json({
@@ -379,11 +426,11 @@ export async function assignMedia(
   try {
     const assignData: Array<IAssignData> = req.body;
     assignData.forEach(async (logsData) => {
-      let media = await Media.findOne({
+      let media = await MediaBase.findOne({
         contentId: logsData.contentMedia.contentId,
       });
       if (!media) {
-        media = await Media.create(logsData.contentMedia);
+        media = await MediaBase.create(logsData.contentMedia);
       }
       const updatedLogs = await Log.updateMany(
         {

@@ -266,14 +266,19 @@ export interface IImmersionList {
   vn: IMediaDocument[];
   video: IMediaDocument[];
 }
-export interface IMediaDocument {
-  _id?: string;
+export interface IMediaDocument extends Document {
   contentId: string;
   title: IMediaTitle;
-  contentImage: string;
+  contentImage?: string;
   coverImage?: string;
   description?: string;
   type: 'anime' | 'manga' | 'reading' | 'vn' | 'video';
+  episodes?: number;
+  duration?: number;
+  chapters?: number;
+  volumes?: number;
+  synonyms?: string[];
+  adult: boolean;
 }
 
 export interface IAverageColor {

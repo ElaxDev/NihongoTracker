@@ -17,6 +17,8 @@ function SettingsScreen() {
   const [discordId, setDiscordId] = useState(user?.discordId || '');
   const [forcedImport] = useState(false);
 
+  const queryClient = useQueryClient();
+
   const { mutate: updateUser, isPending } = useMutation({
     mutationFn: updateUserFn,
     onSuccess: (data: ILoginResponse) => {
@@ -32,8 +34,6 @@ function SettingsScreen() {
       }
     },
   });
-
-  const queryClient = useQueryClient();
 
   const { mutate: syncLogs, isPending: isSyncPending } = useMutation({
     mutationFn: importLogsFn,

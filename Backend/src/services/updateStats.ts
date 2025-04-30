@@ -26,7 +26,6 @@ export default async function updateStats(
   next: NextFunction
 ): Promise<void | IStats> {
   try {
-    console.time('updateStats');
     const user: IUser | null = await User.findById(res.locals.user.id);
     if (!user || !user.stats) {
       throw new customError('User does not have stats', 404);
@@ -87,7 +86,6 @@ export default async function updateStats(
     user.markModified('stats');
     await user.save();
 
-    console.timeEnd('updateStats');
     return userStats as IStats;
   } catch (error) {
     return next(error as customError);

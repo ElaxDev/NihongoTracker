@@ -138,6 +138,12 @@ export interface IMediaDocument extends Document {
   coverImage?: string;
   description?: string;
   type: 'anime' | 'manga' | 'reading' | 'vn' | 'video';
+  episodes?: number;
+  duration?: number;
+  chapters?: number;
+  volumes?: number;
+  synonyms?: string[];
+  adult: boolean;
 }
 
 export interface IImportLogs {
@@ -210,6 +216,11 @@ export interface AnilistSearchResult {
         large: string;
         color: string;
       };
+      synonyms: string[];
+      episodes?: number;
+      duration?: number;
+      chapters?: number;
+      volumes?: number;
       bannerImage: string;
       siteUrl: string;
       description: string;
@@ -249,7 +260,7 @@ export interface ICreateLog extends ILog {
   mediaData?: IContentMedia;
 }
 
-export interface updateRequest {
+export interface IUpdateRequest {
   username?: string;
   password?: string;
   newPassword?: string;

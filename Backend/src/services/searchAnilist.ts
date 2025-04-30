@@ -33,6 +33,11 @@ const query = gql`
         coverImage {
           large
         }
+        episodes
+        duration
+        chapters
+        volumes
+        synonyms
         bannerImage
         description
       }
@@ -43,9 +48,9 @@ const query = gql`
 const anilist = new GraphQLClient('https://graphql.anilist.co');
 
 export async function searchAnilist(variables: {
-  _search?: string | null;
-  _type?: 'ANIME' | 'MANGA' | null;
-  _format?: SearchAnilistArgs['format'];
+  search?: string | null;
+  type?: 'ANIME' | 'MANGA' | null;
+  format?: SearchAnilistArgs['format'];
   ids?: number[] | null;
 }): Promise<IMediaDocument[]> {
   const cleanedVariables: SearchAnilistArgs = cleanVariables(
@@ -69,6 +74,17 @@ export async function searchAnilist(variables: {
     coverImage: media.bannerImage,
     description: media.description,
     type: determineMediaType(media.type, media.format),
+    ...(media.synonyms.length && {
+      synonyms: media.synonyms.map((synonym) => synonym.trim()),
+    }),
+    ...(media.type === 'ANIME' && {
+      episodes: media.episodes,
+      episodeDuration: media.duration,
+    }),
+    ...(media.type === 'MANGA' && {
+      chapters: media.chapters,
+      volumes: media.volumes,
+    }),
   })) as IMediaDocument[];
 }
 

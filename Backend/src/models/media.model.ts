@@ -10,13 +10,40 @@ const MediaTitle = new Schema<IMediaTitle>(
   { _id: false }
 );
 
-const MediaSchema = new Schema<IMediaDocument>({
-  title: { type: MediaTitle, required: true },
-  contentId: { type: String, required: true, unique: true },
-  contentImage: { type: String },
-  coverImage: { type: String },
-  description: { type: String },
-  type: { type: String, required: true },
+const MediaBaseSchema = new Schema<IMediaDocument>(
+  {
+    title: { type: MediaTitle, required: true },
+    contentId: { type: String, required: true, unique: true },
+    contentImage: { type: String },
+    coverImage: { type: String },
+    description: { type: String },
+    type: {
+      type: String,
+      required: true,
+      enum: ['anime', 'manga', 'reading', 'vn', 'video'],
+    },
+    synonyms: { type: [String] },
+    adult: { type: Boolean, default: false },
+  },
+  { discriminatorKey: 'type', collection: 'media' }
+);
+
+const MediaBase = model<IMediaDocument>('Media', MediaBaseSchema);
+
+const AnimeSchema = new Schema({
+  episodes: { type: Number, required: true },
+  episodeDuration: { type: Number },
 });
 
-export default model<IMediaDocument>('Media', MediaSchema);
+const Anime = MediaBase.discriminator('anime', AnimeSchema);
+
+const MangaSchema = new Schema({
+  chapters: { type: Number, required: true },
+  volumes: { type: Number, required: true },
+});
+
+const Manga = MediaBase.discriminator('manga', MangaSchema);
+
+const Reading = MediaBase.discriminator('reading', MangaSchema);
+
+export { MediaBase, Anime, Manga, Reading };
