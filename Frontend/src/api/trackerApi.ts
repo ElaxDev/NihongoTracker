@@ -105,8 +105,13 @@ export async function searchMediaFn(params: {
   return data || [];
 }
 
-export async function getMediaFn(mediaId: string): Promise<IMediaDocument> {
-  const { data } = await api.get<IMediaDocument>(`media/${mediaId}`);
+export async function getMediaFn(
+  mediaId?: string,
+  mediaType?: string
+): Promise<IMediaDocument> {
+  const { data } = await api.get<IMediaDocument>(
+    `media/${mediaType}/${mediaId}`
+  );
   return data;
 }
 

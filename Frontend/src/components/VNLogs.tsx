@@ -6,6 +6,7 @@ import { assignMediaFn } from '../api/trackerApi';
 import { toast } from 'react-toastify';
 import { AxiosError } from 'axios';
 import useSearch from '../hooks/useSearch';
+import {useFilteredGroupedLogs} from "../hooks/useFilteredGroupedLogs.tsx";
 
 interface VNLogsProps {
   logs: ILog[] | undefined;
@@ -37,7 +38,8 @@ function VNLogs({ logs }: VNLogsProps) {
     );
   }, []);
 
-  const handleOpenGroup = useCallback((group: ILog[], title: string) => {
+  const handleOpenGroup = useCallback((group: ILog[] | null, title: string) => {
+    if (!group) return;
     setSelectedLogs(group);
     setSearchQuery(title);
   }, []);
@@ -71,17 +73,7 @@ function VNLogs({ logs }: VNLogsProps) {
     return Array.from(groupedLogs.values());
   }, [logs]);
 
-  const filteredGroupedLogs = useMemo(() => {
-    if (!logs) return [];
-    return groupedLogs
-      ?.map((group) => {
-        const filteredGroup = group.filter(
-          (log) => !assignedLogs.includes(log)
-        );
-        return filteredGroup.length > 0 ? filteredGroup : null;
-      })
-      .filter((group) => !!group);
-  }, [groupedLogs, assignedLogs, logs]);
+  const filteredGroupedLogs = useFilteredGroupedLogs(logs, groupedLogs, assignedLogs);
 
   const { mutate: assignMedia } = useMutation({
     mutationFn: (
@@ -142,15 +134,15 @@ function VNLogs({ logs }: VNLogsProps) {
                       onChange={() =>
                         handleOpenGroup(
                           group,
-                          stripSymbols(group[0].description)
+                          stripSymbols(group && group[0]?.description ? group[0].description : '')
                         )
                       }
                     />
                     <div className="collapse-title text-xl font-medium">
-                      {stripSymbols(group[0].description)}
+                      {stripSymbols(group && group[0]?.description ? group[0].description : '')}
                     </div>
                     <div className="collapse-content">
-                      {group.map((log, i) => (
+                      {group?.map((log, i) => (
                         <div
                           className="flex items-center gap-4 py-2 content-center"
                           key={i}

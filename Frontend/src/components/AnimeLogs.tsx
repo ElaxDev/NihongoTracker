@@ -7,6 +7,7 @@ import { toast } from 'react-toastify';
 import { AxiosError } from 'axios';
 import useSearch from '../hooks/useSearch';
 import { useUserDataStore } from '../store/userData';
+import { useFilteredGroupedLogs } from '../hooks/useFilteredGroupedLogs.tsx';
 
 interface AnimeLogsProps {
   logs: ILog[] | undefined;
@@ -44,7 +45,8 @@ function AnimeLogs({ logs }: AnimeLogsProps) {
     );
   }, []);
 
-  const handleOpenGroup = useCallback((group: ILog[], title: string) => {
+  const handleOpenGroup = useCallback((group: ILog[] | null, title: string) => {
+    if (!group) return;
     setSelectedLogs(group);
     setSearchQuery(title);
     setShouldAnilistSearch(true);
@@ -79,17 +81,11 @@ function AnimeLogs({ logs }: AnimeLogsProps) {
     return Array.from(groupedLogs.values());
   }, [logs]);
 
-  const filteredGroupedLogs = useMemo(() => {
-    if (!logs) return [];
-    return groupedLogs
-      ?.map((group) => {
-        const filteredGroup = group.filter(
-          (log) => !assignedLogs.includes(log)
-        );
-        return filteredGroup.length > 0 ? filteredGroup : null;
-      })
-      .filter((group) => !!group);
-  }, [groupedLogs, assignedLogs, logs]);
+  const filteredGroupedLogs = useFilteredGroupedLogs(
+    logs,
+    groupedLogs,
+    assignedLogs
+  );
 
   const { mutate: assignMedia } = useMutation({
     mutationFn: (
@@ -100,10 +96,10 @@ function AnimeLogs({ logs }: AnimeLogsProps) {
     ) => assignMediaFn(data),
     onSuccess: () => {
       toast.success('Media assigned successfully');
-      queryClient.invalidateQueries({
+      void queryClient.invalidateQueries({
         queryKey: ['logsAssign'],
       });
-      queryClient.invalidateQueries({
+      void queryClient.invalidateQueries({
         queryKey: ['logs', username],
       });
       setAssignedLogs((prev) => [...prev, ...selectedLogs]);
@@ -143,8 +139,8 @@ function AnimeLogs({ logs }: AnimeLogsProps) {
           ...(selectedAnime.episodes && {
             episodes: selectedAnime.episodes,
           }),
-          ...(selectedAnime.duration && {
-            duration: selectedAnime.duration,
+          ...(selectedAnime.episodeDuration && {
+            duration: selectedAnime.episodeDuration,
           }),
         } as IMediaDocument,
       },
@@ -171,18 +167,22 @@ function AnimeLogs({ logs }: AnimeLogsProps) {
                         handleOpenGroup(
                           group,
                           stripSymbols(
-                            group[0].description ? group[0].description : ''
+                            group && group[0]?.description
+                              ? group[0].description
+                              : ''
                           )
                         )
                       }
                     />
                     <div className="collapse-title text-xl font-medium">
                       {stripSymbols(
-                        group[0].description ? group[0].description : ''
+                        group && group[0]?.description
+                          ? group[0].description
+                          : ''
                       )}
                     </div>
                     <div className="collapse-content">
-                      {group.map((log, i) => (
+                      {group?.map((log, i) => (
                         <div
                           className="flex items-center gap-4 py-2 content-center"
                           key={i}

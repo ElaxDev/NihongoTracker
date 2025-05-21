@@ -19,7 +19,7 @@ const LogSchema = new Schema<ILog>(
     mediaId: { type: String, required: false },
     xp: { type: Number, required: true },
     private: { type: Boolean, default: false },
-    adult: { type: Boolean, default: false },
+    isAdult: { type: Boolean, default: false },
     description: {
       type: String,
       trim: true,

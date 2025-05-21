@@ -7,6 +7,7 @@ import { toast } from 'react-toastify';
 import { OutletMediaContextType } from '../types';
 import { useEffect, useState } from 'react';
 import DOMPurify from 'dompurify';
+import convertBBCodeToHtml from '../utils/bbcodeToHTML';
 
 export default function MediaHeader() {
   const { mediaType, mediaId } = useParams<{
@@ -21,8 +22,8 @@ export default function MediaHeader() {
     error: mediaError,
     isLoading: isLoadingMedia,
   } = useQuery({
-    queryKey: ['media', mediaId],
-    queryFn: () => getMediaFn(mediaId!),
+    queryKey: ['media', mediaId, mediaType],
+    queryFn: () => getMediaFn(mediaId, mediaType),
     refetchOnMount: 'always',
   });
 
@@ -38,6 +39,19 @@ export default function MediaHeader() {
   }
 
   const renderDescription = (description: string) => {
+    // First check if it contains BBCode tags
+    if (/\[(b|i|u|s|url|img|spoiler|quote|code|list|\*)\b/i.test(description)) {
+      // Convert BBCode to HTML
+      const htmlFromBBCode = convertBBCodeToHtml(description);
+
+      // Then sanitize and render the HTML
+      const sanitizedDescription = DOMPurify.sanitize(
+        htmlFromBBCode.replace(/<br\s*\/?>/gi, '<br />')
+      );
+      return <div dangerouslySetInnerHTML={{ __html: sanitizedDescription }} />;
+    }
+
+    // Check for regular HTML
     if (!/<[a-z][\s\S]*>/i.test(description)) {
       // No HTML tags, render as plain text
       return description.split('\n').map((line, index) => (
@@ -71,7 +85,6 @@ export default function MediaHeader() {
     async function getAvgColor() {
       if (media?.contentImage) {
         const color = await getAverageColorFn(media?.contentImage);
-        console.log(color);
         if (color) {
           return setAverageColor(color.hex);
         }

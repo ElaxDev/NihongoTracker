@@ -44,6 +44,12 @@ export async function getUserLogs(
           'user.username': req.params.username,
         },
       },
+      ...(req.query.mediaId
+        ? [{ $match: { mediaId: req.query.mediaId } }]
+        : []),
+      ...(req.query.mediaType
+        ? [{ $match: { type: req.query.mediaType } }]
+        : []),
       {
         $project: {
           user: 0,
@@ -186,6 +192,12 @@ async function createLogFunction(
         contentTitleRomaji: mediaData.contentTitleRomaji,
       },
       contentImage: mediaData.contentImage,
+      episodes: mediaData.episodes,
+      episodeDuration: mediaData.episodeDuration,
+      synonyms: mediaData.synonyms,
+      chapters: mediaData.chapters,
+      volumes: mediaData.volumes,
+      isAdult: mediaData.isAdult,
       coverImage: mediaData.coverImage,
       type,
       description: mediaData.description,
@@ -209,6 +221,7 @@ async function createLogFunction(
     episodes,
     xp,
     description,
+    private: false,
     time,
     date,
     chars,

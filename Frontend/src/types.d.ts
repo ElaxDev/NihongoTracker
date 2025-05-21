@@ -120,7 +120,10 @@ export interface IRankingParams {
   filter?: filterTypes;
 }
 
-export type ILogsParams = Pick<IRankingParams, 'page' | 'limit'>;
+export interface ILogsParams extends Pick<IRankingParams, 'page' | 'limit'> {
+  mediaId?: string;
+  mediaType?: string;
+}
 
 export interface updateUserRequest {
   username?: string;
@@ -151,12 +154,19 @@ export interface updateLogRequest {
 
 export interface IContentMedia {
   contentId: string;
-  contentImage: string;
-  coverImage: string;
+  contentImage: string | null;
+  coverImage: string | null;
   contentTitleNative: string;
   contentTitleRomaji?: string;
   contentTitleEnglish: string;
   description?: string;
+  episodes?: number;
+  episodeDuration?: number;
+  chapters?: number;
+  volumes?: number;
+  synonyms?: string[] | null;
+  isAdult: boolean;
+  date?: Date | null;
 }
 
 export interface ICreateLog
@@ -182,7 +192,7 @@ export interface ILog {
   pages?: number;
   chars?: number;
   time?: number;
-  date: string;
+  date: Date;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -275,15 +285,16 @@ export interface IImmersionList {
   vn: IMediaDocument[];
   video: IMediaDocument[];
 }
+
 export interface IMediaDocument extends Document {
   contentId: string;
   title: IMediaTitle;
   contentImage?: string;
   coverImage?: string;
-  description?: string;
+  description: string;
   type: 'anime' | 'manga' | 'reading' | 'vn' | 'video';
   episodes?: number;
-  duration?: number;
+  episodeDuration?: number;
   chapters?: number;
   volumes?: number;
   synonyms?: string[];
@@ -299,4 +310,26 @@ export interface IAverageColor {
   isDark: boolean;
   isLight: boolean;
   error?: Error;
+}
+
+export interface ILogData {
+  type: string | null;
+  titleNative: string;
+  titleRomaji: string | null;
+  titleEnglish: string | null;
+  description: string | null;
+  mediaDescription: string;
+  mediaName: string;
+  mediaId: string;
+  episodes: number;
+  time: number;
+  chars: number;
+  pages: number;
+  hours: number;
+  minutes: number;
+  showTime: boolean;
+  showChars: boolean;
+  img: string;
+  cover: string;
+  date: Date | null;
 }

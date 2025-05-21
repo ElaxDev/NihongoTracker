@@ -1,90 +1,6 @@
 import { Request } from 'express';
 import { Types, Document } from 'mongoose';
 
-export interface IVisualNovelTitle extends Document {
-  id: string;
-  lang: string;
-  official: boolean;
-  title: string;
-  latin: string;
-  image: string;
-}
-export interface IVisualNovelDetail extends Document {
-  id: string;
-  olang: string;
-  image: string;
-  l_wikidata: string;
-  c_votecount: number;
-  c_rating: number;
-  c_average: number;
-  length: number;
-  devstatus: number;
-  alias: string;
-  description: string;
-}
-
-export interface IMangaDocument extends Document {
-  title: string;
-  anilistId: number;
-  description: string;
-  genres: string[];
-  chapters: number;
-  volumes: number;
-  anilistScore?: number;
-  adult: boolean;
-  status: string;
-  approximatedCharCount?: number;
-  approximatedReadingTime?: number;
-  coverImage: string;
-  startDate: string;
-  endDate: string;
-}
-
-export interface ILightNovelTitle {
-  romaji: string;
-  english: string;
-  native: string;
-}
-
-export interface ILightNovelDocument extends Document {
-  title: ILightNovelTitle;
-  anilistId: number;
-  description?: string;
-  author?: string;
-  genres?: string[];
-  anilistScore?: number;
-  startDate?: string;
-  endDate?: string;
-  adult: boolean;
-  coverImage: string;
-  approximatedCharCount?: number;
-  approximatedReadingTime?: number;
-  startedUserCount?: number;
-  readingUserCount?: number;
-  finishedUserCount?: number;
-}
-
-export interface IAnimeDocument extends Document {
-  sources?: string[];
-  title: string;
-  type: 'TV' | 'MOVIE' | 'OVA' | 'ONA' | 'SPECIAL' | 'UNKNOWN';
-  episodes?: number;
-  status: 'FINISHED' | 'ONGOING' | 'UPCOMING' | 'UNKNOWN';
-  animeSeason: {
-    season?: 'SPRING' | 'SUMMER' | 'FALL' | 'WINTER' | 'UNDEFINED';
-    year: number | null;
-  };
-  picture?: string;
-  thumbnail?: string;
-  duration?: {
-    value?: number;
-    unit?: 'SECONDS';
-  } | null;
-  synonyms?: string[];
-  relatedAnime?: string[];
-  tags?: string[];
-}
-
 export interface decodedJWT {
   id: Types.ObjectId;
   iat: number;
@@ -139,10 +55,10 @@ export interface IMediaDocument extends Document {
   description?: string;
   type: 'anime' | 'manga' | 'reading' | 'vn' | 'video';
   episodes?: number;
-  duration?: number;
+  episodeDuration?: number;
   chapters?: number;
   volumes?: number;
-  synonyms?: string[];
+  synonyms?: string[] | null;
   isAdult: boolean;
 }
 
@@ -242,18 +158,25 @@ export interface ILog extends Document {
   pages?: number;
   chars?: number;
   time?: number;
-  date?: Date;
+  date: Date | null;
 }
 
 export interface IContentMedia {
   contentId: string;
-  contentImage: string;
-  coverImage: string;
+  contentImage?: string;
+  coverImage?: string;
   contentTitleNative: string;
   contentTitleRomaji?: string;
   contentTitleEnglish: string;
   description?: string;
   type: 'anime' | 'manga' | 'reading' | 'vn' | 'video';
+  episodes?: number;
+  episodeDuration?: number;
+  chapters?: number;
+  volumes?: number;
+  synonyms?: string[] | null;
+  isAdult: boolean;
+  date?: Date | null;
 }
 
 export interface ICreateLog extends ILog {

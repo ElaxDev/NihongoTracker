@@ -252,7 +252,9 @@ function StatsScreen() {
   const readingSpeedsVn = getReadingSpeed(logs ?? [], ['vn']);
   const readingSpeedsReading = getReadingSpeed(logs ?? [], ['reading']);
 
-  function completeData(speedArray: { month: number; averageSpeed: number }[]) {
+  function completeData(
+    speedArray: { month: number; averageSpeed: number }[]
+  ): number[] {
     const readingSpeed = speedArray.map((speed) => speed.averageSpeed);
     if (readingSpeed.length < 12) {
       for (

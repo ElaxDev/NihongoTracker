@@ -9,6 +9,6 @@ const router = Router();
 
 router.get('/utils/avgcolor', getAverageColor);
 router.get('/search', searchMedia);
-router.get('/:contentId', getMedia);
+router.get('/:mediaType/:contentId', getMedia);
 
 export default router;

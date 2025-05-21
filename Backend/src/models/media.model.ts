@@ -4,8 +4,8 @@ import { IMediaDocument, IMediaTitle } from '../types.js';
 const MediaTitle = new Schema<IMediaTitle>(
   {
     contentTitleNative: { type: String, required: true },
-    contentTitleRomaji: { type: String },
-    contentTitleEnglish: { type: String },
+    contentTitleRomaji: { type: String, default: null },
+    contentTitleEnglish: { type: String, default: null },
   },
   { _id: false }
 );
@@ -22,7 +22,7 @@ const MediaBaseSchema = new Schema<IMediaDocument>(
       required: true,
       enum: ['anime', 'manga', 'reading', 'vn', 'video'],
     },
-    synonyms: { type: [String] },
+    synonyms: { type: [String], default: null },
     isAdult: { type: Boolean, default: false },
   },
   { discriminatorKey: 'type', collection: 'media' }
