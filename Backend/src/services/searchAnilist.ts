@@ -86,6 +86,7 @@ export async function searchAnilist(variables: {
       chapters: media.chapters,
       volumes: media.volumes,
     }),
+    isAdult: media.isAdult,
   })) as IMediaDocument[];
 }
 

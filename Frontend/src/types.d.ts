@@ -42,27 +42,6 @@ export interface IStats {
   listeningLevel: number;
   listeningXpToNextLevel: number;
   listeningXpToCurrentLevel: number;
-  charCountVn: number;
-  charCountLn: number;
-  readingTimeVn: number;
-  charCountReading: number;
-  pageCountLn: number;
-  readingTimeLn: number;
-  pageCountManga: number;
-  pageCountReading: number;
-  charCountManga: number;
-  readingTimeManga: number;
-  mangaPages: number;
-  listeningTime: number;
-  readingTime: number;
-  animeEpisodes: number;
-  animeWatchingTime: number;
-  videoWatchingTime: number;
-  lnCount: number;
-  readManga: string[];
-  watchedAnime: string[];
-  playedVn: string[];
-  readLn: string[];
 }
 
 export type ILoginResponse = Pick<

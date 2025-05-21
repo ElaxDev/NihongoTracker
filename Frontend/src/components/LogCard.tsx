@@ -14,9 +14,19 @@ const logTypeText = {
 
 function LogCard({ log }: { log: ILog }) {
   const { description, xp, date, type, episodes, pages, time, chars } = log;
-  const relativeDate = date ? DateTime.fromISO(date).toRelative() : date;
 
-  const logTitle = `${description}`;
+  // Fix for date conversion
+  const relativeDate = date
+    ? typeof date === 'string'
+      ? DateTime.fromISO(date).toRelative()
+      : DateTime.fromJSDate(date as Date).toRelative()
+    : '';
+
+  // Truncate long titles (over 30 characters)
+  const logTitle =
+    description && description.length > 30
+      ? `${description.substring(0, 30)}...`
+      : description || '';
 
   function renderQuantity() {
     if (type === 'anime') {
@@ -56,7 +66,9 @@ function LogCard({ log }: { log: ILog }) {
   return (
     <div className="card card-side h-full w-full min-h-8 max-w-[450px] bg-base-100 text-base-content">
       <div className="card-body w-full">
-        <h2 className="card-title">{logTitle}</h2>
+        <h2 className="card-title tooltip" data-tip={description}>
+          {logTitle}
+        </h2>
         <p>Type: {logTypeText[type]}</p>
         {renderQuantity()}
         <div className="flex justify-between w-full">

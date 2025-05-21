@@ -29,7 +29,7 @@ function ListScreen() {
       <div className="min-w-96 m-10">
         <div className="w-full grid grid-cols-[20%_80%] gap-4">
           <div className="card bg-base-100 p-4">
-            <div className="prose-h4">Lists</div>
+            <div className="font-bold text-xl">Lists</div>
             <ul className="menu card-body">
               <li className="capitalize">
                 <a onClick={() => setCurrentList('anime')}>Anime</a>
@@ -50,7 +50,7 @@ function ListScreen() {
           </div>
 
           <div className="card bg-base-100 p-4 flex flex-row">
-            <div className="flex flex-row flex-wrap gap-2 w-full">
+            <div className="flex flex-row flex-wrap gap-2 justify-between w-full">
               {listLoading ? (
                 <div className="flex justify-center items-center w-full h-full">
                   <Loader />
