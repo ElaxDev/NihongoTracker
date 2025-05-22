@@ -159,3 +159,8 @@ export async function getAverageColorFn(imageUrl?: string) {
   });
   return data;
 }
+
+export async function getUntrackedLogsFn() {
+  const { data } = await api.get<ILog[]>(`logs/untrackedlogs`);
+  return data;
+}

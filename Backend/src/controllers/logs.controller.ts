@@ -9,6 +9,23 @@ import { customError } from '../middlewares/errorMiddleware.js';
 import updateStats from '../services/updateStats.js';
 import { searchAnilist } from '../services/searchAnilist.js';
 
+export async function getUntrackedLogs(
+  _req: Request,
+  res: Response,
+  next: NextFunction
+) {
+  const { user } = res.locals;
+  try {
+    const untrackedLogs = await Log.find({
+      user: user._id,
+      mediaId: { $exists: false },
+    });
+    return res.status(200).json(untrackedLogs);
+  } catch (error) {
+    return next(error as customError);
+  }
+}
+
 export async function getUserLogs(
   req: Request,
   res: Response,
@@ -36,7 +53,7 @@ export async function getUserLogs(
       },
       {
         $sort: {
-          createdAt: -1,
+          date: -1,
         },
       },
       {
@@ -449,8 +466,9 @@ export async function assignMedia(
         {
           _id: { $in: logsData.logsId },
         },
-        { mediaId: media._id }
+        { mediaId: media.contentId }
       );
+      console.log('updatedLogs', updatedLogs);
       if (!updatedLogs)
         throw new customError(
           `Log${logsData.logsId.length > 1 || 's'} not found`,

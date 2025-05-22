@@ -6,6 +6,7 @@ import { AxiosError } from 'axios';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import useSearch from '../hooks/useSearch';
 import { DayPicker } from 'react-day-picker';
+import { useUserDataStore } from '../store/userData';
 
 interface logDataType {
   type: ILog['type'] | null;
@@ -72,6 +73,7 @@ function LogScreen() {
   const [shouldAnilistSearch, setShouldAnilistSearch] = useState(true);
   const [isAdvancedOptions, setIsAdvancedOptions] = useState<boolean>(false);
   const suggestionRef = useRef<HTMLDivElement>(null);
+  const { user } = useUserDataStore();
 
   const {
     data: searchResult,
@@ -119,7 +121,9 @@ function LogScreen() {
       setShouldAnilistSearch(false);
       void queryClient.invalidateQueries({
         predicate: (query) =>
-          ['logs', 'user'].includes(query.queryKey[0] as string),
+          ['logs', user?.username, 'user'].includes(
+            query.queryKey[0] as string
+          ),
       });
       toast.success('Log created successfully!');
     },

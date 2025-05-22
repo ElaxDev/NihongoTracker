@@ -38,8 +38,8 @@ const AnimeSchema = new Schema({
 const Anime = MediaBase.discriminator('anime', AnimeSchema);
 
 const MangaSchema = new Schema({
-  chapters: { type: Number, required: true },
-  volumes: { type: Number, required: true },
+  chapters: { type: Number, default: null },
+  volumes: { type: Number, default: null },
 });
 
 const Manga = MediaBase.discriminator('manga', MangaSchema);

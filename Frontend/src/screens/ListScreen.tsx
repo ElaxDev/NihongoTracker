@@ -1,6 +1,6 @@
 import { Link, useOutletContext } from 'react-router-dom';
 import { IImmersionList, OutletProfileContextType } from '../types';
-import { getImmersionListFn } from '../api/trackerApi';
+import { getImmersionListFn, getUntrackedLogsFn } from '../api/trackerApi';
 import { useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
 import { toast } from 'react-toastify';
@@ -14,10 +14,14 @@ function ListScreen() {
     data: list,
     error: listError,
     isLoading: listLoading,
-    // refetch: refetchList,
   } = useQuery({
     queryKey: ['ImmersionList', username],
     queryFn: () => getImmersionListFn(username as string),
+  });
+
+  const { data: untrackedLogs } = useQuery({
+    queryKey: ['logs', username],
+    queryFn: () => getUntrackedLogsFn(),
   });
 
   if (listError) {
@@ -48,35 +52,70 @@ function ListScreen() {
               </li>
             </ul>
           </div>
-
-          <div className="card bg-base-100 p-4 flex flex-row">
-            <div className="flex flex-row flex-wrap gap-2 justify-between w-full">
-              {listLoading ? (
-                <div className="flex justify-center items-center w-full h-full">
-                  <Loader />
+          <div className="flex flex-col gap-4">
+            {untrackedLogs && untrackedLogs.length > 0 && (
+              <div className="alert alert-info shadow-lg">
+                <div className="flex flex-row gap-2 items-center">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    className="stroke-current shrink-0 w-6 h-6"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                    ></path>
+                  </svg>
+                  <span>
+                    You have {untrackedLogs.length} unmatched logs.{' '}
+                    {
+                      <Link className="link" to="/matchmedia">
+                        Click here
+                      </Link>
+                    }{' '}
+                    to match them!
+                  </span>
                 </div>
-              ) : list && list[currentList] && list[currentList].length > 0 ? (
-                list[currentList].map((item, index) => (
-                  <div key={index}>
-                    <Link
-                      to={`/${currentList}/${item.contentId}`}
-                      className="w-52 h-52"
-                    >
-                      <img
-                        src={item.contentImage}
-                        className="transition hover:shadow-md rounded-md duration-300 h-52 w-full"
-                      />
-                    </Link>
+              </div>
+            )}
+            <div className="card bg-base-100 p-4 flex flex-row">
+              <div className="flex flex-row flex-wrap gap-2 w-full">
+                {listLoading ? (
+                  <div className="flex justify-center items-center w-full h-full">
+                    <Loader />
                   </div>
-                ))
-              ) : (
-                <div className="flex justify-center items-center w-full h-full">
-                  <div className="flex flex-col items-center">
-                    <p className="text-center">{'No elements in this list.'}</p>
-                    <p className="text-center">{'Go immerse to fill it up!'}</p>
+                ) : list &&
+                  list[currentList] &&
+                  list[currentList].length > 0 ? (
+                  list[currentList].map((item, index) => (
+                    <div key={index}>
+                      <Link
+                        to={`/${currentList}/${item.contentId}`}
+                        className="w-52 h-52"
+                      >
+                        <img
+                          src={item.contentImage}
+                          className="transition hover:shadow-md rounded-md duration-300 h-52 w-full"
+                        />
+                      </Link>
+                    </div>
+                  ))
+                ) : (
+                  <div className="flex justify-center items-center w-full h-full">
+                    <div className="flex flex-col items-center">
+                      <p className="text-center">
+                        {'No elements in this list.'}
+                      </p>
+                      <p className="text-center">
+                        {'Go immerse to fill it up!'}
+                      </p>
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
+              </div>
             </div>
           </div>
         </div>

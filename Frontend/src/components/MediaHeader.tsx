@@ -8,6 +8,7 @@ import { OutletMediaContextType } from '../types';
 import { useEffect, useState } from 'react';
 import DOMPurify from 'dompurify';
 import convertBBCodeToHtml from '../utils/bbcodeToHTML';
+import QuickLog from '../components/QuickLog';
 
 export default function MediaHeader() {
   const { mediaType, mediaId } = useParams<{
@@ -16,6 +17,7 @@ export default function MediaHeader() {
   }>();
   const navigate = useNavigate();
   const [averageColor, setAverageColor] = useState<string>('#ffffff');
+  const [logModalOpen, setLogModalOpen] = useState(false);
 
   const {
     data: media,
@@ -96,6 +98,11 @@ export default function MediaHeader() {
 
   return (
     <div className="flex flex-col justify-center bg-base-200 text-base-content">
+      <QuickLog
+        open={logModalOpen}
+        onClose={() => setLogModalOpen(false)}
+        media={media}
+      />
       <div
         className={`h-96 w-full bg-cover bg-center bg-no-repeat ${
           isLoadingMedia ? 'skeleton' : ''
@@ -121,7 +128,12 @@ export default function MediaHeader() {
                 src={media?.contentImage ? media.contentImage : ''}
               />
             </div>
-            <button className="btn btn-block btn-primary mt-2">Log</button>
+            <button
+              className="btn w-52 btn-primary mt-2"
+              onClick={() => setLogModalOpen(true)}
+            >
+              Log
+            </button>
           </div>
           <div className="py-22px px-25px">
             <h1 className="text-xl font-bold inline-block text-base-content">

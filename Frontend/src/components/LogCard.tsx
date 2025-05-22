@@ -1,6 +1,11 @@
-// import { Link } from 'react-router-dom';
+import { useMutation } from '@tanstack/react-query';
 import { ILog } from '../types';
 import { DateTime } from 'luxon';
+import { MdDelete } from 'react-icons/md';
+import { deleteLogFn } from '../api/trackerApi';
+import { toast } from 'react-toastify';
+import queryClient from '../queryClient';
+import { AxiosError } from 'axios';
 
 const logTypeText = {
   reading: 'Reading',
@@ -15,19 +20,34 @@ const logTypeText = {
 function LogCard({ log }: { log: ILog }) {
   const { description, xp, date, type, episodes, pages, time, chars } = log;
 
-  // Fix for date conversion
   const relativeDate = date
     ? typeof date === 'string'
       ? DateTime.fromISO(date).toRelative()
       : DateTime.fromJSDate(date as Date).toRelative()
     : '';
 
-  // Truncate long titles (over 30 characters)
   const logTitle =
     description && description.length > 30
       ? `${description.substring(0, 30)}...`
       : description || '';
 
+  const { mutate: deleteLog } = useMutation({
+    mutationFn: (id: string) => deleteLogFn(id),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({
+        predicate: (query) =>
+          ['logs', 'user'].includes(query.queryKey[0] as string),
+      });
+      toast.success('Log deleted successfully!');
+    },
+    onError: (error) => {
+      const errorMessage =
+        error instanceof AxiosError
+          ? error.response?.data.message
+          : 'An error occurred';
+      toast.error(errorMessage);
+    },
+  });
   function renderQuantity() {
     if (type === 'anime') {
       return <p>Episodes: {episodes}</p>;
@@ -66,9 +86,17 @@ function LogCard({ log }: { log: ILog }) {
   return (
     <div className="card card-side h-full w-full min-h-8 max-w-[450px] bg-base-100 text-base-content">
       <div className="card-body w-full">
-        <h2 className="card-title tooltip" data-tip={description}>
-          {logTitle}
-        </h2>
+        <div className="flex items-center justify-between">
+          <h2 className="card-title tooltip" data-tip={description}>
+            {logTitle}
+          </h2>
+          <button
+            className="btn btn-sm btn-circle btn-ghost group"
+            onClick={() => deleteLog(log._id)}
+          >
+            <MdDelete className="text-xl opacity-75 group-hover:opacity-100" />
+          </button>
+        </div>
         <p>Type: {logTypeText[type]}</p>
         {renderQuantity()}
         <div className="flex justify-between w-full">
