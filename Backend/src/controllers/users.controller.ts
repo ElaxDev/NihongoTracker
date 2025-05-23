@@ -70,17 +70,33 @@ export async function updateUser(
         const files = req.files as {
           [fieldname: string]: Express.Multer.File[];
         };
-        if (files && files.avatar) {
+
+        if (files.avatar?.[0]) {
           const file = await uploadFile(files.avatar[0]);
           user.avatar = file.downloadURL;
-        } else if (files && files.banner) {
+        }
+
+        if (files.banner?.[0]) {
           const file = await uploadFile(files.banner[0]);
           user.banner = file.downloadURL;
-        } else {
-          throw new customError('Invalid fieldname', 400);
+        }
+
+        if (!files.avatar && !files.banner) {
+          throw new customError(
+            'Invalid field name. Only avatar and banner uploads are allowed.',
+            400
+          );
         }
       } catch (error) {
-        return next(error as customError);
+        if (error instanceof customError) {
+          return next(error);
+        }
+        return next(
+          new customError(
+            'File upload failed: ' + (error as Error).message,
+            400
+          )
+        );
       }
     }
 
