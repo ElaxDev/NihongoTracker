@@ -27,7 +27,6 @@ function StatsScreen() {
     staleTime: Infinity,
   });
 
-  // Filter logs based on the selected time range
   const filterLogsByTimeRange = (logs: ILog[]) => {
     if (!logs) return [];
 
@@ -62,23 +61,19 @@ function StatsScreen() {
     }
   };
 
-  // Time-filtered logs
   const timeFilteredLogs = filterLogsByTimeRange(logs || []);
 
-  // Calculate total hours from logs instead of using user.stats fields
   const totalHours = timeFilteredLogs
     ? timeFilteredLogs
         .reduce((total, log: ILog) => {
           if (log.type === 'anime' && log.time) {
             return total + log.time / 60;
           } else if (log.type === 'anime' && !log.time) {
-            // For anime logs without time but with episodes
             if (log.episodes) {
               return total + (log.episodes * 24) / 60;
             }
             return total;
           } else {
-            // For all other log types
             if (log.time) {
               return total + log.time / 60;
             }
@@ -98,14 +93,12 @@ function StatsScreen() {
     'other',
   ];
 
-  // Filter logs based on currentType and time range
   const filteredLogs = timeFilteredLogs
     ? currentType === 'all'
       ? timeFilteredLogs
       : timeFilteredLogs.filter((log: ILog) => log.type === currentType)
     : [];
 
-  // Wrap filterLogsByType in useCallback to stabilize its reference
   const filterLogsByType = useCallback(
     (type: string): ILog[] => {
       if (currentType !== 'all' && type !== currentType) {
@@ -124,7 +117,6 @@ function StatsScreen() {
     }
   }, [logs, currentType, filterLogsByType]);
 
-  // Chart data for log count
   const logCountData = {
     labels: currentType === 'all' ? logTypes : [currentType],
     datasets: [
@@ -163,7 +155,6 @@ function StatsScreen() {
       (log.type !== 'anime' && !log.time)
   );
 
-  // Get time spent data
   const getTimeSpentData = (type: string) => {
     if (currentType !== 'all' && type !== currentType) {
       return 0;
@@ -190,7 +181,6 @@ function StatsScreen() {
     return totalHours;
   };
 
-  // Calculate time spent from filtered logs
   const calculateTimeSpent = () => {
     return filteredLogs.reduce((total, log) => {
       if (log.type === 'anime' && log.time) {
@@ -209,7 +199,6 @@ function StatsScreen() {
     }, 0);
   };
 
-  // Chart data for time spent
   const logTimeData = {
     labels: currentType === 'all' ? logTypes : [currentType],
     datasets: [
@@ -242,7 +231,6 @@ function StatsScreen() {
     ],
   };
 
-  // Get XP data
   const getXpData = (type: string) => {
     if (currentType !== 'all' && type !== currentType) {
       return 0;
@@ -255,12 +243,10 @@ function StatsScreen() {
     );
   };
 
-  // Calculate total XP from filtered logs
   const calculateTotalXp = () => {
     return filteredLogs.reduce((acc, log) => acc + log.xp, 0);
   };
 
-  // Chart data for XP
   const logXpData = {
     labels: currentType === 'all' ? logTypes : [currentType],
     datasets: [

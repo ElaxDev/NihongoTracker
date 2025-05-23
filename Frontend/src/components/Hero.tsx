@@ -318,11 +318,11 @@ function Hero() {
                   <div className="stat">
                     <div className="stat-title">Current Streak</div>
                     <div className="stat-value text-success">
-                      {user.stats.currentStreak ?? 0}
+                      {user.stats?.currentStreak ?? 0}
                     </div>
                     <div className="stat-desc">
                       day
-                      {user.stats.currentStreak && user.stats.currentStreak > 1
+                      {user.stats?.currentStreak && user.stats.currentStreak > 1
                         ? 's'
                         : ''}
                     </div>
@@ -497,7 +497,7 @@ function Hero() {
                               {ranking.username}
                             </Link>
                           </td>
-                          <td>{numberWithCommas(ranking.stats.userXp)}</td>
+                          <td>{numberWithCommas(ranking.stats?.userXp ?? 0)}</td>
                         </tr>
                       ))}
                     </tbody>
