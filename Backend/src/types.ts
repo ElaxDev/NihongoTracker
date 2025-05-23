@@ -1,5 +1,5 @@
 import { Request } from 'express';
-import { Types, Document } from 'mongoose';
+import { Document, Types } from 'mongoose';
 
 export interface decodedJWT {
   id: Types.ObjectId;
@@ -7,9 +7,9 @@ export interface decodedJWT {
   exp: number;
 }
 
-export interface tokenDataType {
-  id: Types.ObjectId;
-}
+// export interface tokenDataType {
+//   id: Types.ObjectId;
+// }
 
 export interface IRanking extends Document {
   _id: Types.ObjectId;
@@ -208,4 +208,15 @@ export interface ILogin {
 
 export interface IRequest<Type> extends Request {
   body: Type;
+}
+
+export interface csvLogs {
+  type: 'anime' | 'manga' | 'reading' | 'vn' | 'video' | 'audio' | 'other';
+  description: string;
+  date: string;
+  time: string;
+  chars: string;
+  pages: string;
+  episodes: string;
+  mediaId: string;
 }

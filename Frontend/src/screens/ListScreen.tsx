@@ -1,26 +1,26 @@
-import { Link, useOutletContext } from 'react-router-dom';
-import { IImmersionList, OutletProfileContextType } from '../types';
-import { getImmersionListFn, getUntrackedLogsFn } from '../api/trackerApi';
-import { useQuery } from '@tanstack/react-query';
-import { useState } from 'react';
-import { toast } from 'react-toastify';
-import Loader from '../components/Loader';
+import { Link, useOutletContext } from "react-router-dom";
+import { IImmersionList, OutletProfileContextType } from "../types";
+import { getImmersionListFn, getUntrackedLogsFn } from "../api/trackerApi";
+import { useQuery } from "@tanstack/react-query";
+import { useState } from "react";
+import { toast } from "react-toastify";
+import Loader from "../components/Loader";
 
 function ListScreen() {
   const { username } = useOutletContext<OutletProfileContextType>();
-  const [currentList, setCurrentList] = useState<keyof IImmersionList>('anime');
+  const [currentList, setCurrentList] = useState<keyof IImmersionList>("anime");
 
   const {
     data: list,
     error: listError,
     isLoading: listLoading,
   } = useQuery({
-    queryKey: ['ImmersionList', username],
+    queryKey: ["ImmersionList", username],
     queryFn: () => getImmersionListFn(username as string),
   });
 
   const { data: untrackedLogs } = useQuery({
-    queryKey: ['logs', username],
+    queryKey: ["logs", username],
     queryFn: () => getUntrackedLogsFn(),
   });
 
@@ -36,19 +36,19 @@ function ListScreen() {
             <div className="font-bold text-xl">Lists</div>
             <ul className="menu card-body">
               <li className="capitalize">
-                <a onClick={() => setCurrentList('anime')}>Anime</a>
+                <a onClick={() => setCurrentList("anime")}>Anime</a>
               </li>
               <li className="capitalize">
-                <a onClick={() => setCurrentList('manga')}>Manga</a>
+                <a onClick={() => setCurrentList("manga")}>Manga</a>
               </li>
               <li className="capitalize">
-                <a onClick={() => setCurrentList('vn')}>Visual Novel</a>
+                <a onClick={() => setCurrentList("vn")}>Visual Novel</a>
               </li>
               <li className="capitalize">
-                <a onClick={() => setCurrentList('video')}>Video</a>
+                <a onClick={() => setCurrentList("video")}>Video</a>
               </li>
               <li className="capitalize">
-                <a onClick={() => setCurrentList('reading')}>Reading</a>
+                <a onClick={() => setCurrentList("reading")}>Reading</a>
               </li>
             </ul>
           </div>
@@ -70,12 +70,12 @@ function ListScreen() {
                     ></path>
                   </svg>
                   <span>
-                    You have {untrackedLogs.length} unmatched logs.{' '}
+                    You have {untrackedLogs.length} unmatched logs.{" "}
                     {
                       <Link className="link" to="/matchmedia">
                         Click here
                       </Link>
-                    }{' '}
+                    }{" "}
                     to match them!
                   </span>
                 </div>
@@ -98,6 +98,7 @@ function ListScreen() {
                       >
                         <img
                           src={item.contentImage}
+                          alt={item.title.contentTitleNative}
                           className="transition hover:shadow-md rounded-md duration-300 h-52 w-full"
                         />
                       </Link>
@@ -107,10 +108,10 @@ function ListScreen() {
                   <div className="flex justify-center items-center w-full h-full">
                     <div className="flex flex-col items-center">
                       <p className="text-center">
-                        {'No elements in this list.'}
+                        {"No elements in this list."}
                       </p>
                       <p className="text-center">
-                        {'Go immerse to fill it up!'}
+                        {"Go immerse to fill it up!"}
                       </p>
                     </div>
                   </div>

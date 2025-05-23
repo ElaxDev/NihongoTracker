@@ -3,7 +3,7 @@ import {
   ILoginResponse,
   IRegisterInput,
   ILoginInput,
-  updateLogRequest,
+  // updateLogRequest,
   ICreateLog,
   ILog,
   IUser,
@@ -74,23 +74,23 @@ export async function getRankingFn(params?: IRankingParams) {
   return data;
 }
 
-export async function getLogFn(id: string) {
-  const { data } = await api.get<ILog>(`logs/${id}`);
-  return data;
-}
+// export async function getLogFn(id: string) {
+//   const { data } = await api.get<ILog>(`logs/${id}`);
+//   return data;
+// }
 
-export async function updateLogFn(id: string, updateValues: updateLogRequest) {
-  const updateParams = Object.entries(updateValues).reduce(
-    (params, [key, value]) => {
-      params.append(key, value);
-      return params;
-    },
-    new URLSearchParams()
-  );
-
-  const { data } = await api.put<ILog>(`logs/${id}`, updateParams);
-  return data;
-}
+// export async function updateLogFn(id: string, updateValues: updateLogRequest) {
+//   const updateParams = Object.entries(updateValues).reduce(
+//     (params, [key, value]) => {
+//       params.append(key, value);
+//       return params;
+//     },
+//     new URLSearchParams()
+//   );
+//
+//   const { data } = await api.put<ILog>(`logs/${id}`, updateParams);
+//   return data;
+// }
 
 export async function searchMediaFn(params: {
   type: string;
@@ -141,7 +141,7 @@ export async function deleteLogFn(id: string) {
 }
 
 export async function importLogsFn(forced: boolean) {
-  const { data } = await api.post(`logs/importlogs`, { forced });
+  const { data } = await api.post(`logs/import`, { forced });
   return data;
 }
 
@@ -162,5 +162,14 @@ export async function getAverageColorFn(imageUrl?: string) {
 
 export async function getUntrackedLogsFn() {
   const { data } = await api.get<ILog[]>(`logs/untrackedlogs`);
+  return data;
+}
+
+export async function importFromCSV(file: FormData) {
+  const { data } = await api.post(`logs/importfromcsv`, file, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+  });
   return data;
 }
