@@ -4,16 +4,12 @@ import { useUserDataStore } from '../store/userData';
 import ProgressChart from '../components/ProgressChart';
 import { useQuery } from '@tanstack/react-query';
 import { getUserLogsFn } from '../api/trackerApi';
+import { numberWithCommas } from '../utils/utils';
 
 function MediaDetails() {
   const { mediaDocument, mediaType } =
     useOutletContext<OutletMediaContextType>();
   const { user } = useUserDataStore();
-
-  function numberWithCommas(x: number | undefined) {
-    if (x === undefined || x === null) return '';
-    return x.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-  }
 
   const { data: logs } = useQuery({
     queryKey: [user?.username, 'logs', 'total', mediaDocument?.contentId],
@@ -106,17 +102,19 @@ function MediaDetails() {
               <p className="font-bold">Total XP</p>
               <p>{totalXp}</p>
             </div>
-            <div className="flex flex-col gap-2">
-              <p className="font-bold">Total Time</p>
-              <p>
-                {totalTime && totalTime >= 60
-                  ? `${Math.floor(totalTime / 60)} hour `
-                  : ''}
-                {totalTime && totalTime % 60 > 0
-                  ? `${totalTime % 60} mins`
-                  : ''}
-              </p>
-            </div>
+            {totalTime && totalTime > 0 ? (
+              <div className="flex flex-col gap-2">
+                <p className="font-bold">Total Time</p>
+                <p>
+                  {totalTime && totalTime >= 60
+                    ? `${Math.floor(totalTime / 60)} hour `
+                    : ''}
+                  {totalTime && totalTime % 60 > 0
+                    ? `${totalTime % 60} mins`
+                    : ''}
+                </p>
+              </div>
+            ) : null}
             {mediaDocument?.type === 'anime' && (
               <div className="flex flex-col gap-2">
                 <p className="font-bold">Total Episodes Watched</p>

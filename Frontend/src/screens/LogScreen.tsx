@@ -81,10 +81,18 @@ function LogScreen() {
     isLoading: isSearching,
   } = useSearch(
     shouldAnilistSearch ? (logData.type ?? '') : '',
-    shouldAnilistSearch ? logData.mediaName : ''
+    shouldAnilistSearch ? logData.mediaName : '',
+    undefined,
+    1,
+    5
   );
 
   const queryClient = useQueryClient();
+  const datePickerRef = useRef<HTMLDialogElement>(null);
+
+  const openDatePicker = () => {
+    datePickerRef.current?.showModal();
+  };
 
   const { mutate: createLog, isPending: isLogCreating } = useMutation({
     mutationFn: createLogFn,
@@ -204,161 +212,246 @@ function LogScreen() {
     if (searchError) toast.error(`Error: ${searchError.message}`);
     if (
       logData.mediaName &&
-      ['anime', 'manga', 'reading', 'vn'].includes(logData.type ?? '')
+      ['anime', 'manga', 'reading', 'vn'].includes(logData.type ?? '') &&
+      !['video', 'audio'].includes(logData.type ?? '')
     ) {
       setShouldAnilistSearch(true);
+    } else if (['video', 'audio'].includes(logData.type ?? '')) {
+      setShouldAnilistSearch(false);
     }
   }, [searchError, logData.mediaName, logData.type]);
 
   return (
-    <div className="pt-32 py-16 flex justify-center items-center bg-base-200 min-h-screen">
-      <div className="card min-w-96 bg-base-100">
-        <div className="card-body flex-row gap-12">
-          <div className="flex flex-row gap-4">
-            <div className="flex flex-col gap-4">
-              <h1 className="font-bold text-xl">Log</h1>
-              <form onSubmit={logSubmit} className="flex flex-col gap-4">
-                <div>
-                  <label className="label">
-                    <span className="label-text">Select the log type</span>
-                  </label>
-                  <select
-                    className="select select-bordered w-full max-w-xs"
-                    onChange={(e) =>
-                      handleInputChange('type', e.target.value as ILog['type'])
-                    }
-                    value={logData.type || 'Log type'}
-                  >
-                    <option disabled value="Log type">
-                      Log type
-                    </option>
-                    <option value="anime">Anime</option>
-                    <option value="manga">Manga</option>
-                    <option value="vn">Visual novels</option>
-                    <option value="video">Video</option>
-                    <option value="reading">Reading</option>
-                    <option value="audio">Audio</option>
-                  </select>
-                </div>
-                {logData.type && (
-                  <>
-                    <div>
-                      <label className="label">
-                        <span className="label-text">
-                          Write the name of the media
-                        </span>
-                      </label>
+    <div className="pt-24 pb-16 px-4 flex justify-center items-start bg-base-200 min-h-screen">
+      <div className="card w-full max-w-3xl bg-base-100 shadow-xl">
+        <div className="card-body">
+          <h1 className="card-title text-2xl mb-6">Create New Log</h1>
+
+          <form onSubmit={logSubmit} className="space-y-6">
+            {/* Log Type Selection */}
+            <div className="form-control">
+              <label className="label">
+                <span className="label-text font-medium">Log Type</span>
+              </label>
+              <select
+                className="select select-bordered w-full"
+                onChange={(e) =>
+                  handleInputChange('type', e.target.value as ILog['type'])
+                }
+                value={logData.type || 'Log type'}
+              >
+                <option disabled value="Log type">
+                  Select a log type
+                </option>
+                <option value="anime">Anime</option>
+                <option value="manga">Manga</option>
+                <option value="vn">Visual Novel</option>
+                <option value="video">Video</option>
+                <option value="reading">Reading</option>
+                <option value="audio">Audio</option>
+              </select>
+            </div>
+
+            {logData.type && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-6">
+                  {/* Media Name Input with Suggestions */}
+                  <div className="form-control">
+                    <label className="label">
+                      <span className="label-text font-medium">Media Name</span>
+                    </label>
+                    <div className="relative">
                       <input
                         type="text"
-                        placeholder="Media name"
-                        className="input input-bordered w-full max-w-xs"
+                        placeholder="Search for media..."
+                        className="input input-bordered w-full"
                         onFocus={() => setIsSuggestionsOpen(true)}
                         onBlur={() => {
-                          setTimeout(() => setIsSuggestionsOpen(false), 200); // Delay closing
+                          setTimeout(() => setIsSuggestionsOpen(false), 200);
                         }}
                         onChange={(e) =>
                           handleInputChange('mediaName', e.target.value)
                         }
                         value={logData.mediaName}
                       />
-                      <div
-                        ref={suggestionRef}
-                        className={`dropdown dropdown-open z-50 ${
-                          isSuggestionsOpen && searchResult ? 'block' : 'hidden'
-                        }`}
-                      >
-                        <ul className="dropdown-content menu bg-base-200 rounded-box w-full shadow-lg mt-2 absolute">
-                          {isSearching ? (
-                            <li>
-                              <a>Loading...</a>
-                            </li>
-                          ) : searchResult?.length === 0 ? (
-                            <li>
-                              <a>No results found</a>
-                            </li>
-                          ) : (
-                            searchResult?.map((group, i) => (
+                      {isSearching && (
+                        <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                          <span className="loading loading-spinner loading-sm"></span>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Search Suggestions */}
+                    <div ref={suggestionRef} className="relative">
+                      {isSuggestionsOpen &&
+                        searchResult &&
+                        searchResult.length > 0 && (
+                          <ul className="menu menu-vertical bg-base-200 rounded-box w-full shadow-lg mt-1 absolute z-50 overflow-y-auto">
+                            {searchResult.map((group, i) => (
                               <li
                                 key={i}
                                 onClick={() => handleSuggestionClick(group)}
+                                className="w-full"
                               >
-                                <a>{group.title.contentTitleNative}</a>
+                                <a className="flex items-center gap-2 w-full whitespace-normal">
+                                  {group.contentImage && (
+                                    <div className="avatar w-8 h-8 flex-shrink-0">
+                                      <div className="w-full h-full rounded">
+                                        <img
+                                          src={group.contentImage}
+                                          alt={group.title.contentTitleNative}
+                                          className="object-cover"
+                                        />
+                                      </div>
+                                    </div>
+                                  )}
+                                  <div className="flex-1 min-w-0 w-full pr-2">
+                                    <div className="truncate">
+                                      {group.title.contentTitleRomaji ||
+                                        group.title.contentTitleNative}
+                                    </div>
+                                    <div className="text-xs opacity-70 truncate">
+                                      {group.title.contentTitleNative}
+                                    </div>
+                                  </div>
+                                </a>
                               </li>
-                            ))
-                          )}
-                        </ul>
-                      </div>
-                    </div>
-                    {logData.type === 'anime' && (
-                      <div>
-                        <label className="label">
-                          <span className="label-text">How many episodes?</span>
-                        </label>
-                        <input
-                          type="number"
-                          min="0"
-                          onInput={preventNegativeValues}
-                          placeholder="Episodes"
-                          className="input input-bordered w-full max-w-xs"
-                          onChange={(e) =>
-                            handleInputChange(
-                              'watchedEpisodes',
-                              Number(e.target.value)
-                            )
-                          }
-                          value={logData.watchedEpisodes}
-                        />
-                      </div>
-                    )}
-                    <label className="label">
-                      <input
-                        type="checkbox"
-                        className="checkbox"
-                        onChange={() => setIsAdvancedOptions(true)}
-                        checked={isAdvancedOptions}
-                      />
-                      Advanced options
-                    </label>
-                    {isAdvancedOptions ||
-                    logData.type === 'vn' ||
-                    logData.type === 'video' ||
-                    logData.type === 'reading' ||
-                    logData.type === 'audio' ||
-                    logData.type === 'manga' ? (
-                      <>
-                        <div>
-                          <label className="label">
-                            <span className="label-text">Time spent</span>
-                          </label>
-                          <input
-                            type="number"
-                            min="0"
-                            onInput={preventNegativeValues}
-                            placeholder="Time in minutes"
-                            className="input input-bordered w-full max-w-xs"
-                            onChange={(e) =>
-                              handleInputChange('time', Number(e.target.value))
-                            }
-                            value={logData.time}
-                          />
+                            ))}
+                          </ul>
+                        )}
+                      {isSuggestionsOpen && isSearching && (
+                        <div className="alert mt-1">
+                          <span className="loading loading-spinner loading-sm"></span>
+                          <span>Searching...</span>
                         </div>
-                      </>
-                    ) : null}
-                    {isAdvancedOptions ||
-                    logData.type === 'vn' ||
-                    logData.type === 'reading' ||
-                    logData.type === 'manga' ? (
-                      <>
-                        <div>
+                      )}
+                      {isSuggestionsOpen &&
+                        !isSearching &&
+                        searchResult?.length === 0 &&
+                        logData.mediaName && (
+                          <div className="alert alert-info mt-1">
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              className="stroke-current shrink-0 w-6 h-6"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth="2"
+                                d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                              ></path>
+                            </svg>
+                            <span>
+                              No results found. You can still create a log with
+                              this name.
+                            </span>
+                          </div>
+                        )}
+                    </div>
+                  </div>
+
+                  {/* Episodes Input for Anime */}
+                  {logData.type === 'anime' && (
+                    <div className="form-control">
+                      <label className="label">
+                        <span className="label-text font-medium">
+                          Episodes Watched
+                        </span>
+                      </label>
+                      <input
+                        type="number"
+                        min="0"
+                        onInput={preventNegativeValues}
+                        placeholder="Number of episodes"
+                        className="input input-bordered w-full"
+                        onChange={(e) =>
+                          handleInputChange(
+                            'watchedEpisodes',
+                            Number(e.target.value)
+                          )
+                        }
+                        value={logData.watchedEpisodes}
+                      />
+                      {logData.episodes > 0 && (
+                        <label className="label">
+                          <span className="label-text-alt">
+                            Total episodes: {logData.episodes}
+                          </span>
+                        </label>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Advanced Options Toggle */}
+                  <div className="collapse collapse-arrow border border-base-300 bg-base-200 rounded-box">
+                    <input
+                      type="checkbox"
+                      checked={isAdvancedOptions}
+                      onChange={() => setIsAdvancedOptions(!isAdvancedOptions)}
+                    />
+                    <div className="collapse-title font-medium">
+                      Advanced Options
+                    </div>
+                    <div className="collapse-content space-y-4">
+                      {/* Time Spent Input */}
+                      {(isAdvancedOptions ||
+                        ['vn', 'video', 'reading', 'audio', 'manga'].includes(
+                          logData.type || ''
+                        )) && (
+                        <div className="form-control">
                           <label className="label">
-                            <span className="label-text">Characters read</span>
+                            <span className="label-text">Time Spent</span>
+                          </label>
+                          <div className="join">
+                            <input
+                              type="number"
+                              min="0"
+                              placeholder="Hours"
+                              className="input input-bordered join-item w-1/2"
+                              onChange={(e) =>
+                                handleInputChange(
+                                  'hours',
+                                  Number(e.target.value)
+                                )
+                              }
+                              value={logData.hours}
+                              onInput={preventNegativeValues}
+                            />
+                            <input
+                              type="number"
+                              min="0"
+                              placeholder="Minutes"
+                              className="input input-bordered join-item w-1/2"
+                              onChange={(e) =>
+                                handleInputChange(
+                                  'minutes',
+                                  Number(e.target.value)
+                                )
+                              }
+                              value={logData.minutes}
+                              onInput={preventNegativeValues}
+                            />
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Characters Read Input */}
+                      {(isAdvancedOptions ||
+                        ['vn', 'reading', 'manga'].includes(
+                          logData.type || ''
+                        )) && (
+                        <div className="form-control">
+                          <label className="label">
+                            <span className="label-text">Characters Read</span>
                           </label>
                           <input
                             type="number"
                             min="0"
                             onInput={preventNegativeValues}
-                            placeholder="Characters"
-                            className="input input-bordered w-full max-w-xs"
+                            placeholder="Number of characters"
+                            className="input input-bordered w-full"
                             onChange={(e) =>
                               handleInputChange(
                                 'readChars',
@@ -368,20 +461,20 @@ function LogScreen() {
                             value={logData.readChars}
                           />
                         </div>
-                      </>
-                    ) : null}
-                    {isAdvancedOptions || logData.type === 'manga' ? (
-                      <>
-                        <div>
+                      )}
+
+                      {/* Pages Read Input */}
+                      {(isAdvancedOptions || logData.type === 'manga') && (
+                        <div className="form-control">
                           <label className="label">
-                            <span className="label-text">Pages read</span>
+                            <span className="label-text">Pages Read</span>
                           </label>
                           <input
                             type="number"
                             min="0"
                             onInput={preventNegativeValues}
-                            placeholder="Pages"
-                            className="input input-bordered w-full max-w-xs"
+                            placeholder="Number of pages"
+                            className="input input-bordered w-full"
                             onChange={(e) =>
                               handleInputChange(
                                 'readPages',
@@ -391,67 +484,197 @@ function LogScreen() {
                             value={logData.readPages}
                           />
                         </div>
-                      </>
-                    ) : null}
-                    {isAdvancedOptions && (
-                      <>
-                        <button
-                          data-popover-target="rdp-popover"
-                          className="input input-border"
-                          style={{ anchorName: '--rdp' } as React.CSSProperties}
-                          type="button"
-                        >
-                          {logData.date instanceof Date
-                            ? logData.date.toLocaleDateString()
-                            : 'Pick a date'}
-                        </button>
-                        <div
-                          data-popover="auto"
-                          id="rdp-popover"
-                          className="dropdown"
-                          style={
-                            { positionAnchor: '--rdp' } as React.CSSProperties
-                          }
-                        >
-                          <DayPicker
-                            className="react-day-picker"
-                            mode="single"
-                            selected={logData.date || undefined}
-                            onSelect={(date) =>
-                              handleInputChange('date', date || null)
-                            }
-                          />
+                      )}
+
+                      {/* Date Picker */}
+                      <div className="form-control">
+                        <label className="label">
+                          <span className="label-text">Date</span>
+                        </label>
+                        <div className="w-full">
+                          <button
+                            type="button"
+                            onClick={openDatePicker}
+                            className="input input-bordered w-full text-left flex items-center"
+                          >
+                            {logData.date instanceof Date
+                              ? logData.date.toLocaleDateString()
+                              : 'Select date (defaults to today)'}
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              className="h-5 w-5 ml-auto"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              stroke="currentColor"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth="2"
+                                d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+                              />
+                            </svg>
+                          </button>
+
+                          <dialog
+                            ref={datePickerRef}
+                            className="modal modal-middle"
+                          >
+                            <div className="modal-box bg-base-100 flex flex-col justify-center">
+                              <DayPicker
+                                className="react-day-picker mx-auto"
+                                mode="single"
+                                selected={logData.date || undefined}
+                                onSelect={(date) => {
+                                  handleInputChange('date', date || undefined);
+                                  datePickerRef.current?.close();
+                                }}
+                              />
+                              <div className="modal-action justify-center">
+                                <form method="dialog">
+                                  <button className="btn">Close</button>
+                                </form>
+                              </div>
+                            </div>
+                            <form method="dialog" className="modal-backdrop">
+                              <button>close</button>
+                            </form>
+                          </dialog>
                         </div>
-                      </>
-                    )}
-                    <button
-                      className="btn btn-neutral text-neutral-content w-24 mt-2"
-                      type="submit"
-                    >
-                      {isLogCreating ? 'Loading...' : 'Submit'}
-                    </button>
-                  </>
-                )}
-              </form>
-            </div>
-            {logData.img && (
-              <div className="mt-4">
-                <img
-                  src={logData.img}
-                  alt="Selected Media"
-                  className="rounded-lg shadow-lg w-64"
-                />
-                <div className="text-center mt-2">
-                  <h2 className="font-bold text-lg">{logData.mediaName}</h2>
-                  {logData.type === 'anime' && (
-                    <p className="text-sm text-gray-500">
-                      {logData.episodes} episodes
-                    </p>
+                      </div>
+
+                      {/* Custom Description */}
+                      <div className="form-control">
+                        <label className="label">
+                          <span className="label-text">
+                            Custom Description (Optional)
+                          </span>
+                        </label>
+                        <textarea
+                          className="textarea textarea-bordered w-full"
+                          placeholder="Add your own notes about this log"
+                          onChange={(e) =>
+                            handleInputChange('description', e.target.value)
+                          }
+                          value={logData.description}
+                        ></textarea>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Media Preview Card */}
+                <div className="flex flex-col items-center justify-start">
+                  {logData.img &&
+                  !['video', 'audio'].includes(logData.type || '') ? (
+                    <div className="card bg-base-200 shadow-md w-full">
+                      <figure className="px-4 pt-4">
+                        <img
+                          src={logData.img}
+                          alt="Selected Media"
+                          className="rounded-lg max-h-64 object-contain"
+                        />
+                      </figure>
+                      <div className="card-body pt-2">
+                        <h2 className="card-title text-center">
+                          {logData.mediaName}
+                        </h2>
+                        {logData.episodes > 0 && (
+                          <div className="badge badge-primary">
+                            {logData.episodes} episodes
+                          </div>
+                        )}
+                        {logData.isAdult && (
+                          <div className="badge badge-warning">
+                            Adult Content
+                          </div>
+                        )}
+                        {logData.mediaDescription && (
+                          <div className="text-sm mt-2 max-h-28 overflow-y-auto">
+                            {logData.mediaDescription}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col items-center justify-center h-full w-full bg-base-200 rounded-lg p-8 text-center">
+                      {['video', 'audio'].includes(logData.type || '') ? (
+                        <>
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            className="h-12 w-12 text-base-content opacity-40"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                          >
+                            {logData.type === 'video' ? (
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth="2"
+                                d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"
+                              />
+                            ) : (
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth="2"
+                                d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z"
+                              />
+                            )}
+                          </svg>
+                          <p className="mt-2 text-base-content opacity-60">
+                            {logData.type === 'video' ? 'Video' : 'Audio'}{' '}
+                            title: {logData.mediaName || '(enter a title)'}
+                          </p>
+                        </>
+                      ) : (
+                        <>
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            className="h-12 w-12 text-base-content opacity-40"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth="2"
+                              d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+                            />
+                          </svg>
+                          <p className="mt-2 text-base-content opacity-60">
+                            {logData.type
+                              ? 'Search for media to see a preview'
+                              : 'Select a log type to get started'}
+                          </p>
+                        </>
+                      )}
+                    </div>
                   )}
                 </div>
               </div>
             )}
-          </div>
+            {logData.type && (
+              <div className="card-actions justify-center mt-6">
+                <button
+                  className="btn btn-primary"
+                  type="submit"
+                  disabled={isLogCreating || !logData.mediaName}
+                >
+                  {isLogCreating ? (
+                    <>
+                      <span className="loading loading-spinner loading-sm"></span>
+                      Submitting...
+                    </>
+                  ) : (
+                    'Create Log'
+                  )}
+                </button>
+              </div>
+            )}
+          </form>
         </div>
       </div>
     </div>

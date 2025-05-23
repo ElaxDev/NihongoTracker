@@ -97,6 +97,7 @@ export interface IRankingParams {
   limit?: number;
   sort?: sortTypes;
   filter?: filterTypes;
+  timeFilter?: string; // Add time filter parameter
 }
 
 export interface ILogsParams extends Pick<IRankingParams, 'page' | 'limit'> {

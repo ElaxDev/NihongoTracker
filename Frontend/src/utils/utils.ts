@@ -1,4 +1,9 @@
-export default function convertBBCodeToHtml(text: string): string {
+export function numberWithCommas(x: number | undefined) {
+  if (x === undefined || x === null) return '';
+  return x.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+}
+
+export function convertBBCodeToHtml(text: string): string {
   // Replace BBCode tags with HTML equivalents
   return (
     text

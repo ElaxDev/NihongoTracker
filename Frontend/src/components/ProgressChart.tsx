@@ -1,29 +1,38 @@
 import { ILog } from '../types';
 import { ChartArea, ScriptableContext } from 'chart.js';
 import LineChart from './LineChart';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 interface ProgressChartProps {
   logs: ILog[] | undefined;
+  timeframe?: 'today' | 'month' | 'year' | 'total';
 }
 
-export default function ProgressChart({ logs }: ProgressChartProps) {
-  const [timeframe, setTimeframe] = useState<'month' | 'year' | 'total'>(
-    'total'
-  );
+export default function ProgressChart({
+  logs,
+  timeframe: externalTimeframe,
+}: ProgressChartProps) {
+  const [timeframe, setTimeframe] = useState<
+    'today' | 'month' | 'year' | 'total'
+  >('total');
 
-  // Filter logs based on timeframe and mediaId
+  useEffect(() => {
+    if (externalTimeframe) {
+      setTimeframe(externalTimeframe);
+    }
+  }, [externalTimeframe]);
+
   const filteredLogs = logs ? filterLogsByTimeframe(logs, timeframe) : [];
 
-  // Function to filter logs by timeframe and mediaId
   function filterLogsByTimeframe(logs: ILog[], timeframe: string) {
     const now = new Date();
 
-    // Then filter by timeframe
     return logs.filter((log) => {
       const logDate = new Date(log.date);
 
-      if (timeframe === 'month') {
+      if (timeframe === 'today') {
+        return logDate.toDateString() === now.toDateString();
+      } else if (timeframe === 'month') {
         return (
           logDate.getMonth() === now.getMonth() &&
           logDate.getFullYear() === now.getFullYear()
@@ -36,7 +45,6 @@ export default function ProgressChart({ logs }: ProgressChartProps) {
     });
   }
 
-  // Group logs by date and calculate total XP per day
   function getXpByDate(logs: ILog[]) {
     const xpByDate: { [key: string]: number } = {};
 
@@ -51,7 +59,6 @@ export default function ProgressChart({ logs }: ProgressChartProps) {
     return xpByDate;
   }
 
-  // Create gradient for chart background
   function createGradient(
     ctx: CanvasRenderingContext2D,
     chartArea: ChartArea,
@@ -64,18 +71,34 @@ export default function ProgressChart({ logs }: ProgressChartProps) {
     return gradient;
   }
 
-  // Prepare data for chart
   let labels: string[] = [];
   let xpValues: number[] = [];
 
-  if (timeframe === 'month') {
-    // For month view - daily data (unchanged)
+  if (timeframe === 'today') {
+    const xpByHour: { [key: string]: number } = {};
+
+    for (let i = 0; i < 24; i++) {
+      xpByHour[i.toString()] = 0;
+    }
+
+    filteredLogs.forEach((log) => {
+      const date = new Date(log.date);
+      const hour = date.getHours();
+      xpByHour[hour.toString()] += log.xp;
+    });
+
+    labels = Object.keys(xpByHour)
+      .sort((a, b) => parseInt(a) - parseInt(b))
+      .map((hour) => `${hour}:00`);
+    xpValues = Object.keys(xpByHour)
+      .sort((a, b) => parseInt(a) - parseInt(b))
+      .map((hour) => xpByHour[hour]);
+  } else if (timeframe === 'month') {
     const xpByDate = getXpByDate(filteredLogs);
     const dates = Object.keys(xpByDate).sort();
     labels = dates.map((date) => new Date(date).getDate().toString());
     xpValues = dates.map((date) => xpByDate[date]);
   } else if (timeframe === 'year') {
-    // For year view - aggregate by month (only showing months with data)
     const xpByMonth: { [key: string]: number } = {};
     const months = [
       'Jan',
@@ -92,7 +115,6 @@ export default function ProgressChart({ logs }: ProgressChartProps) {
       'Dec',
     ];
 
-    // Sum XP for each month (without initializing all months to 0)
     filteredLogs.forEach((log) => {
       const date = new Date(log.date);
       const monthIndex = date.getMonth();
@@ -102,7 +124,6 @@ export default function ProgressChart({ logs }: ProgressChartProps) {
       xpByMonth[monthIndex.toString()] += log.xp;
     });
 
-    // Create labels and data points in month order (only for months with data)
     const monthIndices = Object.keys(xpByMonth)
       .map(Number)
       .sort((a, b) => a - b);
@@ -110,7 +131,6 @@ export default function ProgressChart({ logs }: ProgressChartProps) {
     labels = monthIndices.map((monthIdx) => months[monthIdx]);
     xpValues = monthIndices.map((monthIdx) => xpByMonth[monthIdx.toString()]);
   } else {
-    // For total view - group by month-year (unchanged)
     const xpByMonthYear: { [key: string]: number } = {};
 
     filteredLogs.forEach((log) => {
@@ -130,7 +150,9 @@ export default function ProgressChart({ logs }: ProgressChartProps) {
     xpValues = sortedKeys.map((key) => xpByMonthYear[key]);
   }
 
-  // Chart data
+  // Check if there's actual data (sum of all values > 0)
+  const hasData = xpValues.some((value) => value > 0);
+
   const consistencyData = {
     labels: labels,
     datasets: [
@@ -156,39 +178,59 @@ export default function ProgressChart({ logs }: ProgressChartProps) {
       <div className="h-full w-full">
         <div className="flex items-center justify-between mb-4">
           <div>
-            <h2 className="text-xl font-bold text-primary mb-2">Progress</h2>
-            <p className="text-sm text-base-content mb-4">
-              {timeframe === 'month'
-                ? 'Daily XP - Current Month'
-                : timeframe === 'year'
-                  ? 'XP Earned Over the Year'
-                  : 'Total XP Earned Over Time'}
-            </p>
+            <h2 className="text-2xl font-bold text-primary mb-2">Progress</h2>
+            {filteredLogs.length > 0 && hasData ? (
+              <p className="text-sm text-base-content mb-4">
+                {timeframe === 'today'
+                  ? 'Hourly XP - Today'
+                  : timeframe === 'month'
+                    ? 'Daily XP - Current Month'
+                    : timeframe === 'year'
+                      ? 'XP Earned Over the Year'
+                      : 'Total XP Earned Over Time'}
+              </p>
+            ) : null}
           </div>
-          <div>
-            <select
-              value={timeframe}
-              onChange={(e) =>
-                setTimeframe(e.target.value as 'month' | 'year' | 'total')
-              }
-              className="select"
-            >
-              <option value="total">Total</option>
-              <option value="year">Year</option>
-              <option value="month">Month</option>
-            </select>
-          </div>
+          {!externalTimeframe && (
+            <div>
+              <select
+                value={timeframe}
+                onChange={(e) =>
+                  setTimeframe(
+                    e.target.value as 'today' | 'month' | 'year' | 'total'
+                  )
+                }
+                className="select select-bordered"
+              >
+                <option value="total">Total</option>
+                <option value="year">Year</option>
+                <option value="month">Month</option>
+                <option value="today">Today</option>
+              </select>
+            </div>
+          )}
         </div>
 
         <div className="max-h-80">
           <div className="h-full w-full">
-            {filteredLogs.length > 0 ? (
+            {filteredLogs.length > 0 && hasData ? (
               <LineChart data={consistencyData} />
             ) : (
-              <div className="flex items-center justify-center h-48">
-                <p className="text-base-content">
-                  No data available for the selected criteria
-                </p>
+              <div className="alert alert-info">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  className="stroke-current shrink-0 w-6 h-6"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                  ></path>
+                </svg>
+                <span>No data available for the selected timeframe.</span>
               </div>
             )}
           </div>

@@ -7,7 +7,7 @@ import { toast } from 'react-toastify';
 import { OutletMediaContextType } from '../types';
 import { useEffect, useState } from 'react';
 import DOMPurify from 'dompurify';
-import convertBBCodeToHtml from '../utils/bbcodeToHTML';
+import { convertBBCodeToHtml } from '../utils/utils';
 import QuickLog from '../components/QuickLog';
 
 export default function MediaHeader() {

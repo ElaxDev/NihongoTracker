@@ -2,8 +2,15 @@ import { gql, GraphQLClient } from 'graphql-request';
 import { AnilistSearchResult, IMediaDocument } from '../types';
 
 const query = gql`
-  query ($search: String, $ids: [Int], $type: MediaType, $format: MediaFormat) {
-    Page {
+  query (
+    $search: String
+    $ids: [Int]
+    $type: MediaType
+    $format: MediaFormat
+    $page: Int
+    $perPage: Int
+  ) {
+    Page(page: $page, perPage: $perPage) {
       pageInfo {
         total
         currentPage
@@ -69,9 +76,7 @@ export async function searchAnilist(
   if (ids) variables['ids'] = ids;
   if (format) variables['format'] = format;
   if (!type) return [];
-
   const data: AnilistSearchResult = await anilist.request(query, variables);
-
   const media = data.Page.media.map((media) => ({
     contentId: media.id.toString(),
     title: {

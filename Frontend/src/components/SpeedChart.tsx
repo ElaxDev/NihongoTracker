@@ -44,18 +44,23 @@ type FilteredData = {
 };
 
 function SpeedChart({
-  timeframe: initialTimeframe = 'total',
+  timeframe: externalTimeframe,
   readingData,
 }: SpeedChartProps) {
   // Use state to manage the timeframe
-  const [timeframe, setTimeframe] = useState<TimeframeType>(initialTimeframe);
+  const [timeframe, setTimeframe] = useState<TimeframeType>('total');
   const [filteredData, setFilteredData] = useState<FilteredData>({});
   const readingTypes = useMemo<ReadingType[]>(
     () => ['reading', 'vn', 'manga'],
     []
   );
 
-  // Process logs to create speed data
+  useEffect(() => {
+    if (externalTimeframe) {
+      setTimeframe(externalTimeframe);
+    }
+  }, [externalTimeframe]);
+
   useEffect(() => {
     const now = new Date();
     const filtered: FilteredData = {};
@@ -286,40 +291,42 @@ function SpeedChart({
 
   return (
     <div className="p-4 w-full h-full">
-      <div className="join mb-4">
-        <button
-          className={`btn join-item ${
-            timeframe === 'today' ? 'btn-primary' : ''
-          }`}
-          onClick={() => setTimeframe('today')}
-        >
-          Today
-        </button>
-        <button
-          className={`btn join-item ${
-            timeframe === 'month' ? 'btn-primary' : ''
-          }`}
-          onClick={() => setTimeframe('month')}
-        >
-          This Month
-        </button>
-        <button
-          className={`btn join-item ${
-            timeframe === 'year' ? 'btn-primary' : ''
-          }`}
-          onClick={() => setTimeframe('year')}
-        >
-          This Year
-        </button>
-        <button
-          className={`btn join-item ${
-            timeframe === 'total' ? 'btn-primary' : ''
-          }`}
-          onClick={() => setTimeframe('total')}
-        >
-          All Time
-        </button>
-      </div>
+      {!externalTimeframe && (
+        <div className="join mb-4">
+          <button
+            className={`btn join-item ${
+              timeframe === 'today' ? 'btn-primary' : ''
+            }`}
+            onClick={() => setTimeframe('today')}
+          >
+            Today
+          </button>
+          <button
+            className={`btn join-item ${
+              timeframe === 'month' ? 'btn-primary' : ''
+            }`}
+            onClick={() => setTimeframe('month')}
+          >
+            This Month
+          </button>
+          <button
+            className={`btn join-item ${
+              timeframe === 'year' ? 'btn-primary' : ''
+            }`}
+            onClick={() => setTimeframe('year')}
+          >
+            This Year
+          </button>
+          <button
+            className={`btn join-item ${
+              timeframe === 'total' ? 'btn-primary' : ''
+            }`}
+            onClick={() => setTimeframe('total')}
+          >
+            All Time
+          </button>
+        </div>
+      )}
       {Object.values(filteredData).some((data) => data && data.length > 0) ? (
         <Line data={chartData} options={options} />
       ) : (

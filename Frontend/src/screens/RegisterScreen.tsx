@@ -128,7 +128,7 @@ function RegisterScreen() {
                 </Link>
               </label>
             </div>
-            <div className="form-control mt-6">
+            <div className="form-control flex justify-center mt-6">
               <button className="btn btn-primary" type="submit">
                 Register
               </button>

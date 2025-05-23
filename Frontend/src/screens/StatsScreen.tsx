@@ -4,12 +4,15 @@ import { useOutletContext } from 'react-router-dom';
 import { OutletProfileContextType } from '../types';
 import { ILog } from '../types';
 import PieChart from '../components/PieChart';
-import { useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import SpeedChart from '../components/SpeedChart';
+import ProgressChart from '../components/ProgressChart';
+import { numberWithCommas } from '../utils/utils';
 
 function StatsScreen() {
   const { username } = useOutletContext<OutletProfileContextType>();
   const [currentType, setCurrentType] = useState<string>('all');
+  const [typeFilteredLogs, setTypeFilteredLogs] = useState<ILog[]>([]);
   const [timeRange, setTimeRange] = useState<
     'today' | 'month' | 'year' | 'total'
   >('total');
@@ -102,15 +105,24 @@ function StatsScreen() {
       : timeFilteredLogs.filter((log: ILog) => log.type === currentType)
     : [];
 
-  // Get logs count by type (for chart data)
-  const getLogCountByType = (type: string) => {
-    if (currentType !== 'all' && type !== currentType) {
-      return 0;
+  // Wrap filterLogsByType in useCallback to stabilize its reference
+  const filterLogsByType = useCallback(
+    (type: string): ILog[] => {
+      if (currentType !== 'all' && type !== currentType) {
+        return [];
+      }
+      return timeFilteredLogs?.filter((log: ILog) => log.type === type) ?? [];
+    },
+    [currentType, timeFilteredLogs]
+  );
+
+  useEffect(() => {
+    if (logs) {
+      setTypeFilteredLogs(
+        currentType === 'all' ? logs : filterLogsByType(currentType)
+      );
     }
-    return (
-      timeFilteredLogs?.filter((log: ILog) => log.type === type).length ?? 0
-    );
-  };
+  }, [logs, currentType, filterLogsByType]);
 
   // Chart data for log count
   const logCountData = {
@@ -120,7 +132,7 @@ function StatsScreen() {
         label: 'Count',
         data:
           currentType === 'all'
-            ? logTypes.map((type) => getLogCountByType(type))
+            ? logTypes.map((type) => filterLogsByType(type).length)
             : [filteredLogs.length],
         backgroundColor: [
           'rgba(255, 99, 132, 1)',
@@ -284,7 +296,7 @@ function StatsScreen() {
   return (
     <div className="2xl:max-w-(--breakpoint-2xl) 2xl:min-w-[50%] min-w-full 2xl:px-0 px-10 mb-24 mt-4">
       <div className="grid lg:grid-cols-[20%_80%] gap-5">
-        <div className="card bg-base-100 p-4">
+        <div className="sticky top-4 self-start h-fit card bg-base-100 p-4">
           <div className="font-bold text-xl">Types</div>
           <ul className="menu card-body">
             <li
@@ -317,7 +329,7 @@ function StatsScreen() {
                 )
               }
             >
-              <option value="day">Today</option>
+              <option value="today">Today</option>
               <option value="month">This Month</option>
               <option value="year">This Year</option>
               <option value="total">All Time</option>
@@ -325,66 +337,102 @@ function StatsScreen() {
           </div>
         </div>
         <div className="flex flex-col gap-4">
-          <div className="flex flex-row justify-around">
-            <div>
-              <h2 className="text-xl font-bold text-primary">
+          {/* Stats summary cards */}
+          <div className="stats shadow bg-base-100">
+            <div className="stat">
+              <div className="stat-title">Total XP</div>
+              <div className="stat-value text-primary">
                 {currentType === 'all'
-                  ? filteredLogs.reduce((sum, log) => sum + log.xp, 0)
-                  : getXpData(currentType)}{' '}
-                XP
-              </h2>
-              <h4>
+                  ? numberWithCommas(
+                      filteredLogs.reduce((sum, log) => sum + log.xp, 0)
+                    )
+                  : numberWithCommas(getXpData(currentType))}
+              </div>
+              <div className="stat-desc">
                 {currentType === 'all'
-                  ? `${timeRange === 'total' ? 'Total' : timeRange === 'today' ? "Today's" : timeRange === 'month' ? "This Month's" : "This Year's"} XP`
-                  : `${currentType.charAt(0).toUpperCase() + currentType.slice(1)} XP`}
-              </h4>
+                  ? `${timeRange === 'total' ? 'All time' : timeRange === 'today' ? "Today's" : timeRange === 'month' ? "This Month's" : "This Year's"}`
+                  : `${currentType.charAt(0).toUpperCase() + currentType.slice(1)} category`}
+              </div>
             </div>
-            <div>
-              <h2 className="text-xl font-bold text-primary">
+
+            <div className="stat">
+              <div className="stat-title">Time Spent</div>
+              <div className="stat-value text-secondary">
                 {currentType === 'all'
-                  ? totalHours
-                  : getTimeSpentData(currentType).toFixed(1)}
-                h
-              </h2>
-              <h4>
+                  ? numberWithCommas(parseFloat(totalHours))
+                  : numberWithCommas(
+                      parseFloat(getTimeSpentData(currentType).toFixed(1))
+                    )}
+                <span className="text-lg">h</span>
+              </div>
+              <div className="stat-desc">
                 {currentType === 'all'
-                  ? `${timeRange === 'total' ? 'Total' : timeRange === 'today' ? "Today's" : timeRange === 'month' ? "This Month's" : "This Year's"} Hours`
-                  : `${currentType.charAt(0).toUpperCase() + currentType.slice(1)} Hours`}
-              </h4>
+                  ? `${timeRange === 'total' ? 'All time' : timeRange === 'today' ? 'Today' : timeRange === 'month' ? 'This Month' : 'This Year'}`
+                  : `${currentType.charAt(0).toUpperCase() + currentType.slice(1)} category`}
+              </div>
+            </div>
+
+            <div className="stat">
+              <div className="stat-title">Logs Count</div>
+              <div className="stat-value text-accent">
+                {currentType === 'all'
+                  ? numberWithCommas(filteredLogs.length)
+                  : numberWithCommas(filterLogsByType(currentType).length)}
+              </div>
+              <div className="stat-desc">
+                {currentType !== 'all' &&
+                  `${currentType.charAt(0).toUpperCase() + currentType.slice(1)} logs`}
+                {untrackedLogs.length > 0 && currentType === 'all' && (
+                  <span className="text-warning">{` (${untrackedLogs.length} untracked)`}</span>
+                )}
+              </div>
             </div>
           </div>
-          <div className="flex flex-col lg:flex-row justify-center gap-7">
-            <div className="card bg-base-100 p-4">
-              <div className="max-h-64 max-w-64">
-                <h2 className="text-2xl font-bold text-primary">Log Count</h2>
-                <PieChart data={logCountData} />
+
+          {currentType === 'all' && (
+            <div className="flex flex-col lg:flex-row justify-between gap-7">
+              <div className="card bg-base-100 p-4">
+                <div className="max-h-64 max-w-64">
+                  <h2 className="text-2xl font-bold text-primary">Log Count</h2>
+                  <PieChart data={logCountData} />
+                </div>
+              </div>
+              <div className="card bg-base-100 p-4">
+                <div className="max-h-64 max-w-64">
+                  <h2 className="text-2xl font-bold text-primary">Log Hours</h2>
+                  <PieChart data={logTimeData} />
+                </div>
+              </div>
+              <div className="card bg-base-100 p-4">
+                <div className="max-h-64 max-w-64">
+                  <h2 className="text-2xl font-bold text-primary">Log XP</h2>
+                  <PieChart data={logXpData} />
+                </div>
               </div>
             </div>
-            <div className="card bg-base-100 p-4">
-              <div className="max-h-64 max-w-64">
-                <h2 className="text-2xl font-bold text-primary">Log Hours</h2>
-                <p
-                  className="text-sm text-base-content"
-                  hidden={untrackedLogs.length === 0 || currentType !== 'all'}
-                >{`${untrackedLogs.length} untracked logs`}</p>
-                <PieChart data={logTimeData} />
-              </div>
-            </div>
-            <div className="card bg-base-100 p-4">
-              <div className="max-h-64 max-w-64">
-                <h2 className="text-2xl font-bold text-primary">Log XP</h2>
-                <PieChart data={logXpData} />
-              </div>
-            </div>
-          </div>
-          <div className="card bg-base-100  grow p-8 mb-4">
-            <div className="h-full w-full">
-              <h2 className="text-2xl font-bold text-primary mb-2">
-                Reading Speed
-              </h2>
+          )}
+          {currentType === 'all' ||
+          currentType === 'reading' ||
+          currentType === 'manga' ||
+          currentType === 'vn' ? (
+            <div className="card bg-base-100 grow p-8 mb-4">
               <div className="h-full w-full">
-                <SpeedChart timeframe={timeRange} readingData={logs ?? []} />
+                <h2 className="text-2xl font-bold text-primary mb-2">
+                  Reading Speed
+                </h2>
+                <div className="h-full w-full">
+                  <SpeedChart
+                    timeframe={timeRange}
+                    readingData={typeFilteredLogs}
+                  />
+                </div>
               </div>
+            </div>
+          ) : null}
+
+          <div className="card bg-base-100 grow p-8 mb-4">
+            <div className="h-full w-full">
+              <ProgressChart timeframe={timeRange} logs={typeFilteredLogs} />
             </div>
           </div>
         </div>
