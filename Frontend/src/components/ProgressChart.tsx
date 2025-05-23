@@ -1,11 +1,11 @@
-import { ILog } from '../types';
-import { ChartArea, ScriptableContext } from 'chart.js';
-import LineChart from './LineChart';
-import { useEffect, useState } from 'react';
+import { ILog } from "../types";
+import { ChartArea, ScriptableContext } from "chart.js";
+import LineChart from "./LineChart";
+import { useEffect, useState } from "react";
 
 interface ProgressChartProps {
   logs: ILog[] | undefined;
-  timeframe?: 'today' | 'month' | 'year' | 'total';
+  timeframe?: "today" | "month" | "year" | "total";
 }
 
 export default function ProgressChart({
@@ -13,8 +13,8 @@ export default function ProgressChart({
   timeframe: externalTimeframe,
 }: ProgressChartProps) {
   const [timeframe, setTimeframe] = useState<
-    'today' | 'month' | 'year' | 'total'
-  >('total');
+    "today" | "month" | "year" | "total"
+  >("total");
 
   useEffect(() => {
     if (externalTimeframe) {
@@ -30,14 +30,14 @@ export default function ProgressChart({
     return logs.filter((log) => {
       const logDate = new Date(log.date);
 
-      if (timeframe === 'today') {
+      if (timeframe === "today") {
         return logDate.toDateString() === now.toDateString();
-      } else if (timeframe === 'month') {
+      } else if (timeframe === "month") {
         return (
           logDate.getMonth() === now.getMonth() &&
           logDate.getFullYear() === now.getFullYear()
         );
-      } else if (timeframe === 'year') {
+      } else if (timeframe === "year") {
         return logDate.getFullYear() === now.getFullYear();
       } else {
         return true;
@@ -49,7 +49,7 @@ export default function ProgressChart({
     const xpByDate: { [key: string]: number } = {};
 
     logs.forEach((log) => {
-      const dateStr = new Date(log.date).toISOString().split('T')[0];
+      const dateStr = new Date(log.date).toISOString().split("T")[0];
       if (!xpByDate[dateStr]) {
         xpByDate[dateStr] = 0;
       }
@@ -62,19 +62,19 @@ export default function ProgressChart({
   function createGradient(
     ctx: CanvasRenderingContext2D,
     chartArea: ChartArea,
-    color: string
+    color: string,
   ) {
     const { top, bottom } = chartArea;
     const gradient = ctx.createLinearGradient(0, top, 0, bottom);
     gradient.addColorStop(0, color);
-    gradient.addColorStop(1, 'rgba(50, 170, 250, 0)');
+    gradient.addColorStop(1, "rgba(50, 170, 250, 0)");
     return gradient;
   }
 
-  let labels: string[] = [];
-  let xpValues: number[] = [];
+  let labels: string[];
+  let xpValues: number[];
 
-  if (timeframe === 'today') {
+  if (timeframe === "today") {
     const xpByHour: { [key: string]: number } = {};
 
     for (let i = 0; i < 24; i++) {
@@ -93,26 +93,26 @@ export default function ProgressChart({
     xpValues = Object.keys(xpByHour)
       .sort((a, b) => parseInt(a) - parseInt(b))
       .map((hour) => xpByHour[hour]);
-  } else if (timeframe === 'month') {
+  } else if (timeframe === "month") {
     const xpByDate = getXpByDate(filteredLogs);
     const dates = Object.keys(xpByDate).sort();
     labels = dates.map((date) => new Date(date).getDate().toString());
     xpValues = dates.map((date) => xpByDate[date]);
-  } else if (timeframe === 'year') {
+  } else if (timeframe === "year") {
     const xpByMonth: { [key: string]: number } = {};
     const months = [
-      'Jan',
-      'Feb',
-      'Mar',
-      'Apr',
-      'May',
-      'Jun',
-      'Jul',
-      'Aug',
-      'Sep',
-      'Oct',
-      'Nov',
-      'Dec',
+      "Jan",
+      "Feb",
+      "Mar",
+      "Apr",
+      "May",
+      "Jun",
+      "Jul",
+      "Aug",
+      "Sep",
+      "Oct",
+      "Nov",
+      "Dec",
     ];
 
     filteredLogs.forEach((log) => {
@@ -137,7 +137,7 @@ export default function ProgressChart({
       const date = new Date(log.date);
       const yearMonth = `${date.getFullYear()}-${(date.getMonth() + 1)
         .toString()
-        .padStart(2, '0')}`;
+        .padStart(2, "0")}`;
 
       if (!xpByMonthYear[yearMonth]) {
         xpByMonthYear[yearMonth] = 0;
@@ -157,16 +157,16 @@ export default function ProgressChart({
     labels: labels,
     datasets: [
       {
-        label: 'XP Earned',
+        label: "XP Earned",
         data: xpValues,
         fill: true,
         pointRadius: 3,
-        borderColor: 'rgb(50, 170, 250)',
-        backgroundColor: function (context: ScriptableContext<'line'>) {
+        borderColor: "rgb(50, 170, 250)",
+        backgroundColor: function (context: ScriptableContext<"line">) {
           const chart = context.chart;
           const { ctx, chartArea } = chart;
           if (!chartArea) return undefined;
-          return createGradient(ctx, chartArea, 'rgba(50, 170, 250, 1)');
+          return createGradient(ctx, chartArea, "rgba(50, 170, 250, 1)");
         },
         tension: 0.1,
       },
@@ -181,13 +181,13 @@ export default function ProgressChart({
             <h2 className="text-2xl font-bold text-primary mb-2">Progress</h2>
             {filteredLogs.length > 0 && hasData ? (
               <p className="text-sm text-base-content mb-4">
-                {timeframe === 'today'
-                  ? 'Hourly XP - Today'
-                  : timeframe === 'month'
-                    ? 'Daily XP - Current Month'
-                    : timeframe === 'year'
-                      ? 'XP Earned Over the Year'
-                      : 'Total XP Earned Over Time'}
+                {timeframe === "today"
+                  ? "Hourly XP - Today"
+                  : timeframe === "month"
+                    ? "Daily XP - Current Month"
+                    : timeframe === "year"
+                      ? "XP Earned Over the Year"
+                      : "Total XP Earned Over Time"}
               </p>
             ) : null}
           </div>
@@ -197,7 +197,7 @@ export default function ProgressChart({
                 value={timeframe}
                 onChange={(e) =>
                   setTimeframe(
-                    e.target.value as 'today' | 'month' | 'year' | 'total'
+                    e.target.value as "today" | "month" | "year" | "total",
                   )
                 }
                 className="select select-bordered"

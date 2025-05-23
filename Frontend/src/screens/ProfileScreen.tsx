@@ -29,28 +29,29 @@ function ProfileScreen() {
     enabled: !!username,
   });
 
-  const totalUserXpToLevelUp = user?.stats.userXpToNextLevel
-    ? user?.stats.userXpToNextLevel - user?.stats.userXpToCurrentLevel
+  const totalUserXpToLevelUp = user?.stats?.userXpToNextLevel
+    ? user?.stats?.userXpToNextLevel - user?.stats?.userXpToCurrentLevel
     : 0;
-  const userProgressXP = user?.stats.userXp
-    ? user?.stats.userXp - user?.stats.userXpToCurrentLevel
+  const userProgressXP = user?.stats?.userXp
+    ? user?.stats?.userXp - user?.stats?.userXpToCurrentLevel
     : 0;
   const userProgressPercentage = (userProgressXP / totalUserXpToLevelUp) * 100;
 
-  const totalListeningXpToLevelUp = user?.stats.listeningXpToNextLevel
-    ? user?.stats.listeningXpToNextLevel - user?.stats.listeningXpToCurrentLevel
+  const totalListeningXpToLevelUp = user?.stats?.listeningXpToNextLevel
+    ? user?.stats?.listeningXpToNextLevel -
+      user?.stats?.listeningXpToCurrentLevel
     : 0;
-  const listeningProgressXP = user?.stats.listeningXp
-    ? user?.stats.listeningXp - user?.stats.listeningXpToCurrentLevel
+  const listeningProgressXP = user?.stats?.listeningXp
+    ? user?.stats?.listeningXp - user?.stats?.listeningXpToCurrentLevel
     : 0;
   const listeningProgressPercentage =
     (listeningProgressXP / totalListeningXpToLevelUp) * 100;
 
-  const totalReadingXpToLevelUp = user?.stats.readingXpToNextLevel
-    ? user?.stats.readingXpToNextLevel - user?.stats.readingXpToCurrentLevel
+  const totalReadingXpToLevelUp = user?.stats?.readingXpToNextLevel
+    ? user?.stats?.readingXpToNextLevel - user?.stats?.readingXpToCurrentLevel
     : 0;
-  const readingProgressXP = user?.stats.readingXp
-    ? user?.stats.readingXp - user?.stats.readingXpToCurrentLevel
+  const readingProgressXP = user?.stats?.readingXp
+    ? user?.stats?.readingXp - user?.stats?.readingXpToCurrentLevel
     : 0;
   const readingProgressPercentage =
     (readingProgressXP / totalReadingXpToLevelUp) * 100;
@@ -68,7 +69,7 @@ function ProfileScreen() {
                   progressColor={accent}
                 />
                 <div className="flex justify-between text-sm">
-                  <p>Level: {user?.stats.userLevel}</p>
+                  <p>Level: {user?.stats?.userLevel}</p>
                   <p className="text-right">
                     XP: {userProgressXP}/{totalUserXpToLevelUp}
                   </p>
@@ -81,7 +82,7 @@ function ProfileScreen() {
                   progressColor={`primary`}
                 />
                 <div className="flex justify-between text-sm">
-                  <p>Level: {user?.stats.listeningLevel}</p>
+                  <p>Level: {user?.stats?.listeningLevel}</p>
                   <p className="text-right">
                     XP: {listeningProgressXP}/{totalListeningXpToLevelUp}
                   </p>
@@ -94,7 +95,7 @@ function ProfileScreen() {
                   progressColor={accent}
                 />
                 <div className="flex justify-between text-sm">
-                  <p>Level: {user?.stats.readingLevel}</p>
+                  <p>Level: {user?.stats?.readingLevel}</p>
                   <p className="text-right">
                     XP: {readingProgressXP}/{totalReadingXpToLevelUp}
                   </p>
@@ -104,7 +105,7 @@ function ProfileScreen() {
           </div>
 
           <div className="flex flex-col gap-5 items-center">
-            {logs && logs?.pages ? (
+            {logs?.pages ? (
               logs.pages.map((page, index) => (
                 <React.Fragment key={index}>
                   {page.map((log) => (
@@ -120,11 +121,13 @@ function ProfileScreen() {
               onClick={() => fetchNextPage()}
               disabled={!hasNextPage || isFetchingNextPage}
             >
-              {isFetchingNextPage
-                ? 'Loading more...'
-                : hasNextPage
-                  ? 'Load More'
-                  : 'Nothing more to load'}
+              {isFetchingNextPage ? (
+                <span className="loading loading-spinner loading-sm"></span>
+              ) : hasNextPage ? (
+                'Load More'
+              ) : (
+                'Nothing more to load'
+              )}
             </button>
           </div>
         </div>

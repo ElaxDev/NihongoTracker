@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import axios from 'axios';
 import { customError } from './errorMiddleware.js';
-import { IUser, ILog } from '../types.js';
+import { IUser, ILog, csvLogs } from '../types.js';
 import { Types } from 'mongoose';
 
 type manabeLogs = {
@@ -24,7 +24,7 @@ type manabeLogs = {
   officialId?: string;
 };
 
-interface ILogTypeMap {
+interface ILogManabeTypeMap {
   [key: string]: {
     logType: ILog['type'];
     parametro: string;
@@ -46,8 +46,11 @@ interface ILogNT {
   date: Date;
 }
 
-function transformList(list: manabeLogs[], user: Omit<IUser, 'password'>) {
-  const logTypeMap: ILogTypeMap = {
+function transformManabeLogsList(
+  list: manabeLogs[],
+  user: Omit<IUser, 'password'>
+) {
+  const logTypeMap: ILogManabeTypeMap = {
     ANIME: {
       logType: 'anime',
       parametro: 'episodes',
@@ -99,7 +102,7 @@ function transformList(list: manabeLogs[], user: Omit<IUser, 'password'>) {
     });
 }
 
-export default async function getLogsFromAPI(
+export async function getLogsFromAPI(
   req: Request,
   res: Response,
   next: NextFunction
@@ -120,7 +123,66 @@ export default async function getLogsFromAPI(
         page: 1,
       },
     });
-    const logs = transformList(response.data, user);
+    const logs = transformManabeLogsList(response.data, user);
+    req.body.logs = logs;
+    return next();
+  } catch (error) {
+    return next(error as customError);
+  }
+}
+
+function transformCSVLogsList(
+  list: csvLogs[],
+  user: Omit<IUser, 'password'>
+): ILogNT[] {
+  return list.map((log) => {
+    const { type, description, date, time, chars, pages, episodes, mediaId } =
+      log;
+    if (
+      type !== 'anime' &&
+      type !== 'manga' &&
+      type !== 'reading' &&
+      type !== 'vn' &&
+      type !== 'video' &&
+      type !== 'audio' &&
+      type !== 'other'
+    ) {
+      throw new customError('Invalid log type', 400);
+    }
+    const NTLogs: ILogNT = {
+      user: user._id,
+      description,
+      type: type as ILog['type'],
+      date: new Date(date),
+    };
+    if (time) {
+      NTLogs.time = Number(time);
+    }
+    if (chars) {
+      NTLogs.chars = Number(chars);
+    }
+    if (pages) {
+      NTLogs.pages = Number(pages);
+    }
+    if (episodes) {
+      NTLogs.episodes = Number(episodes);
+    }
+    if (mediaId) {
+      NTLogs.mediaId = mediaId;
+    }
+    return NTLogs;
+  });
+}
+
+export async function getLogsFromCSV(
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
+  try {
+    const logs = transformCSVLogsList(req.body.logs, res.locals.user);
+    if (!logs) throw new customError('No logs found', 404);
+    if (logs.length === 0) throw new customError('No logs found', 404);
     req.body.logs = logs;
     return next();
   } catch (error) {

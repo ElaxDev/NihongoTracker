@@ -42,6 +42,9 @@ export interface IStats {
   listeningLevel: number;
   listeningXpToNextLevel: number;
   listeningXpToCurrentLevel: number;
+  currentStreak: number;
+  longestStreak: number;
+  lastStreakDate: Date | null;
 }
 
 export type ILoginResponse = Pick<

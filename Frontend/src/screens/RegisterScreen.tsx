@@ -1,17 +1,17 @@
-import { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { registerUserFn } from '../api/trackerApi';
-import { useMutation } from '@tanstack/react-query';
-import { ILoginResponse } from '../types';
-import { useUserDataStore } from '../store/userData';
-import { toast } from 'react-toastify';
-import { AxiosError } from 'axios';
-import Loader from '../components/Loader';
+import React, { useEffect, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { registerUserFn } from "../api/trackerApi";
+import { useMutation } from "@tanstack/react-query";
+import { ILoginResponse } from "../types";
+import { useUserDataStore } from "../store/userData";
+import { toast } from "react-toastify";
+import { AxiosError } from "axios";
+import Loader from "../components/Loader";
 
 function RegisterScreen() {
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
-  const [passwordConfirmation, setPasswordConfirmation] = useState('');
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [passwordConfirmation, setPasswordConfirmation] = useState("");
   const { setUser } = useUserDataStore();
   const navigate = useNavigate();
 
@@ -24,7 +24,7 @@ function RegisterScreen() {
       if (error instanceof AxiosError) {
         toast.error(error.response?.data.message);
       } else {
-        toast.error(error.message ? error.message : 'An error occurred');
+        toast.error(error.message ? error.message : "An error occurred");
       }
     },
   });
@@ -36,8 +36,8 @@ function RegisterScreen() {
 
   useEffect(() => {
     if (isSuccess) {
-      toast.success('Login successful');
-      navigate('/'); // Redirect to home page
+      toast.success("Login successful");
+      navigate("/"); // Redirect to home page
     }
   }, [navigate, isSuccess]);
 

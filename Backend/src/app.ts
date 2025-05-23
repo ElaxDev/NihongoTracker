@@ -25,6 +25,7 @@ app.use(express.json());
 app.use(morgan('dev'));
 app.use(cookieParser());
 
+app.use(express.static('dist'));
 app.use('/api/auth', authRoutes);
 app.use('/api/media', mediaRoutes);
 app.use('/api/logs', logsRoutes);

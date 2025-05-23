@@ -12,24 +12,27 @@ import {
 } from '../controllers/logs.controller.js';
 import { calculateXp } from '../middlewares/calculateXp.js';
 import { protect } from '../libs/authMiddleware.js';
-// import multer from 'multer';
-// import { csvToArray } from '../middlewares/csvToArray';
-import getLogsFromAPI from '../middlewares/getLogs.js';
+import { csvToArray } from '../middlewares/csvToArray.js';
+import multer from 'multer';
+import { getLogsFromAPI, getLogsFromCSV } from '../middlewares/getLogs.js';
 
 const router = Router();
-// const upload = multer();
 
-//TODO: Add a route to import logs from a CSV file
-// router.post<ParamsDictionary, any, ILog[]>(
-//   '/importcsv',
-//   protect,
-//   upload.single('logs'),
-//   csvToArray,
-//   calculateXp,
-//   importLogs
-// );
+const upload = multer({
+  storage: multer.memoryStorage(),
+});
 
-router.post('/importlogs', protect, getLogsFromAPI, calculateXp, importLogs);
+router.post('/import', protect, getLogsFromAPI, calculateXp, importLogs);
+
+router.post(
+  '/importfromcsv',
+  protect,
+  upload.single('csv'),
+  csvToArray,
+  getLogsFromCSV,
+  calculateXp,
+  importLogs
+);
 
 router.put('/assign-media', protect, assignMedia);
 

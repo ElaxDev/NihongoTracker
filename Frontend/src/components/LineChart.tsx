@@ -1,19 +1,19 @@
-import { Line } from 'react-chartjs-2';
+import { Line } from "react-chartjs-2";
 
 import {
-  Chart as ChartJS,
   CategoryScale,
+  Chart as ChartJS,
+  ChartData,
+  Filler,
+  Legend,
   LinearScale,
-  PointElement,
   LineElement,
+  Point,
+  PointElement,
   TimeScale,
   Title,
   Tooltip,
-  Legend,
-  Filler,
-  ChartData,
-  Point,
-} from 'chart.js';
+} from "chart.js";
 
 ChartJS.register(
   CategoryScale,
@@ -24,21 +24,21 @@ ChartJS.register(
   Title,
   Tooltip,
   Legend,
-  Filler
+  Filler,
 );
 
 function LineChart({
   data,
 }: {
-  data: ChartData<'line', (number | Point | null)[], unknown>;
+  data: ChartData<"line", (number | Point | null)[]>;
 }) {
   return (
     <Line
       options={{
         responsive: true,
         maintainAspectRatio: false,
-        interaction: { mode: 'index', intersect: false, axis: 'xy' },
-        plugins: { legend: { position: 'right' } },
+        interaction: { mode: "index", intersect: false, axis: "xy" },
+        plugins: { legend: { position: "right" } },
         scales: {
           x: {
             title: { display: true },

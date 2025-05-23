@@ -29,6 +29,7 @@ import ListScreen from './screens/ListScreen.tsx';
 import MatchMedia from './screens/MatchMedia.tsx';
 import MediaDetails from './screens/MediaDetails.tsx';
 import MediaHeader from './components/MediaHeader.tsx';
+import FeaturesScreen from './screens/FeaturesScreen.tsx';
 
 const router = createBrowserRouter(
   createRoutesFromElements(
@@ -38,6 +39,7 @@ const router = createBrowserRouter(
       <Route path="register" element={<RegisterScreen />} />
       <Route path="settings" element={<SettingsScreen />} />
       <Route path="ranking" element={<RankingScreen />} />
+      <Route path="features" element={<FeaturesScreen />} />
       <Route path="user/:username" element={<ProfileHeader />}>
         <Route index element={<ProfileScreen />} />
         <Route path="stats" element={<StatsScreen />} />

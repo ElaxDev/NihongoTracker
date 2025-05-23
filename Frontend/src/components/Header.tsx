@@ -1,14 +1,14 @@
-import { Link, useNavigate } from 'react-router-dom';
-import { MdLogout, MdPerson, MdSettings } from 'react-icons/md';
-import { useUserDataStore } from '../store/userData';
-import { useMutation } from '@tanstack/react-query';
-import { logoutUserFn } from '../api/trackerApi';
-import { toast } from 'react-toastify';
-import { AxiosError } from 'axios';
-import { logoutResponseType } from '../types';
-import Loader from './Loader';
-// import QuickLog from './QuickLog';
-import { IconContext } from 'react-icons';
+import React from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { MdLogout, MdPerson, MdSettings } from "react-icons/md";
+import { useUserDataStore } from "../store/userData";
+import { useMutation } from "@tanstack/react-query";
+import { logoutUserFn } from "../api/trackerApi";
+import { toast } from "react-toastify";
+import { AxiosError } from "axios";
+import { logoutResponseType } from "../types";
+import Loader from "./Loader";
+import { IconContext } from "react-icons";
 
 function Header() {
   const { user, logout } = useUserDataStore();
@@ -20,13 +20,13 @@ function Header() {
       logout();
       useUserDataStore.persist.clearStorage();
       toast.success(data.message);
-      navigate('/');
+      navigate("/");
     },
     onError: (error) => {
       if (error instanceof AxiosError) {
         toast.error(error.response?.data.message);
       } else {
-        toast.error(error.message ? error.message : 'An error occurred');
+        toast.error(error.message ? error.message : "An error occurred");
       }
     },
   });
@@ -130,7 +130,7 @@ function Header() {
                   className="dropdown-content z-1 menu p-2 shadow-sm bg-base-100 text-base-content rounded-box w-52"
                 >
                   <IconContext.Provider
-                    value={{ className: 'text-lg currentColor' }}
+                    value={{ className: "text-lg currentColor" }}
                   >
                     <li>
                       <Link to={`/user/${user.username}`}>

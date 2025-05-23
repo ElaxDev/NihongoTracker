@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { ICreateLog, ILog, IMediaDocument } from '../types';
-import { createLogFn } from '../api/trackerApi';
+import { ICreateLog, ILog, ILoginResponse, IMediaDocument } from '../types';
+import { createLogFn, getUserFn } from '../api/trackerApi';
 import { toast } from 'react-toastify';
 import { AxiosError } from 'axios';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -73,7 +73,7 @@ function LogScreen() {
   const [shouldAnilistSearch, setShouldAnilistSearch] = useState(true);
   const [isAdvancedOptions, setIsAdvancedOptions] = useState<boolean>(false);
   const suggestionRef = useRef<HTMLDivElement>(null);
-  const { user } = useUserDataStore();
+  const { user, setUser } = useUserDataStore();
 
   const {
     data: searchResult,
@@ -96,7 +96,7 @@ function LogScreen() {
 
   const { mutate: createLog, isPending: isLogCreating } = useMutation({
     mutationFn: createLogFn,
-    onSuccess: () => {
+    onSuccess: async () => {
       setLogData({
         type: null,
         titleNative: '',
@@ -133,6 +133,25 @@ function LogScreen() {
             query.queryKey[0] as string
           ),
       });
+
+      if (user?.username) {
+        try {
+          const updatedUser = await getUserFn(user.username);
+
+          const loginResponse: ILoginResponse = {
+            _id: updatedUser._id,
+            username: updatedUser.username,
+            stats: updatedUser.stats,
+            avatar: updatedUser.avatar,
+            titles: updatedUser.titles,
+            roles: updatedUser.roles,
+            discordId: updatedUser.discordId,
+          };
+          setUser(loginResponse);
+        } catch (e) {
+          console.error('Error fetching user data:', e);
+        }
+      }
       toast.success('Log created successfully!');
     },
     onError: (error) => {
