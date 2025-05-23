@@ -22,7 +22,7 @@ function ProfileScreen() {
       getUserLogsFn(username as string, { limit, page: pageParam as number }),
     getNextPageParam: (lastPage, allPages) => {
       if (!lastPage || lastPage.length < limit) return undefined;
-      return allPages.length + 1;
+      return allPages ? allPages.length + 1 : 2;
     },
     initialPageParam: 1,
     staleTime: Infinity,
