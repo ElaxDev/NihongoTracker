@@ -14,21 +14,6 @@ function ProfileNavbar({ username }: { username: string | undefined }) {
           <li>
             <Link to={`/user/${username}/list`}>Immersion List</Link>
           </li>
-          <li>
-            <a>Link</a>
-          </li>
-          <li>
-            <a>Link</a>
-          </li>
-          <li>
-            <a>Link</a>
-          </li>
-          <li>
-            <a>Link</a>
-          </li>
-          <li>
-            <a>Link</a>
-          </li>
         </ul>
       </div>
     </div>

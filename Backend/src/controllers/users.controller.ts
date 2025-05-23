@@ -1,10 +1,9 @@
-import User from '../models/user.model';
-import Log from '../models/log.model';
-import ImmersionList from '../models/immersionList.model';
+import User from '../models/user.model.js';
+import Log from '../models/log.model.js';
 import { Request, Response, NextFunction } from 'express';
-import { updateRequest } from '../types';
-import { customError } from '../middlewares/errorMiddleware';
-import uploadFile from '../services/uploadFile';
+import { IUpdateRequest } from '../types.js';
+import { customError } from '../middlewares/errorMiddleware.js';
+import uploadFile from '../services/uploadFile.js';
 
 export async function updateUser(
   req: Request,
@@ -12,7 +11,7 @@ export async function updateUser(
   next: NextFunction
 ) {
   const { username, newPassword, newPasswordConfirm, password, discordId } =
-    req.body as updateRequest;
+    req.body as IUpdateRequest;
 
   try {
     const user = await User.findById(res.locals.user._id);
@@ -116,7 +115,6 @@ export async function getUser(req: Request, res: Response, next: NextFunction) {
     id: userFound._id,
     username: userFound.username,
     stats: userFound.stats,
-    ImmersionList: userFound.immersionList,
     discordId: userFound.discordId,
     avatar: userFound.avatar,
     banner: userFound.banner,
@@ -137,17 +135,141 @@ export async function getRanking(
     const skip = (page - 1) * limit;
     const filter = (req.query.filter as string) || 'userLevel';
     const sort = (req.query.sort as string) || 'desc';
+    const timeFilter = (req.query.timeFilter as string) || 'all-time';
 
-    const rankingUsers = await User.aggregate([
-      { $sort: { [`stats.${filter}`]: sort === 'asc' ? 1 : -1 } },
-      { $skip: skip },
-      { $limit: limit },
-      {
-        $project: { _id: 0, avatar: 1, username: 1, stats: 1 },
-      },
-    ]);
+    // Create date filter based on timeFilter
+    let dateFilter: { date?: { $gte: Date } } = {};
+    const now = new Date();
 
-    return res.status(200).json(rankingUsers);
+    if (timeFilter === 'today') {
+      const startOfDay = new Date(now.setHours(0, 0, 0, 0));
+      dateFilter = { date: { $gte: startOfDay } };
+    } else if (timeFilter === 'month') {
+      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+      dateFilter = { date: { $gte: startOfMonth } };
+    } else if (timeFilter === 'year') {
+      const startOfYear = new Date(now.getFullYear(), 0, 1);
+      dateFilter = { date: { $gte: startOfYear } };
+    }
+
+    // Extract date value for use in aggregation
+    const dateGte = dateFilter.date?.$gte || new Date(0);
+
+    // If filtering by time period (not all-time), calculate stats from logs
+    if (timeFilter !== 'all-time') {
+      // Calculate user stats based on logs within the date range
+      const userStats = await Log.aggregate([
+        { $match: dateFilter },
+        {
+          $group: {
+            _id: '$user',
+            userXp: { $sum: '$xp' },
+            readingXp: {
+              $sum: {
+                $cond: [
+                  { $in: ['$type', ['reading', 'manga', 'vn']] },
+                  '$xp',
+                  0,
+                ],
+              },
+            },
+            listeningXp: {
+              $sum: {
+                $cond: [
+                  { $in: ['$type', ['anime', 'audio', 'video']] },
+                  '$xp',
+                  0,
+                ],
+              },
+            },
+          },
+        },
+        { $sort: { [`${filter}`]: sort === 'asc' ? 1 : -1 } },
+        { $skip: skip },
+        { $limit: limit },
+      ]);
+
+      // Lookup user details
+      const rankingUsers = await User.aggregate([
+        {
+          $match: {
+            _id: { $in: userStats.map((stat) => stat._id) },
+          },
+        },
+        {
+          $lookup: {
+            from: 'logs',
+            let: { userId: '$_id' },
+            pipeline: [
+              {
+                $match: {
+                  $expr: {
+                    $and: [
+                      { $eq: ['$user', '$$userId'] },
+                      { $gte: ['$date', dateGte] },
+                    ],
+                  },
+                },
+              },
+              {
+                $group: {
+                  _id: '$user',
+                  userXp: { $sum: '$xp' },
+                  readingXp: {
+                    $sum: {
+                      $cond: [
+                        { $in: ['$type', ['reading', 'manga', 'vn']] },
+                        '$xp',
+                        0,
+                      ],
+                    },
+                  },
+                  listeningXp: {
+                    $sum: {
+                      $cond: [
+                        { $in: ['$type', ['anime', 'audio', 'video']] },
+                        '$xp',
+                        0,
+                      ],
+                    },
+                  },
+                },
+              },
+            ],
+            as: 'timeStats',
+          },
+        },
+        { $unwind: '$timeStats' },
+        {
+          $project: {
+            _id: 0,
+            username: 1,
+            avatar: 1,
+            stats: {
+              userXp: '$timeStats.userXp',
+              readingXp: '$timeStats.readingXp',
+              listeningXp: '$timeStats.listeningXp',
+              userLevel: 1, // Keep the user level from the user document
+            },
+          },
+        },
+        { $sort: { [`stats.${filter}`]: sort === 'asc' ? 1 : -1 } },
+      ]);
+
+      return res.status(200).json(rankingUsers);
+    } else {
+      // Default behavior - get all-time stats
+      const rankingUsers = await User.aggregate([
+        { $sort: { [`stats.${filter}`]: sort === 'asc' ? 1 : -1 } },
+        { $skip: skip },
+        { $limit: limit },
+        {
+          $project: { _id: 0, avatar: 1, username: 1, stats: 1 },
+        },
+      ]);
+
+      return res.status(200).json(rankingUsers);
+    }
   } catch (error) {
     return next(error as customError);
   }
@@ -193,6 +315,11 @@ export async function clearUserData(
   }
 }
 
+interface ImmersionGroup {
+  _id: 'anime' | 'manga' | 'reading' | 'vn' | 'video';
+  media: any[];
+}
+
 export async function getImmersionList(
   req: Request,
   res: Response,
@@ -201,9 +328,49 @@ export async function getImmersionList(
   try {
     const user = await User.findOne({ username: req.params.username });
     if (!user) throw new customError('User not found', 404);
-    const list = await ImmersionList.findById(user.immersionList);
-    if (!list) throw new customError('List not found', 404);
-    return res.status(200).json(list);
+
+    const immersionList: ImmersionGroup[] = await Log.aggregate([
+      { $match: { user: user._id } },
+      {
+        $group: {
+          _id: '$mediaId',
+        },
+      },
+      {
+        $lookup: {
+          from: 'media', // The name of the Media collection
+          localField: '_id',
+          foreignField: 'contentId',
+          as: 'mediaDetails',
+        },
+      },
+      { $unwind: '$mediaDetails' },
+      {
+        $replaceRoot: { newRoot: '$mediaDetails' },
+      },
+      {
+        $group: {
+          _id: '$type',
+          media: { $push: '$$ROOT' },
+        },
+      },
+    ]);
+
+    const result: { [key in ImmersionGroup['_id']]: any[] } = {
+      anime: [],
+      manga: [],
+      reading: [],
+      vn: [],
+      video: [],
+    };
+
+    immersionList.forEach((group) => {
+      if (result[group._id]) {
+        result[group._id] = group.media;
+      }
+    });
+
+    return res.status(200).json(result);
   } catch (error) {
     return next(error as customError);
   }

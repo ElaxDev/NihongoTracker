@@ -1,10 +1,13 @@
-import { IVNDocument, ILog } from '../types';
-import { useState, useMemo, useEffect, useCallback } from 'react';
+import { ILog, IMediaDocument } from '../types';
+import { useState, useMemo, useCallback } from 'react';
 import { fuzzy } from 'fast-fuzzy';
-import { useMutation, useQuery } from '@tanstack/react-query';
-import { assignMediaFn, searchVNFn } from '../api/trackerApi';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { assignMediaFn } from '../api/trackerApi';
 import { toast } from 'react-toastify';
 import { AxiosError } from 'axios';
+import useSearch from '../hooks/useSearch';
+import { useFilteredGroupedLogs } from '../hooks/useFilteredGroupedLogs.tsx';
+import { useUserDataStore } from '../store/userData';
 
 interface VNLogsProps {
   logs: ILog[] | undefined;
@@ -12,24 +15,27 @@ interface VNLogsProps {
 
 function VNLogs({ logs }: VNLogsProps) {
   const [searchQuery, setSearchQuery] = useState<string>('');
-  const [selectedVN, setSelectedVN] = useState<IVNDocument | undefined>(
+  const [selectedVN, setSelectedVN] = useState<IMediaDocument | undefined>(
     undefined
   );
   const [selectedLogs, setSelectedLogs] = useState<ILog[]>([]);
+  const [selectedGroup, setSelectedGroup] = useState<number | null>(null);
   const [assignedLogs, setAssignedLogs] = useState<ILog[]>([]);
+  const [shouldSearch, setShouldSearch] = useState<boolean>(true);
+
+  const { user } = useUserDataStore();
+  const username = user?.username;
+
+  const queryClient = useQueryClient();
 
   const {
-    data: VNResult,
-    error: searchVNError,
-    refetch: searchVN,
-  } = useQuery({
-    queryKey: ['VN', searchQuery],
-    queryFn: () => searchVNFn({ title: searchQuery }),
-    enabled: false,
-  });
+    data: searchResult,
+    error: searchError,
+    isLoading: isSearching,
+  } = useSearch('vn', shouldSearch ? searchQuery : '');
 
-  if (searchVNError && searchVNError instanceof AxiosError) {
-    toast.error(searchVNError.response?.data.message);
+  if (searchError && searchError instanceof AxiosError) {
+    toast.error(searchError.response?.data.message);
   }
 
   const handleCheckboxChange = useCallback((log: ILog) => {
@@ -40,10 +46,16 @@ function VNLogs({ logs }: VNLogsProps) {
     );
   }, []);
 
-  const handleOpenGroup = useCallback((group: ILog[], title: string) => {
-    setSelectedLogs(group);
-    setSearchQuery(title);
-  }, []);
+  const handleOpenGroup = useCallback(
+    (group: ILog[] | null, title: string, groupIndex: number) => {
+      if (!group) return;
+      setSelectedGroup(groupIndex);
+      setSelectedLogs(group);
+      setSearchQuery(title);
+      setShouldSearch(true);
+    },
+    []
+  );
 
   const stripSymbols = useCallback((description: string) => {
     return description
@@ -54,17 +66,11 @@ function VNLogs({ logs }: VNLogsProps) {
       .trim();
   }, []);
 
-  useEffect(() => {
-    if (searchQuery) {
-      searchVN();
-    }
-  }, [searchQuery, searchVN]);
-
   const groupedLogs = useMemo(() => {
     if (!logs) return [];
     const groupedLogs = new Map<string, ILog[]>();
     logs.forEach((log) => {
-      if (!log.description || log.type !== 'vn' || log.contentId) return;
+      if (!log.description || log.type !== 'vn' || log.mediaId) return;
       let foundGroup = false;
       for (const [key, group] of groupedLogs) {
         if (fuzzy(key, log.description) > 0.8) {
@@ -80,30 +86,35 @@ function VNLogs({ logs }: VNLogsProps) {
     return Array.from(groupedLogs.values());
   }, [logs]);
 
-  const filteredGroupedLogs = useMemo(() => {
-    if (!logs) return [];
-    return groupedLogs
-      ?.map((group) => {
-        const filteredGroup = group.filter(
-          (log) => !assignedLogs.includes(log)
-        );
-        return filteredGroup.length > 0 ? filteredGroup : null;
-      })
-      .filter((group) => !!group);
-  }, [groupedLogs, assignedLogs, logs]);
+  const filteredGroupedLogs = useFilteredGroupedLogs(
+    logs,
+    groupedLogs,
+    assignedLogs
+  );
 
-  const { mutate: assignMedia } = useMutation({
-    mutationFn: (data: {
-      logsId: string[];
-      mediaId: string;
-      mediaType: string;
-    }) => assignMediaFn(data.logsId, data.mediaId, data.mediaType),
+  const { mutate: assignMedia, isPending: isAssigning } = useMutation({
+    mutationFn: (
+      data: {
+        logsId: string[];
+        contentMedia: IMediaDocument;
+      }[]
+    ) => assignMediaFn(data),
     onSuccess: () => {
-      toast.success('Media assigned successfully');
       setAssignedLogs((prev) => [...prev, ...selectedLogs]);
       setSelectedLogs([]);
       setSelectedVN(undefined);
       setSearchQuery('');
+      setSelectedGroup(null);
+
+      setTimeout(() => {
+        queryClient.invalidateQueries({ queryKey: ['logsAssign'] });
+        queryClient.invalidateQueries({ queryKey: ['logs', username] });
+        queryClient.invalidateQueries({
+          queryKey: ['ImmersionList', username],
+        });
+
+        toast.success('Media assigned successfully');
+      }, 0);
     },
     onError: (error) => {
       if (error instanceof AxiosError) {
@@ -116,78 +127,147 @@ function VNLogs({ logs }: VNLogsProps) {
 
   const handleAssignMedia = useCallback(() => {
     if (!selectedVN) {
+      toast.error('You need to select a visual novel!');
+      return;
+    }
+    if (selectedLogs.length === 0) {
       toast.error('You need to select at least one log!');
       return;
     }
-    assignMedia({
-      logsId: selectedLogs.map((log) => log._id),
-      mediaId: selectedVN._id,
-      mediaType: 'vn',
-    });
+    assignMedia([
+      {
+        logsId: selectedLogs.map((log) => log._id),
+        contentMedia: selectedVN,
+      },
+    ]);
+    setShouldSearch(false);
   }, [selectedVN, selectedLogs, assignMedia]);
 
   return (
-    <div className="w-full">
-      <div className="w-full grid grid-cols-[50%_50%]">
-        <div className="h-full max-h-screen">
-          <div className="overflow-y-auto h-full">
-            <div>
-              <div className="join join-vertical">
-                {filteredGroupedLogs.map((group, i) => (
-                  <div
-                    className="collapse collapse-arrow join-item border-base-300 border"
-                    key={i}
-                  >
-                    <input
-                      type="radio"
-                      name="group"
-                      onChange={() =>
-                        handleOpenGroup(
-                          group,
-                          stripSymbols(group[0].description)
-                        )
-                      }
-                    />
-                    <div className="collapse-title text-xl font-medium">
-                      {stripSymbols(group[0].description)}
-                    </div>
-                    <div className="collapse-content">
-                      {group.map((log, i) => (
-                        <div
-                          className="flex items-center gap-4 py-2 content-center"
-                          key={i}
-                        >
-                          <label>
-                            <input
-                              type="checkbox"
-                              className="checkbox"
-                              checked={selectedLogs.includes(log)}
-                              onChange={() => handleCheckboxChange(log)}
-                            />
-                          </label>
-                          <div className="flex-grow">
-                            <h2 className="text-lg inline-block font-medium align-middle">
-                              {log.description}
-                            </h2>
+    <div className="w-full p-4">
+      <h1 className="text-2xl font-bold text-center mb-4">
+        Assign Visual Novels to Logs
+      </h1>
+
+      <div className="stats shadow mb-4 w-full">
+        <div className="stat">
+          <div className="stat-title">Selected Logs</div>
+          <div className="stat-value">{selectedLogs.length}</div>
+        </div>
+        <div className="stat">
+          <div className="stat-title">Available Groups</div>
+          <div className="stat-value">{filteredGroupedLogs.length}</div>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Left panel - Log groups */}
+        <div className="card bg-base-200 shadow-lg">
+          <div className="card-body p-4">
+            <h2 className="card-title">Unassigned Logs</h2>
+            <div className="divider my-1"></div>
+
+            {filteredGroupedLogs.length > 0 ? (
+              <div className="overflow-y-auto max-h-[60vh]">
+                <div className="join join-vertical w-full">
+                  {filteredGroupedLogs.map((group, i) => (
+                    <div
+                      className="collapse collapse-arrow join-item border border-base-300 bg-base-100"
+                      key={i}
+                    >
+                      <input
+                        type="radio"
+                        name="log-accordion"
+                        checked={i === selectedGroup}
+                        onChange={() => {
+                          handleOpenGroup(
+                            group,
+                            stripSymbols(
+                              group && group[0]?.description
+                                ? group[0].description
+                                : ''
+                            ),
+                            i
+                          );
+                        }}
+                      />
+                      <div className="collapse-title font-medium">
+                        <div className="flex items-center gap-2">
+                          <div className="badge badge-primary">
+                            {group?.length || 0}
                           </div>
+                          <span className="text-sm md:text-base">
+                            {stripSymbols(
+                              group && group[0]?.description
+                                ? group[0].description
+                                : ''
+                            )}
+                          </span>
                         </div>
-                      ))}
+                      </div>
+                      <div className="collapse-content">
+                        {group?.map((log, i) => (
+                          <div
+                            className="flex items-center gap-4 py-2 hover:bg-base-200 rounded-md px-2"
+                            key={i}
+                          >
+                            <label onClick={(e) => e.stopPropagation()}>
+                              <input
+                                type="checkbox"
+                                className="checkbox checkbox-primary checkbox-sm"
+                                checked={selectedLogs.includes(log)}
+                                onChange={(e) => {
+                                  e.stopPropagation();
+                                  handleCheckboxChange(log);
+                                }}
+                              />
+                            </label>
+                            <div className="grow">
+                              <h3 className="text-sm">{log.description}</h3>
+                              <p className="text-xs text-base-content/70">
+                                {new Date(log.date).toLocaleDateString()}
+                              </p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
-            </div>
+            ) : (
+              <div className="alert alert-info">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  className="stroke-current shrink-0 w-6 h-6"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                  ></path>
+                </svg>
+                <span>No unassigned visual novel logs found.</span>
+              </div>
+            )}
           </div>
         </div>
-        <div className="h-full max-h-screen">
-          <div className="flex flex-col px-4 gap-2 overflow-y-auto h-full">
-            <label className="input input-bordered flex items-center gap-2">
-              <input type="text" className="grow" placeholder="Search" />
+
+        {/* Right panel - VN search */}
+        <div className="card bg-base-200 shadow-lg">
+          <div className="card-body p-4">
+            <h2 className="card-title">Find Matching Visual Novels</h2>
+            <div className="divider my-1"></div>
+
+            <label className="input input-bordered input-primary flex items-center gap-2 mb-4">
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 viewBox="0 0 16 16"
                 fill="currentColor"
-                className="h-4 w-4 opacity-70"
+                className="w-4 h-4 opacity-70"
               >
                 <path
                   fillRule="evenodd"
@@ -195,42 +275,146 @@ function VNLogs({ logs }: VNLogsProps) {
                   clipRule="evenodd"
                 />
               </svg>
+              <input
+                type="text"
+                className="grow"
+                placeholder="Search visual novels..."
+                value={searchQuery}
+                onChange={(e) => {
+                  setSearchQuery(e.target.value);
+                  setShouldSearch(true);
+                }}
+              />
             </label>
-            <div className="overflow-y-auto h-full">
-              {VNResult ? (
-                <div>
-                  {VNResult.map((VN, i) => (
+
+            <div className="overflow-y-auto max-h-[60vh]">
+              {isSearching ? (
+                <div className="flex flex-col items-center justify-center py-8">
+                  <span className="loading loading-spinner loading-lg text-primary"></span>
+                  <p className="mt-2">Searching visual novels...</p>
+                </div>
+              ) : searchResult && searchResult.length > 0 ? (
+                <div className="space-y-2">
+                  {searchResult.map((vn, i) => (
                     <div
-                      className="flex items-center gap-4 py-2 content-center"
                       key={i}
+                      className={`flex gap-3 p-3 rounded-lg hover:bg-base-300 cursor-pointer ${
+                        selectedVN?.contentId === vn.contentId
+                          ? 'bg-primary/10 border border-primary'
+                          : ''
+                      }`}
+                      onClick={() => setSelectedVN(vn)}
                     >
-                      <label>
-                        <input
-                          type="radio"
-                          className="radio"
-                          name="VN"
-                          checked={selectedVN?.title === VN.title}
-                          onChange={() => setSelectedVN(VN)}
-                        />
-                      </label>
-                      <div className="flex-grow">
-                        <h2 className="text-lg inline-block font-medium align-middle">
-                          {VN.latin ? VN.latin : VN.title}
-                        </h2>
+                      <div className="w-12">
+                        <label className="cursor-pointer flex items-center justify-center h-full">
+                          <input
+                            type="radio"
+                            className="radio radio-primary radio-sm"
+                            name="vn"
+                            checked={selectedVN?.contentId === vn.contentId}
+                            onChange={() => setSelectedVN(vn)}
+                          />
+                        </label>
+                      </div>
+
+                      <div className="flex gap-3">
+                        {vn.contentImage && (
+                          <div className="w-12 h-16 overflow-hidden rounded-md">
+                            <img
+                              src={vn.contentImage}
+                              alt={
+                                vn.title.contentTitleRomaji ||
+                                vn.title.contentTitleNative
+                              }
+                              className="object-cover w-full h-full"
+                            />
+                          </div>
+                        )}
+
+                        <div className="flex flex-col">
+                          <span className="font-medium">
+                            {vn.title.contentTitleRomaji ||
+                              vn.title.contentTitleNative}
+                          </span>
+                          {vn.title.contentTitleEnglish && (
+                            <span className="text-sm opacity-70">
+                              {vn.title.contentTitleEnglish}
+                            </span>
+                          )}
+                          {vn.title.contentTitleNative &&
+                            vn.title.contentTitleRomaji && (
+                              <span className="text-sm opacity-70">
+                                {vn.title.contentTitleNative}
+                              </span>
+                            )}
+                        </div>
                       </div>
                     </div>
                   ))}
                 </div>
+              ) : searchQuery ? (
+                <div className="alert alert-warning">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="stroke-current shrink-0 h-6 w-6"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                    />
+                  </svg>
+                  <span>No visual novels found. Try different keywords.</span>
+                </div>
               ) : (
-                <div className="text-center text-lg">No results</div>
+                <div className="alert alert-info">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    className="stroke-current shrink-0 w-6 h-6"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                    ></path>
+                  </svg>
+                  <span>
+                    Select a log group or enter a visual novel title to search
+                  </span>
+                </div>
               )}
             </div>
           </div>
         </div>
       </div>
-      <div className="flex justify-center mt-4">
-        <button onClick={handleAssignMedia} className="btn">
-          Assign
+
+      <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mt-6">
+        <div className="stats shadow">
+          <div className="stat">
+            <div className="stat-title">Selected Logs</div>
+            <div className="stat-value text-primary">{selectedLogs.length}</div>
+          </div>
+        </div>
+
+        <button
+          onClick={handleAssignMedia}
+          disabled={isAssigning || !selectedVN || selectedLogs.length === 0}
+          className={`btn btn-primary btn-lg ${isAssigning ? 'loading' : ''}`}
+        >
+          {isAssigning ? (
+            <>
+              <span className="loading loading-spinner"></span>
+              Assigning...
+            </>
+          ) : (
+            'Assign to Visual Novel'
+          )}
         </button>
       </div>
     </div>

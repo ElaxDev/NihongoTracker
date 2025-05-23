@@ -6,7 +6,6 @@ export interface IUser {
   clubs?: string[];
   discordId?: string;
   stats: IStats;
-  immersionList?: string;
   titles: string[];
   roles: userRoles;
   createdAt?: Date;
@@ -20,9 +19,14 @@ enum userRoles {
   mod = 'mod',
 }
 
-export type OutletContextType = {
+export type OutletProfileContextType = {
   user: IUser | undefined;
   username: string | undefined;
+};
+
+export type OutletMediaContextType = {
+  mediaDocument: IMediaDocument | undefined;
+  mediaType: string | undefined;
 };
 
 export interface IStats {
@@ -38,27 +42,6 @@ export interface IStats {
   listeningLevel: number;
   listeningXpToNextLevel: number;
   listeningXpToCurrentLevel: number;
-  charCountVn: number;
-  charCountLn: number;
-  readingTimeVn: number;
-  charCountReading: number;
-  pageCountLn: number;
-  readingTimeLn: number;
-  pageCountManga: number;
-  pageCountReading: number;
-  charCountManga: number;
-  readingTimeManga: number;
-  mangaPages: number;
-  listeningTime: number;
-  readingTime: number;
-  animeEpisodes: number;
-  animeWatchingTime: number;
-  videoWatchingTime: number;
-  lnCount: number;
-  readManga: string[];
-  watchedAnime: string[];
-  playedVn: string[];
-  readLn: string[];
 }
 
 export type ILoginResponse = Pick<
@@ -114,9 +97,13 @@ export interface IRankingParams {
   limit?: number;
   sort?: sortTypes;
   filter?: filterTypes;
+  timeFilter?: string; // Add time filter parameter
 }
 
-export type ILogsParams = Pick<IRankingParams, 'page' | 'limit'>;
+export interface ILogsParams extends Pick<IRankingParams, 'page' | 'limit'> {
+  mediaId?: string;
+  mediaType?: string;
+}
 
 export interface updateUserRequest {
   username?: string;
@@ -145,42 +132,50 @@ export interface updateLogRequest {
   chars?: number;
 }
 
-export interface IImmersionListItemMedia {
+export interface IContentMedia {
+  contentId: string;
+  contentImage: string | null;
+  coverImage: string | null;
   contentTitleNative: string;
   contentTitleRomaji?: string;
-  contentImage: string;
+  contentTitleEnglish: string;
+  description?: string;
+  episodes?: number;
+  episodeDuration?: number;
+  chapters?: number;
+  volumes?: number;
+  synonyms?: string[] | null;
+  isAdult: boolean;
+  date?: Date | null;
 }
 
-export interface IAnimeLog extends ILog {
-  anilistUrl?: string;
-  contentMedia: IImmersionListItemMedia;
+export interface ICreateLog
+  extends Omit<
+    ILog,
+    '_id' | 'user' | 'xp' | 'editedFields' | 'createdAt' | 'updatedAt'
+  > {
+  createMedia?: boolean;
+  mediaData?: IContentMedia;
 }
 
 export interface ILog {
   _id: string;
   user: string;
   type: 'reading' | 'anime' | 'vn' | 'video' | 'manga' | 'audio' | 'other';
-  contentId?: string;
+  mediaId?: string;
   xp: number;
   private: boolean;
-  adult: boolean;
-  image?: string;
-  description?: string;
-  mediaName?: string;
+  isAdult: boolean;
+  description: string;
   editedFields?: IEditedFields | null;
   episodes?: number;
   pages?: number;
   chars?: number;
   time?: number;
-  date: string;
+  date: Date;
   createdAt: Date;
   updatedAt: Date;
 }
-
-export type createLogRequest = Omit<
-  ILog,
-  '_id' | 'user' | 'xp' | 'editedFields'
->;
 
 export interface IRankingResponse {
   username: string;
@@ -188,7 +183,7 @@ export interface IRankingResponse {
   stats: Pick<IStats, filterTypes>;
 }
 
-interface AnilistSearchResult {
+export interface AnilistSearchResult {
   Page: {
     pageInfo: {
       total: number;
@@ -204,14 +199,23 @@ interface AnilistSearchResult {
         english: string;
         native: string;
       };
-      type: string;
+      format: 'NOVEL' | 'MANGA' | 'ONE_SHOT';
+      type: 'ANIME' | 'MANGA';
       coverImage: {
         extraLarge: string;
         medium: string;
         large: string;
         color: string;
       };
+      synonyms: string[];
+      episodes?: number;
+      duration?: number;
+      chapters?: number;
+      volumes?: number;
+      isAdult: boolean;
+      bannerImage: string;
       siteUrl: string;
+      description: string;
     }[];
   };
 }
@@ -248,23 +252,64 @@ export interface IAnimeDocument {
   tags?: string[];
 }
 
-export interface IImmersionListItemMedia {
+export interface IMediaTitle {
   contentTitleNative: string;
   contentTitleRomaji?: string;
-  contentImage: string;
-}
-
-export interface IImmersionListItem {
-  contentId: string;
-  contentMedia: IImmersionListItemMedia;
+  contentTitleEnglish?: string;
 }
 
 export interface IImmersionList {
-  [key: string]: string | IImmersionListItem[];
-  _id: string;
-  manga: IImmersionListItem[];
-  anime: IImmersionListItem[];
-  vn: IImmersionListItem[];
-  reading: IImmersionListItem[];
-  video: IImmersionListItem[];
+  anime: IMediaDocument[];
+  manga: IMediaDocument[];
+  reading: IMediaDocument[];
+  vn: IMediaDocument[];
+  video: IMediaDocument[];
+}
+
+export interface IMediaDocument extends Document {
+  contentId: string;
+  title: IMediaTitle;
+  contentImage?: string;
+  coverImage?: string;
+  description: string;
+  type: 'anime' | 'manga' | 'reading' | 'vn' | 'video';
+  episodes?: number;
+  episodeDuration?: number;
+  chapters?: number;
+  volumes?: number;
+  synonyms?: string[];
+  isAdult: boolean;
+}
+
+export interface IAverageColor {
+  rgb: string;
+  rgba: string;
+  hex: string;
+  hexa: string;
+  value: [number, number, number, number];
+  isDark: boolean;
+  isLight: boolean;
+  error?: Error;
+}
+
+export interface ILogData {
+  type: string | null;
+  titleNative: string;
+  titleRomaji: string | null;
+  titleEnglish: string | null;
+  description: string | null;
+  mediaDescription: string;
+  mediaName: string;
+  mediaId: string;
+  episodes: number;
+  time: number;
+  chars: number;
+  pages: number;
+  hours: number;
+  minutes: number;
+  showTime: boolean;
+  showChars: boolean;
+  img: string;
+  cover: string;
+  date: Date | null;
 }

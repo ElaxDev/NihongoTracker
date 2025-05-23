@@ -1,8 +1,8 @@
 import jwt from 'jsonwebtoken';
-import User from '../models/user.model';
+import User from '../models/user.model.js';
 import { Request, Response, NextFunction } from 'express';
-import { customError } from '../middlewares/errorMiddleware';
-import { decodedJWT } from '../types';
+import { customError } from '../middlewares/errorMiddleware.js';
+import { decodedJWT } from '../types.js';
 
 export async function protect(req: Request, res: Response, next: NextFunction) {
   let token;

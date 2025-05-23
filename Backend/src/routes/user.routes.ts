@@ -6,9 +6,9 @@ import {
   getUsers,
   clearUserData,
   getImmersionList,
-} from '../controllers/users.controller';
-import { getUserLogs } from '../controllers/logs.controller';
-import { protect } from '../libs/authMiddleware';
+} from '../controllers/users.controller.js';
+import { getUserLogs } from '../controllers/logs.controller.js';
+import { protect } from '../libs/authMiddleware.js';
 import multer from 'multer';
 
 const router = Router();

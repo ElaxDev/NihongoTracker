@@ -4,7 +4,7 @@ import {
   getDownloadURL,
   uploadBytesResumable,
 } from 'firebase/storage';
-import { firebaseConfig } from '../firebaseConfig';
+import { firebaseConfig } from '../firebaseConfig.js';
 import { initializeApp } from 'firebase/app';
 
 initializeApp(firebaseConfig);

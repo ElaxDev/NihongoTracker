@@ -1,89 +1,6 @@
 import { Request } from 'express';
 import { Types, Document } from 'mongoose';
 
-export interface IVisualNovelTitle extends Document {
-  id: string;
-  lang: string;
-  official: boolean;
-  title: string;
-  latin: string;
-}
-export interface IVisualNovelDetail extends Document {
-  id: string;
-  olang: string;
-  image: string;
-  l_wikidata: string;
-  c_votecount: number;
-  c_rating: number;
-  c_average: number;
-  length: number;
-  devstatus: number;
-  alias: string;
-  description: string;
-}
-
-export interface IMangaDocument extends Document {
-  title: string;
-  anilistId: number;
-  description: string;
-  genres: string[];
-  chapters: number;
-  volumes: number;
-  anilistScore?: number;
-  adult: boolean;
-  status: string;
-  approximatedCharCount?: number;
-  approximatedReadingTime?: number;
-  coverImage: string;
-  startDate: string;
-  endDate: string;
-}
-
-export interface ILightNovelTitle {
-  romaji: string;
-  english: string;
-  native: string;
-}
-
-export interface ILightNovelDocument extends Document {
-  title: ILightNovelTitle;
-  anilistId: number;
-  description?: string;
-  author?: string;
-  genres?: string[];
-  anilistScore?: number;
-  startDate?: string;
-  endDate?: string;
-  adult: boolean;
-  coverImage: string;
-  approximatedCharCount?: number;
-  approximatedReadingTime?: number;
-  startedUserCount?: number;
-  readingUserCount?: number;
-  finishedUserCount?: number;
-}
-
-export interface IAnimeDocument extends Document {
-  sources?: string[];
-  title: string;
-  type: 'TV' | 'MOVIE' | 'OVA' | 'ONA' | 'SPECIAL' | 'UNKNOWN';
-  episodes?: number;
-  status: 'FINISHED' | 'ONGOING' | 'UPCOMING' | 'UNKNOWN';
-  animeSeason: {
-    season?: 'SPRING' | 'SUMMER' | 'FALL' | 'WINTER' | 'UNDEFINED';
-    year: number | null;
-  };
-  picture?: string;
-  thumbnail?: string;
-  duration?: {
-    value?: number;
-    unit?: 'SECONDS';
-  } | null;
-  synonyms?: string[];
-  relatedAnime?: string[];
-  tags?: string[];
-}
-
 export interface decodedJWT {
   id: Types.ObjectId;
   iat: number;
@@ -116,7 +33,6 @@ export interface IUser extends Document {
   discordId?: string;
   clubs?: Types.ObjectId[];
   stats: IStats;
-  immersionList: Types.ObjectId;
   titles: string[];
   roles: userRoles[];
   lastImport?: Date;
@@ -125,24 +41,30 @@ export interface IUser extends Document {
   matchPassword: (enteredPassword: string) => Promise<boolean>;
 }
 
-export interface IImmersionListItemMedia {
+export interface IMediaTitle {
   contentTitleNative: string;
   contentTitleRomaji?: string;
-  contentImage: string;
+  contentTitleEnglish?: string;
 }
 
-export interface IImmersionListItem {
+export interface IMediaDocument extends Document {
   contentId: string;
-  contentMedia: IImmersionListItemMedia;
+  title: IMediaTitle;
+  contentImage?: string;
+  coverImage?: string;
+  description?: string;
+  type: 'anime' | 'manga' | 'reading' | 'vn' | 'video';
+  episodes?: number;
+  episodeDuration?: number;
+  chapters?: number;
+  volumes?: number;
+  synonyms?: string[] | null;
+  isAdult: boolean;
 }
 
-export interface IImmersionList extends Document {
-  _id: Types.ObjectId;
-  manga: IImmersionListItem[];
-  anime: IImmersionListItem[];
-  vn: IImmersionListItem[];
-  reading: IImmersionListItem[];
-  video: IImmersionListItem[];
+export interface IImportLogs {
+  forced: boolean;
+  logs: ILog[];
 }
 
 export interface IStats {
@@ -158,23 +80,24 @@ export interface IStats {
   listeningLevel: number;
   listeningXpToNextLevel: number;
   listeningXpToCurrentLevel: number;
-  charCountVn: number;
-  charCountLn: number;
-  readingTimeVn: number;
-  charCountReading: number;
-  pageCountLn: number;
-  readingTimeLn: number;
-  pageCountManga: number;
-  pageCountReading: number;
-  charCountManga: number;
-  readingTimeManga: number;
-  mangaPages: number;
-  listeningTime: number;
-  audioListeningTime: number;
-  readingTime: number;
-  animeEpisodes: number;
-  animeWatchingTime: number;
-  videoWatchingTime: number;
+}
+
+export interface SearchAnilistArgs {
+  search?: string | null;
+  ids?: number[] | null;
+  type?: 'ANIME' | 'MANGA' | null;
+  format?:
+    | 'TV'
+    | 'TV_SHORT'
+    | 'MOVIE'
+    | 'SPECIAL'
+    | 'OVA'
+    | 'ONA'
+    | 'MUSIC'
+    | 'MANGA'
+    | 'NOVEL'
+    | 'ONE_SHOT'
+    | null;
 }
 
 export interface IEditedFields {
@@ -185,32 +108,83 @@ export interface IEditedFields {
   xp?: number;
 }
 
+export interface AnilistSearchResult {
+  Page: {
+    pageInfo: {
+      total: number;
+      currentPage: number;
+      lastPage: number;
+      hasNextPage: boolean;
+      perPage: number;
+    };
+    media: {
+      id: number;
+      title: {
+        romaji: string;
+        english: string;
+        native: string;
+      };
+      format: 'NOVEL' | 'MANGA' | 'ONE_SHOT';
+      type: 'ANIME' | 'MANGA';
+      coverImage: {
+        extraLarge: string;
+        medium: string;
+        large: string;
+        color: string;
+      };
+      synonyms: string[];
+      episodes?: number;
+      duration?: number;
+      chapters?: number;
+      volumes?: number;
+      isAdult: boolean;
+      bannerImage: string;
+      siteUrl: string;
+      description: string;
+    }[];
+  };
+}
+
 export interface ILog extends Document {
   user: Types.ObjectId;
   type: 'reading' | 'anime' | 'vn' | 'video' | 'manga' | 'audio' | 'other';
-  contentId?: string;
+  mediaId?: string;
   xp: number;
   private: boolean;
-  adult: boolean;
-  image?: string;
+  isAdult: boolean;
   description?: string;
-  mediaName?: string;
   editedFields?: IEditedFields | null;
   episodes?: number;
   pages?: number;
   chars?: number;
   time?: number;
-  date: Date;
+  date: Date | null;
+}
+
+export interface IContentMedia {
+  contentId: string;
+  contentImage?: string;
+  coverImage?: string;
+  contentTitleNative: string;
+  contentTitleRomaji?: string;
+  contentTitleEnglish: string;
+  description?: string;
+  type: 'anime' | 'manga' | 'reading' | 'vn' | 'video';
+  episodes?: number;
+  episodeDuration?: number;
+  chapters?: number;
+  volumes?: number;
+  synonyms?: string[] | null;
+  isAdult: boolean;
+  date?: Date | null;
 }
 
 export interface ICreateLog extends ILog {
-  anilistId?: string;
   createMedia?: boolean;
-  contentMedia?: IImmersionListItemMedia;
-  mediaData?: IMangaDocument | ILightNovelDocument | IAnimeDocument;
+  mediaData?: IContentMedia;
 }
 
-export interface updateRequest {
+export interface IUpdateRequest {
   username?: string;
   password?: string;
   newPassword?: string;

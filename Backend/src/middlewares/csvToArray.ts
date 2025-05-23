@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import { customError } from './errorMiddleware';
+import { customError } from './errorMiddleware.js';
 import csvtojson from 'csvtojson';
 
 export async function csvToArray(

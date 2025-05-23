@@ -7,7 +7,7 @@ import { toast } from 'react-toastify';
 import { AxiosError } from 'axios';
 import { logoutResponseType } from '../types';
 import Loader from './Loader';
-import QuickLog from './QuickLog';
+// import QuickLog from './QuickLog';
 import { IconContext } from 'react-icons';
 
 function Header() {
@@ -60,16 +60,14 @@ function Header() {
             {user ? (
               <ul
                 tabIndex={0}
-                className="menu menu-sm dropdown-content mt-3 z-[1] p-2 shadow rounded-box w-52"
+                className="menu menu-sm dropdown-content mt-3 z-1 p-2 shadow-sm rounded-box w-52"
               >
-                <li>
-                  <QuickLog />
-                </li>
+                <li>{/* <QuickLog /> */}</li>
               </ul>
             ) : (
               <ul
                 tabIndex={0}
-                className="menu menu-sm dropdown-content mt-3 z-[1] p-2 shadow bg-base-100 rounded-box w-52"
+                className="menu menu-sm dropdown-content mt-3 z-1 p-2 shadow-sm bg-base-100 rounded-box w-52"
               >
                 <li>
                   <Link to="/">Home</Link>
@@ -129,7 +127,7 @@ function Header() {
                 </div>
                 <ul
                   tabIndex={0}
-                  className="dropdown-content z-[1] menu p-2 shadow bg-base-100 text-base-content rounded-box w-52"
+                  className="dropdown-content z-1 menu p-2 shadow-sm bg-base-100 text-base-content rounded-box w-52"
                 >
                   <IconContext.Provider
                     value={{ className: 'text-lg currentColor' }}

@@ -4,7 +4,7 @@ import { getUserFn } from '../api/trackerApi';
 import { AxiosError } from 'axios';
 import { useQuery } from '@tanstack/react-query';
 import { toast } from 'react-toastify';
-import { OutletContextType } from '../types';
+import { OutletProfileContextType } from '../types';
 
 export default function ProfileHeader() {
   const { username } = useParams<{ username: string }>();
@@ -30,7 +30,7 @@ export default function ProfileHeader() {
   }
 
   return (
-    <div className="flex flex-col justify-center bg-base-300 text-base-content">
+    <div className="flex flex-col justify-center bg-base-200 text-base-content">
       <div
         className={`h-96 w-full bg-cover bg-center bg-no-repeat ${
           isLoadingUser ? 'skeleton' : ''
@@ -39,8 +39,8 @@ export default function ProfileHeader() {
           backgroundImage: `url(${!isLoadingUser ? user?.banner : ''})`,
         }}
       >
-        <div className="flex flex-col justify-end size-full bg-gradient-to-t from-shadow/[0.6] to-40% bg-cover">
-          <div className="flex items-end min-w-80 px-5 2xl:max-w-screen-2xl 2xl:px-24 mx-auto w-full mb-2">
+        <div className="flex flex-col justify-end size-full bg-linear-to-t from-shadow/[0.6] to-40% bg-cover">
+          <div className="flex items-end min-w-80 px-5 2xl:max-w-(--breakpoint-2xl) 2xl:px-24 mx-auto w-full mb-2">
             {isLoadingUser ? (
               <div className="skeleton h-24 w-24 shrink-0 rounded-full"></div>
             ) : (
@@ -60,7 +60,7 @@ export default function ProfileHeader() {
       </div>
 
       <ProfileNavbar username={user?.username} />
-      <Outlet context={{ user, username } satisfies OutletContextType} />
+      <Outlet context={{ user, username } satisfies OutletProfileContextType} />
     </div>
   );
 }

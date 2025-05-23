@@ -1,9 +1,8 @@
 import { Schema, model } from 'mongoose';
-import { IUser, userRoles } from '../types';
+import { IUser, userRoles } from '../types.js';
 import bcrypt from 'bcryptjs';
-import Log from './log.model';
-import ImmersionList from './immersionList.model';
-import { calculateXp } from '../services/calculateLevel';
+import Log from './log.model.js';
+import { calculateXp } from '../services/calculateLevel.js';
 
 const UserSchema = new Schema<IUser>(
   {
@@ -54,28 +53,6 @@ const UserSchema = new Schema<IUser>(
         required: true,
         default: calculateXp(1),
       },
-      charCountVn: { type: Number, required: true, default: 0 },
-      charCountLn: { type: Number, required: true, default: 0 },
-      readingTimeVn: { type: Number, required: true, default: 0 },
-      charCountReading: { type: Number, required: true, default: 0 },
-      pageCountLn: { type: Number, required: true, default: 0 },
-      readingTimeLn: { type: Number, required: true, default: 0 },
-      pageCountManga: { type: Number, required: true, default: 0 },
-      charCountManga: { type: Number, required: true, default: 0 },
-      readingTimeManga: { type: Number, required: true, default: 0 },
-      mangaPages: { type: Number, required: true, default: 0 },
-      listeningTime: { type: Number, required: true, default: 0 },
-      audioListeningTime: { type: Number, required: true, default: 0 },
-      readingTime: { type: Number, required: true, default: 0 },
-      outputTime: { type: Number, required: true, default: 0 },
-      animeEpisodes: { type: Number, required: true, default: 0 },
-      animeWatchingTime: { type: Number, required: true, default: 0 },
-      videoWatchingTime: { type: Number, required: true, default: 0 },
-    },
-    immersionList: {
-      type: Schema.Types.ObjectId,
-      required: true,
-      ref: 'ImmersionList',
     },
     clubs: [{ type: Schema.Types.ObjectId, ref: 'Club' }],
     avatar: { type: String, default: '' },
@@ -99,10 +76,6 @@ UserSchema.pre('save', async function (next) {
     const salt = await bcrypt.genSalt(10);
     this.password = await bcrypt.hash(this.password, salt);
   }
-  if (this.isNew) {
-    const immersionList = await ImmersionList.create({});
-    this.immersionList = immersionList._id;
-  }
   next();
 });
 
@@ -112,8 +85,6 @@ UserSchema.pre(
   async function (this: IUser, next) {
     console.log('Deleting user logs\nUser id:', this._id);
     await Log.deleteMany({ user: this._id });
-    console.log('Deleting user immersion list\nUser id:', this._id);
-    await ImmersionList.findByIdAndDelete(this.immersionList);
     next();
   }
 );

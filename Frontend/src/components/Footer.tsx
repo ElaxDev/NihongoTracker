@@ -3,10 +3,10 @@ import { FaGithub } from 'react-icons/fa6';
 
 function Footer() {
   return (
-    <footer className="footer items-center p-4 bg-base-100 text-base-content bottom-0 inset-x-0">
+    <footer className="footer items-center p-4 bg-base-100 text-base-content bottom-0 inset-x-0 flex flex-col md:flex-row justify-between">
       <aside className="items-center grid-flow-col">
         <p className="text-base-content">
-          Copyright © 2024 - All rights reserved
+          Copyright © {new Date().getFullYear()} - All rights reserved
         </p>
       </aside>
       <nav className="grid-flow-col gap-4 md:place-self-center md:justify-self-end">

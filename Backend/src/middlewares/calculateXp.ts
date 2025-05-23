@@ -1,8 +1,8 @@
 import { Request, Response, NextFunction } from 'express';
 import { ParamsDictionary } from 'express-serve-static-core';
-import Log from '../models/log.model';
-import { ILog } from '../types';
-import { customError } from './errorMiddleware';
+import Log from '../models/log.model.js';
+import { IImportLogs, ILog } from '../types.js';
+import { customError } from './errorMiddleware.js';
 
 const XP_FACTOR_TIME = 5;
 const XP_FACTOR_PAGES = 5;
@@ -35,10 +35,6 @@ async function calculateXpForLog(log: ILog, req: Request): Promise<ILog> {
     : 0;
 
   switch (type) {
-    case 'reading':
-    case 'manga':
-      log.xp = Math.max(timeXp, charsXp, pagesXp);
-      break;
     case 'anime':
       if (timeXp) {
         log.xp = timeXp;
@@ -46,13 +42,13 @@ async function calculateXpForLog(log: ILog, req: Request): Promise<ILog> {
         log.xp = episodesXp;
       }
       break;
+    case 'reading':
+    case 'manga':
     case 'vn':
-      log.xp = Math.max(timeXp, charsXp);
-      break;
     case 'video':
     case 'other':
     case 'audio':
-      log.xp = timeXp;
+      log.xp = Math.max(timeXp, pagesXp, charsXp, episodesXp);
       break;
     default:
       throw new customError('Invalid log type', 400);
@@ -60,17 +56,21 @@ async function calculateXpForLog(log: ILog, req: Request): Promise<ILog> {
   return log;
 }
 
+function isImportLogs(body: any): body is IImportLogs {
+  return body.logs && Array.isArray(body.logs);
+}
+
 export async function calculateXp(
-  req: Request<ParamsDictionary, any, ILog | ILog[]>,
+  req: Request<ParamsDictionary, any, ILog | IImportLogs>,
   _res: Response,
   next: NextFunction
 ) {
   try {
-    if (Array.isArray(req.body)) {
+    if (isImportLogs(req.body)) {
       const modifiedLogs = await Promise.all(
-        req.body.map((log) => calculateXpForLog(log, req))
+        req.body.logs.map((log) => calculateXpForLog(log, req))
       );
-      req.body = modifiedLogs;
+      req.body.logs = modifiedLogs;
     } else {
       const modifiedLog = await calculateXpForLog(req.body, req);
       req.body = modifiedLog;

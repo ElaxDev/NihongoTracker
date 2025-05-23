@@ -8,33 +8,34 @@ import { AxiosError } from 'axios';
 import useSearch from '../hooks/useSearch';
 import { useUserDataStore } from '../store/userData';
 import { useFilteredGroupedLogs } from '../hooks/useFilteredGroupedLogs.tsx';
-interface AnimeLogsProps {
+
+interface MangaLogsProps {
   logs: ILog[] | undefined;
 }
 
-function AnimeLogs({ logs }: AnimeLogsProps) {
+function MangaLogs({ logs }: MangaLogsProps) {
   const [searchQuery, setSearchQuery] = useState<string>('');
-  const [selectedAnime, setSelectedAnime] = useState<
+  const [selectedManga, setSelectedManga] = useState<
     IMediaDocument | undefined
   >(undefined);
   const [selectedLogs, setSelectedLogs] = useState<ILog[]>([]);
   const [selectedGroup, setSelectedGroup] = useState<number | null>(null);
   const [assignedLogs, setAssignedLogs] = useState<ILog[]>([]);
-  const [shouldAnilistSearch, setShouldAnilistSearch] = useState<boolean>(true);
+  const [shouldSearch, setShouldSearch] = useState<boolean>(true);
 
   const { user } = useUserDataStore();
   const username = user?.username;
 
   const {
-    data: animeResult,
-    error: searchAnimeError,
-    isLoading: isSearchingAnilist,
-  } = useSearch('anime', shouldAnilistSearch ? searchQuery : '');
+    data: mangaResult,
+    error: searchMangaError,
+    isLoading: isSearchingManga,
+  } = useSearch('manga', shouldSearch ? searchQuery : '');
 
   const queryClient = useQueryClient();
 
-  if (searchAnimeError && searchAnimeError instanceof AxiosError) {
-    toast.error(searchAnimeError.response?.data.message);
+  if (searchMangaError && searchMangaError instanceof AxiosError) {
+    toast.error(searchMangaError.response?.data.message);
   }
 
   const handleCheckboxChange = useCallback((log: ILog) => {
@@ -51,13 +52,14 @@ function AnimeLogs({ logs }: AnimeLogsProps) {
       setSelectedGroup(groupIndex);
       setSelectedLogs(group);
       setSearchQuery(title);
-      setShouldAnilistSearch(true);
+      setShouldSearch(true);
     },
     []
   );
 
   const stripSymbols = useCallback((description: string) => {
     return description
+      .replace(/\s*v\d+\s*$/i, '')
       .replace(
         /[^a-zA-Z\u3040-\u30FF\u4E00-\u9FFF -]|(?<![a-zA-Z\u3040-\u30FF\u4E00-\u9FFF])-|-(?![a-zA-Z\u3040-\u30FF\u4E00-\u9FFF])/g,
         ''
@@ -69,7 +71,7 @@ function AnimeLogs({ logs }: AnimeLogsProps) {
     if (!logs) return [];
     const groupedLogs = new Map<string, ILog[]>();
     logs.forEach((log) => {
-      if (!log.description || log.type !== 'anime' || log.mediaId) return;
+      if (!log.description || log.type !== 'manga' || log.mediaId) return;
       let foundGroup = false;
       for (const [key, group] of groupedLogs) {
         if (fuzzy(key, log.description) > 0.8) {
@@ -101,7 +103,7 @@ function AnimeLogs({ logs }: AnimeLogsProps) {
     onSuccess: () => {
       setAssignedLogs((prev) => [...prev, ...selectedLogs]);
       setSelectedLogs([]);
-      setSelectedAnime(undefined);
+      setSelectedManga(undefined);
       setSearchQuery('');
       setSelectedGroup(null);
 
@@ -124,8 +126,8 @@ function AnimeLogs({ logs }: AnimeLogsProps) {
   });
 
   const handleAssignMedia = useCallback(() => {
-    if (!selectedAnime) {
-      toast.error('You need to select an anime!');
+    if (!selectedManga) {
+      toast.error('You need to select a manga!');
       return;
     }
     if (selectedLogs.length === 0) {
@@ -136,33 +138,33 @@ function AnimeLogs({ logs }: AnimeLogsProps) {
       {
         logsId: selectedLogs.map((log) => log._id),
         contentMedia: {
-          contentId: selectedAnime.contentId,
-          contentImage: selectedAnime.contentImage,
-          coverImage: selectedAnime.coverImage,
-          description: selectedAnime.description,
-          type: 'anime',
+          contentId: selectedManga.contentId,
+          contentImage: selectedManga.contentImage,
+          coverImage: selectedManga.coverImage,
+          description: selectedManga.description,
+          type: 'manga',
           title: {
-            contentTitleNative: selectedAnime.title.contentTitleNative,
-            contentTitleEnglish: selectedAnime.title.contentTitleEnglish,
-            contentTitleRomaji: selectedAnime.title.contentTitleRomaji,
+            contentTitleNative: selectedManga.title.contentTitleNative,
+            contentTitleEnglish: selectedManga.title.contentTitleEnglish,
+            contentTitleRomaji: selectedManga.title.contentTitleRomaji,
           },
-          isAdult: selectedAnime.isAdult,
-          ...(selectedAnime.episodes && {
-            episodes: selectedAnime.episodes,
+          isAdult: selectedManga.isAdult,
+          ...(selectedManga.chapters && {
+            chapters: selectedManga.chapters,
           }),
-          ...(selectedAnime.episodeDuration && {
-            duration: selectedAnime.episodeDuration,
+          ...(selectedManga.volumes && {
+            volumes: selectedManga.volumes,
           }),
         } as IMediaDocument,
       },
     ]);
-    setShouldAnilistSearch(false);
-  }, [selectedAnime, selectedLogs, assignMedia]);
+    setShouldSearch(false);
+  }, [selectedManga, selectedLogs, assignMedia]);
 
   return (
     <div className="w-full p-4">
       <h1 className="text-2xl font-bold text-center mb-4">
-        Assign Anime to Logs
+        Assign Manga to Logs
       </h1>
 
       <div className="stats shadow mb-4 w-full">
@@ -266,16 +268,16 @@ function AnimeLogs({ logs }: AnimeLogsProps) {
                     d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
                   ></path>
                 </svg>
-                <span>No unassigned anime logs found.</span>
+                <span>No unassigned manga logs found.</span>
               </div>
             )}
           </div>
         </div>
 
-        {/* Right panel - Anime search */}
+        {/* Right panel - Manga search */}
         <div className="card bg-base-200 shadow-lg">
           <div className="card-body p-4">
-            <h2 className="card-title">Find Matching Anime</h2>
+            <h2 className="card-title">Find Matching Manga</h2>
             <div className="divider my-1"></div>
 
             <label className="input input-bordered input-primary flex items-center gap-2 mb-4">
@@ -294,55 +296,55 @@ function AnimeLogs({ logs }: AnimeLogsProps) {
               <input
                 type="text"
                 className="grow"
-                placeholder="Search anime..."
+                placeholder="Search manga..."
                 value={searchQuery}
                 onChange={(e) => {
                   setSearchQuery(e.target.value);
-                  setShouldAnilistSearch(true);
+                  setShouldSearch(true);
                 }}
               />
             </label>
 
             <div className="overflow-y-auto max-h-[60vh]">
-              {isSearchingAnilist ? (
+              {isSearchingManga ? (
                 <div className="flex flex-col items-center justify-center py-8">
                   <span className="loading loading-spinner loading-lg text-primary"></span>
-                  <p className="mt-2">Searching anime...</p>
+                  <p className="mt-2">Searching manga...</p>
                 </div>
-              ) : animeResult && animeResult.length > 0 ? (
+              ) : mangaResult && mangaResult.length > 0 ? (
                 <div className="space-y-2">
-                  {animeResult.map((anime, i) => (
+                  {mangaResult.map((manga, i) => (
                     <div
                       key={i}
                       className={`flex gap-3 p-3 rounded-lg hover:bg-base-300 cursor-pointer ${
-                        selectedAnime?.contentId === anime.contentId
+                        selectedManga?.contentId === manga.contentId
                           ? 'bg-primary/10 border border-primary'
                           : ''
                       }`}
-                      onClick={() => setSelectedAnime(anime)}
+                      onClick={() => setSelectedManga(manga)}
                     >
                       <div className="w-12">
                         <label className="cursor-pointer flex items-center justify-center h-full">
                           <input
                             type="radio"
                             className="radio radio-primary radio-sm"
-                            name="anime"
+                            name="manga"
                             checked={
-                              selectedAnime?.contentId === anime.contentId
+                              selectedManga?.contentId === manga.contentId
                             }
-                            onChange={() => setSelectedAnime(anime)}
+                            onChange={() => setSelectedManga(manga)}
                           />
                         </label>
                       </div>
 
                       <div className="flex gap-3">
-                        {anime.contentImage && (
+                        {manga.contentImage && (
                           <div className="w-12 h-16 overflow-hidden rounded-md">
                             <img
-                              src={anime.contentImage}
+                              src={manga.contentImage}
                               alt={
-                                anime.title.contentTitleEnglish ||
-                                anime.title.contentTitleRomaji
+                                manga.title.contentTitleEnglish ||
+                                manga.title.contentTitleRomaji
                               }
                               className="object-cover w-full h-full"
                             />
@@ -351,23 +353,30 @@ function AnimeLogs({ logs }: AnimeLogsProps) {
 
                         <div className="flex flex-col">
                           <span className="font-medium">
-                            {anime.title.contentTitleRomaji}
+                            {manga.title.contentTitleRomaji}
                           </span>
-                          {anime.title.contentTitleEnglish && (
+                          {manga.title.contentTitleEnglish && (
                             <span className="text-sm opacity-70">
-                              {anime.title.contentTitleEnglish}
+                              {manga.title.contentTitleEnglish}
                             </span>
                           )}
-                          {anime.title.contentTitleNative && (
+                          {manga.title.contentTitleNative && (
                             <span className="text-sm opacity-70">
-                              {anime.title.contentTitleNative}
+                              {manga.title.contentTitleNative}
                             </span>
                           )}
-                          {anime.episodes && (
-                            <span className="text-xs badge badge-sm mt-1">
-                              {anime.episodes} episodes
-                            </span>
-                          )}
+                          <div className="flex gap-2 mt-1">
+                            {manga.chapters && (
+                              <span className="text-xs badge badge-sm">
+                                {manga.chapters} chapters
+                              </span>
+                            )}
+                            {manga.volumes && (
+                              <span className="text-xs badge badge-sm">
+                                {manga.volumes} volumes
+                              </span>
+                            )}
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -388,7 +397,7 @@ function AnimeLogs({ logs }: AnimeLogsProps) {
                       d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
                     />
                   </svg>
-                  <span>No anime found. Try different keywords.</span>
+                  <span>No manga found. Try different keywords.</span>
                 </div>
               ) : (
                 <div className="alert alert-info">
@@ -406,7 +415,7 @@ function AnimeLogs({ logs }: AnimeLogsProps) {
                     ></path>
                   </svg>
                   <span>
-                    Select a log group or enter an anime title to search
+                    Select a log group or enter a manga title to search
                   </span>
                 </div>
               )}
@@ -425,7 +434,7 @@ function AnimeLogs({ logs }: AnimeLogsProps) {
 
         <button
           onClick={handleAssignMedia}
-          disabled={isAssigning || !selectedAnime || selectedLogs.length === 0}
+          disabled={isAssigning || !selectedManga || selectedLogs.length === 0}
           className={`btn btn-primary btn-lg ${isAssigning ? 'loading' : ''}`}
         >
           {isAssigning ? (
@@ -434,7 +443,7 @@ function AnimeLogs({ logs }: AnimeLogsProps) {
               Assigning...
             </>
           ) : (
-            'Assign to Anime'
+            'Assign to Manga'
           )}
         </button>
       </div>
@@ -442,4 +451,4 @@ function AnimeLogs({ logs }: AnimeLogsProps) {
   );
 }
 
-export default AnimeLogs;
+export default MangaLogs;

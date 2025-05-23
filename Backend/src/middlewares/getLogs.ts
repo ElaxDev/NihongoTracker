@@ -1,63 +1,101 @@
 import { Request, Response, NextFunction } from 'express';
 import axios from 'axios';
-import { customError } from './errorMiddleware';
-import { IUser } from '../types';
+import { customError } from './errorMiddleware.js';
+import { IUser, ILog } from '../types.js';
+import { Types } from 'mongoose';
 
 type manabeLogs = {
-  _id: string;
-  anilistAccount: string;
-  anilistId: number;
   descripcion: string;
-  id: number;
-  medio: string;
-  tiempo: number;
-  caracteres: number;
+  medio:
+    | 'ANIME'
+    | 'MANGA'
+    | 'LECTURA'
+    | 'TIEMPOLECTURA'
+    | 'VN'
+    | 'VIDEO'
+    | 'AUDIO'
+    | 'OUTPUT'
+    | 'JUEGO'
+    | 'LIBRO';
+  tiempo?: number;
+  caracteres?: number;
   parametro: number;
-  puntos: number;
   createdAt: string;
-  userId: number;
+  officialId?: string;
 };
 
-interface LogTypeMap {
+interface ILogTypeMap {
   [key: string]: {
-    logType: string;
+    logType: ILog['type'];
     parametro: string;
     tiempo?: boolean;
     chars?: boolean;
+    officialId?: boolean;
   };
 }
 
-function transformList(list: manabeLogs[]) {
-  const logTypeMap: LogTypeMap = {
+interface ILogNT {
+  user: Types.ObjectId;
+  description: string;
+  type: ILog['type'];
+  episodes?: number;
+  time?: number;
+  chars?: number;
+  pages?: number;
+  mediaId?: string;
+  date: Date;
+}
+
+function transformList(list: manabeLogs[], user: Omit<IUser, 'password'>) {
+  const logTypeMap: ILogTypeMap = {
     ANIME: {
       logType: 'anime',
       parametro: 'episodes',
-      tiempo: true,
-      chars: true,
     },
-    MANGA: { logType: 'manga', parametro: 'pages', tiempo: true, chars: true },
-    LECTURA: { logType: 'reading', parametro: 'chars', tiempo: true },
-    TIEMPOLECTURA: { logType: 'reading', parametro: 'time', chars: true },
-    VN: { logType: 'vn', parametro: 'chars', tiempo: true },
+    MANGA: {
+      logType: 'manga',
+      parametro: 'pages',
+    },
+    LECTURA: {
+      logType: 'reading',
+      parametro: 'chars',
+    },
+    TIEMPOLECTURA: {
+      logType: 'reading',
+      parametro: 'time',
+    },
+    VN: { logType: 'vn', parametro: 'chars' },
     VIDEO: { logType: 'video', parametro: 'time' },
     AUDIO: { logType: 'audio', parametro: 'time' },
     OUTPUT: { logType: 'other', parametro: 'time' },
     JUEGO: { logType: 'other', parametro: 'time' },
+    LIBRO: { logType: 'reading', parametro: 'pages' },
   };
 
   return list
     .filter((log) => logTypeMap.hasOwnProperty(log.medio))
     .map((log) => {
-      const { logType, parametro, tiempo, chars } = logTypeMap[log.medio];
+      const { logType, parametro } = logTypeMap[log.medio];
 
-      return {
+      const NTLogs: ILogNT = {
+        user: user._id,
         description: log.descripcion,
         type: logType,
         [parametro]: log.parametro,
-        ...(tiempo ? { time: log.tiempo } : {}),
-        ...(chars ? { chars: log.caracteres } : {}),
         date: new Date(log.createdAt),
       };
+
+      if (log.tiempo) {
+        NTLogs.time = log.tiempo;
+      }
+      if (log.caracteres) {
+        NTLogs.chars = log.caracteres;
+      }
+      if (log.officialId) {
+        NTLogs.mediaId = log.officialId;
+      }
+
+      return NTLogs;
     });
 }
 
@@ -82,9 +120,8 @@ export default async function getLogsFromAPI(
         page: 1,
       },
     });
-    const logs = transformList(response.data);
-    req.body = logs;
-    console.log(response.data);
+    const logs = transformList(response.data, user);
+    req.body.logs = logs;
     return next();
   } catch (error) {
     return next(error as customError);

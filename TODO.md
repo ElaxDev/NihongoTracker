@@ -49,14 +49,14 @@
 - [x] Editar novela visual
 - [x] Eliminar novela visual
 - [x] Obtener novela visual
-- [ ] Buscar novela visual
+- [x] Buscar novela visual
 - [x] Crear novela ligera
 - [x] Editar novela ligera
 - [x] Eliminar novela ligera
 - [x] Obtener novela ligera
-- [ ] Buscar novela ligera
-- [ ] Lista de inmersión
-- [ ] Asignarle media a los logs
+- [x] Buscar novela ligera
+- [x] Lista de inmersión
+- [x] Asignarle media a los logs
 
 ## Frontend
 

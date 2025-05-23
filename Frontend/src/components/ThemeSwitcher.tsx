@@ -23,7 +23,7 @@ function ThemeSwitcher() {
         </div>
         <ul
           tabIndex={0}
-          className="dropdown-content bg-base-300 rounded-box z-[1] w-52 p-2 shadow-2xl overflow-y-auto h-full min-h-72"
+          className="dropdown-content bg-base-300 rounded-box z-1 w-52 p-2 shadow-2xl overflow-y-auto h-full min-h-72"
         >
           <li>
             <input

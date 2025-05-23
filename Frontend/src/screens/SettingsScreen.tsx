@@ -3,7 +3,7 @@ import { updateUserFn, importLogsFn, clearUserDataFn } from '../api/trackerApi';
 import { toast } from 'react-toastify';
 import { AxiosError } from 'axios';
 import { ILoginResponse } from '../types';
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useUserDataStore } from '../store/userData';
 import Loader from '../components/Loader';
 import ThemeSwitcher from '../components/ThemeSwitcher';
@@ -15,6 +15,9 @@ function SettingsScreen() {
   const [newPassword, setNewPassword] = useState('');
   const [newPasswordConfirm, setPasswordConfirm] = useState('');
   const [discordId, setDiscordId] = useState(user?.discordId || '');
+  const [forcedImport] = useState(false);
+
+  const queryClient = useQueryClient();
 
   const { mutate: updateUser, isPending } = useMutation({
     mutationFn: updateUserFn,
@@ -36,6 +39,11 @@ function SettingsScreen() {
     mutationFn: importLogsFn,
     onSuccess: (data) => {
       toast.success(data.message);
+      queryClient.invalidateQueries({
+        predicate: (query) => {
+          return ['logs', 'user'].includes(query.queryKey[0] as string);
+        },
+      });
     },
     onError: (error) => {
       console.log(error);
@@ -51,6 +59,11 @@ function SettingsScreen() {
     mutationFn: clearUserDataFn,
     onSuccess: (data) => {
       toast.success(data.message);
+      queryClient.invalidateQueries({
+        predicate: (query) => {
+          return ['logs', 'user'].includes(query.queryKey[0] as string);
+        },
+      });
     },
     onError: (error) => {
       console.log(error);
@@ -64,7 +77,7 @@ function SettingsScreen() {
 
   async function handleSyncLogs(e: React.FormEvent) {
     e.preventDefault();
-    syncLogs();
+    syncLogs(forcedImport);
   }
 
   async function handleClearData(e: React.FormEvent) {
@@ -98,7 +111,7 @@ function SettingsScreen() {
   }
 
   return (
-    <div className="pt-32 py-16 flex justify-center items-center bg-base-300 min-h-screen">
+    <div className="pt-32 py-16 flex justify-center items-center bg-base-200 min-h-screen">
       <dialog id="my_modal_2" className="modal">
         <div className="modal-box">
           <h3 className="font-bold text-lg">Are you sure?</h3>
@@ -180,6 +193,7 @@ function SettingsScreen() {
                   placeholder="Username"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
+                  autoComplete="new-off"
                 />
               </label>
             </div>
@@ -193,6 +207,7 @@ function SettingsScreen() {
                   placeholder="Password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
+                  autoComplete="new-password"
                 />
               </label>
             </div>

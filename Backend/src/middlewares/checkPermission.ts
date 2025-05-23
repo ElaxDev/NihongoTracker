@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
-import User from '../models/user.model';
-import { customError } from './errorMiddleware';
-import { userRoles } from '../types';
+import User from '../models/user.model.js';
+import { customError } from './errorMiddleware.js';
+import { userRoles } from '../types.js';
 
 export function checkPermission(requiredRole: userRoles) {
   return async (_req: Request, res: Response, next: NextFunction) => {

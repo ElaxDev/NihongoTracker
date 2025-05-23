@@ -4,11 +4,11 @@ import ProgressBar from '../components/ProgressBar';
 import React from 'react';
 import { useInfiniteQuery } from '@tanstack/react-query';
 import { getUserLogsFn } from '../api/trackerApi';
-import { OutletContextType } from '../types';
+import { OutletProfileContextType } from '../types';
 
 function ProfileScreen() {
   const limit = 10;
-  const { user, username } = useOutletContext<OutletContextType>();
+  const { user, username } = useOutletContext<OutletProfileContextType>();
   const accent = 'primary';
 
   const {
@@ -20,9 +20,9 @@ function ProfileScreen() {
     queryKey: ['logs', username],
     queryFn: ({ pageParam }) =>
       getUserLogsFn(username as string, { limit, page: pageParam as number }),
-    getNextPageParam: (lastPage, _allPages, lastPageParam) => {
-      if (lastPage.length < limit) return undefined;
-      return lastPageParam + 1;
+    getNextPageParam: (lastPage, allPages) => {
+      if (!lastPage || lastPage.length < limit) return undefined;
+      return allPages ? allPages.length + 1 : 2;
     },
     initialPageParam: 1,
     staleTime: Infinity,
@@ -56,7 +56,7 @@ function ProfileScreen() {
     (readingProgressXP / totalReadingXpToLevelUp) * 100;
   return (
     <div className="flex flex-col items-center py-8">
-      <div className="2xl:max-w-screen-2xl 2xl:min-w-[50%] min-w-full 2xl:px-0 px-10">
+      <div className="2xl:max-w-(--breakpoint-2xl) min-w-[50%] px-0">
         <div className="grid grid-cols-2 gap-10">
           <div className="flex flex-col shrink gap-5">
             <div className="card w-full bg-base-100">
@@ -104,13 +104,17 @@ function ProfileScreen() {
           </div>
 
           <div className="flex flex-col gap-5 items-center">
-            {logs?.pages.map((page, index) => (
-              <React.Fragment key={index}>
-                {page.map((log) => (
-                  <LogCard key={log._id} log={log} />
-                ))}
-              </React.Fragment>
-            ))}
+            {logs && logs?.pages ? (
+              logs.pages.map((page, index) => (
+                <React.Fragment key={index}>
+                  {page.map((log) => (
+                    <LogCard key={log._id} log={log} />
+                  ))}
+                </React.Fragment>
+              ))
+            ) : (
+              <p>No logs available</p>
+            )}
             <button
               className="btn btn-wide bg-base-100"
               onClick={() => fetchNextPage()}
@@ -119,8 +123,8 @@ function ProfileScreen() {
               {isFetchingNextPage
                 ? 'Loading more...'
                 : hasNextPage
-                ? 'Load More'
-                : 'Nothing more to load'}
+                  ? 'Load More'
+                  : 'Nothing more to load'}
             </button>
           </div>
         </div>

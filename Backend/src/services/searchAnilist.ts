@@ -1,16 +1,13 @@
 import { gql, GraphQLClient } from 'graphql-request';
-import { AnilistSearchResult, IMediaDocument } from '../types';
+import {
+  AnilistSearchResult,
+  IMediaDocument,
+  SearchAnilistArgs,
+} from '../types.js';
 
 const query = gql`
-  query (
-    $search: String
-    $ids: [Int]
-    $type: MediaType
-    $format: MediaFormat
-    $page: Int
-    $perPage: Int
-  ) {
-    Page(page: $page, perPage: $perPage) {
+  query ($search: String, $ids: [Int], $type: MediaType, $format: MediaFormat) {
+    Page {
       pageInfo {
         total
         currentPage
@@ -41,6 +38,7 @@ const query = gql`
         chapters
         volumes
         synonyms
+        isAdult
         bannerImage
         description
       }
@@ -50,34 +48,23 @@ const query = gql`
 
 const anilist = new GraphQLClient('https://graphql.anilist.co');
 
-interface SearchAnilistArgs {
-  search: string;
-  type?: string;
-  page?: number;
-  perPage?: number;
-  format?: string;
-  ids?: number[] | number;
-}
+export async function searchAnilist(variables: {
+  search?: string | null;
+  type?: 'ANIME' | 'MANGA' | null;
+  format?: SearchAnilistArgs['format'];
+  ids?: number[] | null;
+}): Promise<IMediaDocument[]> {
+  const cleanedVariables: SearchAnilistArgs = cleanVariables(
+    variables
+  ) as SearchAnilistArgs;
+  const data: AnilistSearchResult = await anilist.request(
+    query,
+    cleanedVariables
+  );
 
-export async function searchAnilist(
-  search: string,
-  type?: string,
-  page: number = 1,
-  perPage: number = 10,
-  format?: string,
-  ids?: number[] | number
-): Promise<IMediaDocument[]> {
-  const variables: SearchAnilistArgs = {
-    search: search,
-    type: type,
-    page: page,
-    perPage: perPage,
-  };
-  if (ids) variables['ids'] = ids;
-  if (format) variables['format'] = format;
-  if (!type) return [];
-  const data: AnilistSearchResult = await anilist.request(query, variables);
-  const media = data.Page.media.map((media) => ({
+  if (!data.Page.media.length) return [];
+
+  return data.Page.media.map((media) => ({
     contentId: media.id.toString(),
     title: {
       contentTitleNative: media.title.native,
@@ -101,8 +88,14 @@ export async function searchAnilist(
     }),
     isAdult: media.isAdult,
   })) as IMediaDocument[];
+}
 
-  return media;
+function cleanVariables<T extends object>(variables: T): Partial<T> {
+  return Object.fromEntries(
+    Object.entries(variables).filter(
+      ([_, value]) => value !== undefined && value !== null
+    )
+  ) as Partial<T>;
 }
 
 function determineMediaType(
