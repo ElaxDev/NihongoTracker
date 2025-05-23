@@ -53,6 +53,9 @@ const UserSchema = new Schema<IUser>(
         required: true,
         default: calculateXp(1),
       },
+      currentStreak: { type: Number, required: true, default: 0 },
+      longestStreak: { type: Number, required: true, default: 0 },
+      lastStreakDate: { type: Date, default: null },
     },
     clubs: [{ type: Schema.Types.ObjectId, ref: 'Club' }],
     avatar: { type: String, default: '' },
@@ -83,7 +86,6 @@ UserSchema.pre(
   'findOneAndDelete',
   { document: true, query: false },
   async function (this: IUser, next) {
-    console.log('Deleting user logs\nUser id:', this._id);
     await Log.deleteMany({ user: this._id });
     next();
   }

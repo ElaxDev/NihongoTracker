@@ -26,7 +26,6 @@ function SettingsScreen() {
       setUser(data);
     },
     onError: (error) => {
-      console.log(error);
       if (error instanceof AxiosError) {
         toast.error(error.response?.data.message);
       } else {
@@ -46,7 +45,6 @@ function SettingsScreen() {
       });
     },
     onError: (error) => {
-      console.log(error);
       if (error instanceof AxiosError) {
         toast.error(error.response?.data.message);
       } else {
@@ -66,7 +64,6 @@ function SettingsScreen() {
       });
     },
     onError: (error) => {
-      console.log(error);
       if (error instanceof AxiosError) {
         toast.error(error.response?.data.message);
       } else {

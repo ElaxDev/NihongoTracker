@@ -104,7 +104,7 @@ function ProfileScreen() {
           </div>
 
           <div className="flex flex-col gap-5 items-center">
-            {logs && logs?.pages ? (
+            {logs?.pages ? (
               logs.pages.map((page, index) => (
                 <React.Fragment key={index}>
                   {page.map((log) => (
@@ -121,7 +121,7 @@ function ProfileScreen() {
               disabled={!hasNextPage || isFetchingNextPage}
             >
               {isFetchingNextPage
-                ? 'Loading more...'
+                ? <span className="loading loading-spinner loading-sm"></span>
                 : hasNextPage
                   ? 'Load More'
                   : 'Nothing more to load'}

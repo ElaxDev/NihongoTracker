@@ -172,8 +172,8 @@ export async function updateLog(
   }
 }
 
-async function createLogFunction(
-  logData: ICreateLog,
+export async function createLog(
+  req: Request<ParamsDictionary, any, ICreateLog>,
   res: Response,
   next: NextFunction
 ) {
@@ -188,80 +188,92 @@ async function createLogFunction(
     date,
     chars,
     mediaData,
-  } = logData;
-  let logMedia;
-  if (mediaId) {
-    logMedia = await MediaBase.findOne({ contentId: mediaId });
-  }
-
-  if (
-    !logMedia &&
-    type !== 'audio' &&
-    type !== 'other' &&
-    mediaId &&
-    mediaData
-  ) {
-    await MediaBase.create({
-      contentId: mediaId,
-      title: {
-        contentTitleNative: mediaData.contentTitleNative,
-        contentTitleEnglish: mediaData.contentTitleEnglish,
-        contentTitleRomaji: mediaData.contentTitleRomaji,
-      },
-      contentImage: mediaData.contentImage,
-      episodes: mediaData.episodes,
-      episodeDuration: mediaData.episodeDuration,
-      synonyms: mediaData.synonyms,
-      chapters: mediaData.chapters,
-      volumes: mediaData.volumes,
-      isAdult: mediaData.isAdult,
-      coverImage: mediaData.coverImage,
-      type,
-      description: mediaData.description,
-    });
-  }
-
-  const newLogMedia = await MediaBase.findOne({
-    contentId: mediaId,
-  });
-
-  const user: ILog['user'] = res.locals.user._id;
-  const newLog: ILog | null = new Log({
-    user,
-    type,
-    mediaId: logMedia
-      ? logMedia._id
-      : newLogMedia
-        ? newLogMedia._id
-        : undefined,
-    pages,
-    episodes,
-    xp,
-    description,
-    private: false,
-    time,
-    date,
-    chars,
-  });
-  if (!newLog) throw new customError('Log could not be created', 500);
-  const savedLog = await newLog.save();
-  res.locals.log = savedLog;
-  await updateStats(res, next);
-  return savedLog;
-}
-
-export async function createLog(
-  req: Request<ParamsDictionary, any, ICreateLog>,
-  res: Response,
-  next: NextFunction
-) {
-  const { type, description } = req.body;
+  } = req.body;
 
   try {
     if (!type) throw new customError('Log type is required', 400);
     if (!description) throw new customError('Description is required', 400);
+    let logMedia;
+    if (mediaId) {
+      logMedia = await MediaBase.findOne({ contentId: mediaId });
+    }
 
-    const savedLog = await createLogFunction(req.body, res, next);
+    if (
+      !logMedia &&
+      type !== 'audio' &&
+      type !== 'other' &&
+      mediaId &&
+      mediaData
+    ) {
+      await MediaBase.create({
+        contentId: mediaId,
+        title: {
+          contentTitleNative: mediaData.contentTitleNative,
+          contentTitleEnglish: mediaData.contentTitleEnglish,
+          contentTitleRomaji: mediaData.contentTitleRomaji,
+        },
+        contentImage: mediaData.contentImage,
+        episodes: mediaData.episodes,
+        episodeDuration: mediaData.episodeDuration,
+        synonyms: mediaData.synonyms,
+        chapters: mediaData.chapters,
+        volumes: mediaData.volumes,
+        isAdult: mediaData.isAdult,
+        coverImage: mediaData.coverImage,
+        type,
+        description: mediaData.description,
+      });
+    }
+
+    const newLogMedia = await MediaBase.findOne({
+      contentId: mediaId,
+    });
+
+    const user: ILog['user'] = res.locals.user._id;
+    const newLog: ILog | null = new Log({
+      user,
+      type,
+      mediaId: logMedia
+        ? logMedia._id
+        : newLogMedia
+          ? newLogMedia._id
+          : undefined,
+      pages,
+      episodes,
+      xp,
+      description,
+      private: false,
+      time,
+      date,
+      chars,
+    });
+    if (!newLog) throw new customError('Log could not be created', 500);
+    const savedLog = await newLog.save();
+    if (!savedLog) throw new customError('Log could not be saved', 500);
+    res.locals.log = savedLog;
+    await updateStats(res, next);
+    const userStats = await User.findById(res.locals.user._id);
+    if (!userStats) throw new customError('User not found', 404);
+    // Check if lastStreakDate is yesterday
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    if (
+      userStats.stats.lastStreakDate &&
+      userStats.stats.lastStreakDate.toDateString() === yesterday.toDateString()
+    ) {
+      userStats.stats.currentStreak += 1;
+    } else if (
+      userStats.stats.lastStreakDate &&
+      userStats.stats.lastStreakDate.toDateString() !== yesterday.toDateString()
+    ) {
+      userStats.stats.currentStreak = 1;
+    }
+    userStats.stats.lastStreakDate = new Date();
+    if (userStats.stats.currentStreak > userStats.stats.longestStreak) {
+      userStats.stats.longestStreak = userStats.stats.currentStreak;
+    }
+    await userStats.save();
+
     return res.status(200).json(savedLog);
   } catch (error) {
     return next(error as customError);
@@ -293,7 +305,6 @@ async function createImportedMedia(
       logsMediaId.manga.length > 0 ||
       logsMediaId.reading.length > 0)
   ) {
-    console.log('No mediaId provided, fetching from logs');
     const userLogs = await Log.find({ user: userId });
     if (!userLogs) return 0;
     const logsMediaId = userLogs.reduce<IImportStats['anilistMediaId']>(
@@ -468,7 +479,6 @@ export async function assignMedia(
         },
         { mediaId: media.contentId }
       );
-      console.log('updatedLogs', updatedLogs);
       if (!updatedLogs)
         throw new customError(
           `Log${logsData.logsId.length > 1 || 's'} not found`,
