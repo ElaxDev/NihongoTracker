@@ -108,9 +108,11 @@ function ProfileScreen() {
             {logs?.pages ? (
               logs.pages.map((page, index) => (
                 <React.Fragment key={index}>
-                  {page.map((log) => (
-                    <LogCard key={log._id} log={log} />
-                  ))}
+                  {Array.isArray(page)
+                    ? page.map((log) => (
+                        <LogCard key={log._id} log={log} own={true} />
+                      ))
+                    : null}
                 </React.Fragment>
               ))
             ) : (

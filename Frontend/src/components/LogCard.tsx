@@ -17,7 +17,7 @@ const logTypeText = {
   other: 'Other',
 };
 
-function LogCard({ log }: { log: ILog }) {
+function LogCard({ log, own = false }: { log: ILog; own?: boolean }) {
   const { description, xp, date, type, episodes, pages, time, chars } = log;
 
   const relativeDate = date
@@ -90,12 +90,14 @@ function LogCard({ log }: { log: ILog }) {
           <h2 className="card-title tooltip" data-tip={description}>
             {logTitle}
           </h2>
-          <button
-            className="btn btn-sm btn-circle btn-ghost group"
-            onClick={() => deleteLog(log._id)}
-          >
-            <MdDelete className="text-xl opacity-75 group-hover:opacity-100" />
-          </button>
+          {own && (
+            <button
+              className="btn btn-sm btn-circle btn-ghost group"
+              onClick={() => deleteLog(log._id)}
+            >
+              <MdDelete className="text-xl opacity-75 group-hover:opacity-100" />
+            </button>
+          )}
         </div>
         <p>Type: {logTypeText[type]}</p>
         {renderQuantity()}
