@@ -18,24 +18,21 @@ export async function csvToArray(
     const csvString = req.file.buffer.toString('utf8');
     const results: csvLogs[] = await csvtojson({
       delimiter: 'auto',
-      includeColumns:
-        /^(?:type|description|date|time|chars|pages|episodes|mediaId)$/,
+      includeColumns: /^(?:type|description|quantity|date|time|chars|mediaId)$/,
     }).fromString(csvString);
     if (results.length === 0) {
       throw new customError('No data found in the CSV file', 400);
     }
     req.body.logs = results.map((log) => {
-      const { type, description, date, time, chars, pages, episodes, mediaId } =
-        log;
+      const { type, description, date, time, chars, quantity, mediaId } = log;
       return {
         type,
         description,
         mediaId: mediaId || null,
+        quantity: Number(quantity),
         date: new Date(date),
         time: Number(time),
         chars: chars ? Number(chars) : null,
-        pages: pages ? Number(pages) : null,
-        episodes: episodes ? Number(episodes) : null,
       };
     });
     return next();

@@ -1,26 +1,26 @@
-import React, { useState } from "react";
+import React, { useState } from 'react';
 import {
   clearUserDataFn,
   importFromCSV,
   importLogsFn,
   updateUserFn,
-} from "../api/trackerApi";
-import { toast } from "react-toastify";
-import { AxiosError } from "axios";
-import { ILoginResponse } from "../types";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useUserDataStore } from "../store/userData";
-import Loader from "../components/Loader";
-import ThemeSwitcher from "../components/ThemeSwitcher";
-import { MdInfo } from "react-icons/md";
+} from '../api/trackerApi';
+import { toast } from 'react-toastify';
+import { AxiosError } from 'axios';
+import { ILoginResponse } from '../types';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useUserDataStore } from '../store/userData';
+import Loader from '../components/Loader';
+import ThemeSwitcher from '../components/ThemeSwitcher';
+import { MdInfo } from 'react-icons/md';
 
 function SettingsScreen() {
   const { setUser, user } = useUserDataStore();
-  const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("");
-  const [newPassword, setNewPassword] = useState("");
-  const [newPasswordConfirm, setPasswordConfirm] = useState("");
-  const [discordId, setDiscordId] = useState(user?.discordId || "");
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [newPasswordConfirm, setPasswordConfirm] = useState('');
+  const [discordId, setDiscordId] = useState(user?.discordId || '');
   const [forcedImport] = useState(false);
 
   const queryClient = useQueryClient();
@@ -28,14 +28,14 @@ function SettingsScreen() {
   const { mutate: updateUser, isPending } = useMutation({
     mutationFn: updateUserFn,
     onSuccess: (data: ILoginResponse) => {
-      toast.success("User updated");
+      toast.success('User updated');
       setUser(data);
     },
     onError: (error) => {
       if (error instanceof AxiosError) {
         toast.error(error.response?.data.message);
       } else {
-        toast.error(error.message ? error.message : "An error occurred");
+        toast.error(error.message ? error.message : 'An error occurred');
       }
     },
   });
@@ -46,7 +46,7 @@ function SettingsScreen() {
       toast.success(data.message);
       void queryClient.invalidateQueries({
         predicate: (query) => {
-          return ["logs", "user"].includes(query.queryKey[0] as string);
+          return ['logs', 'user'].includes(query.queryKey[0] as string);
         },
       });
     },
@@ -54,7 +54,7 @@ function SettingsScreen() {
       if (error instanceof AxiosError) {
         toast.error(error.response?.data.message);
       } else {
-        toast.error(error.message ? error.message : "An error occurred");
+        toast.error(error.message ? error.message : 'An error occurred');
       }
     },
   });
@@ -65,7 +65,7 @@ function SettingsScreen() {
       toast.success(data.message);
       void queryClient.invalidateQueries({
         predicate: (query) => {
-          return ["logs", "user"].includes(query.queryKey[0] as string);
+          return ['logs', 'user'].includes(query.queryKey[0] as string);
         },
       });
     },
@@ -73,7 +73,7 @@ function SettingsScreen() {
       if (error instanceof AxiosError) {
         toast.error(error.response?.data.message);
       } else {
-        toast.error(error.message ? error.message : "An error occurred");
+        toast.error(error.message ? error.message : 'An error occurred');
       }
     },
   });
@@ -84,7 +84,7 @@ function SettingsScreen() {
       toast.success(data.message);
       void queryClient.invalidateQueries({
         predicate: (query) => {
-          return ["logs", "user"].includes(query.queryKey[0] as string);
+          return ['logs', 'user'].includes(query.queryKey[0] as string);
         },
       });
     },
@@ -92,7 +92,7 @@ function SettingsScreen() {
       if (error instanceof AxiosError) {
         toast.error(error.response?.data.message);
       } else {
-        toast.error(error.message ? error.message : "An error occurred");
+        toast.error(error.message ? error.message : 'An error occurred');
       }
     },
   });
@@ -104,42 +104,42 @@ function SettingsScreen() {
 
   async function handleImportCSV(e: React.FormEvent) {
     e.preventDefault();
-    const csvFile = (document.getElementById("csv") as HTMLInputElement)
+    const csvFile = (document.getElementById('csv') as HTMLInputElement)
       .files![0];
     if (!csvFile) {
-      toast.error("Please select a CSV file");
+      toast.error('Please select a CSV file');
       return;
     }
     const formData = new FormData();
-    formData.append("csv", csvFile);
+    formData.append('csv', csvFile);
     importCSVLogs(formData);
   }
 
   async function handleClearData(e: React.FormEvent) {
     e.preventDefault();
-    (document.getElementById("clear_data_modal") as HTMLDialogElement).close();
+    (document.getElementById('clear_data_modal') as HTMLDialogElement).close();
     clearData();
   }
 
   async function handleUpdateUser(e: React.FormEvent) {
     e.preventDefault();
     const formData = new FormData();
-    formData.append("username", username);
-    formData.append("password", password);
-    formData.append("newPassword", newPassword);
-    formData.append("discordId", discordId);
-    formData.append("newPasswordConfirm", newPasswordConfirm);
+    formData.append('username', username);
+    formData.append('password', password);
+    formData.append('newPassword', newPassword);
+    formData.append('discordId', discordId);
+    formData.append('newPasswordConfirm', newPasswordConfirm);
 
-    const avatar = (document.getElementById("avatar") as HTMLInputElement)
+    const avatar = (document.getElementById('avatar') as HTMLInputElement)
       .files![0];
-    const banner = (document.getElementById("banner") as HTMLInputElement)
+    const banner = (document.getElementById('banner') as HTMLInputElement)
       .files![0];
 
     if (avatar) {
-      formData.append("avatar", avatar);
+      formData.append('avatar', avatar);
     }
     if (banner) {
-      formData.append("banner", banner);
+      formData.append('banner', banner);
     }
 
     updateUser(formData);
@@ -237,7 +237,7 @@ function SettingsScreen() {
                       {isSyncPending ? (
                         <span className="loading loading-spinner loading-sm"></span>
                       ) : (
-                        "Sync Logs"
+                        'Sync Logs'
                       )}
                     </button>
                   </div>
@@ -248,7 +248,7 @@ function SettingsScreen() {
                     <span className="label-text">Import from CSV</span>
                     <span
                       className="tooltip"
-                      data-tip='The headers of the CSV File should be "type ("anime", "manga", "reading", "vn", "video", "audio" or "other"), description, date, time, chars, pages, episodes, mediaId (if applicable)" if they are not, the import can and will fail.'
+                      data-tip='The headers of the CSV File should be "type ("anime", "manga", "reading", "vn", "video", "audio" or "other"), description, date, quantity (this column varies according to the type column, for anime is episodes, manga is pages, reading is characters, vn is characters, video is time, audio is time, other is time), time (in minutes), chars, mediaId (if applicable)" if they are not, the import can and will fail.'
                     >
                       <MdInfo />
                     </span>
@@ -339,7 +339,7 @@ function SettingsScreen() {
                   onClick={() =>
                     (
                       document.getElementById(
-                        "clear_data_modal",
+                        'clear_data_modal'
                       ) as HTMLDialogElement
                     ).showModal()
                   }
@@ -362,7 +362,7 @@ function SettingsScreen() {
                   {isPending ? (
                     <span className="loading loading-spinner loading-sm"></span>
                   ) : (
-                    "Update Profile"
+                    'Update Profile'
                   )}
                 </button>
               </div>
@@ -371,7 +371,7 @@ function SettingsScreen() {
             {isClearDataPending && (
               <div className="fixed inset-0 bg-base-300 bg-opacity-80 flex items-center justify-center z-50">
                 <div className="card bg-base-100 shadow-xl p-6">
-                  <Loader text={"Clearing user data..."} />
+                  <Loader text={'Clearing user data...'} />
                 </div>
               </div>
             )}

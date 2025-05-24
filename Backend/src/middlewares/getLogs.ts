@@ -34,6 +34,10 @@ interface ILogManabeTypeMap {
   };
 }
 
+interface ILogCSVTypeMap {
+  [key: string]: string;
+}
+
 interface ILogNT {
   user: Types.ObjectId;
   description: string;
@@ -135,43 +139,38 @@ function transformCSVLogsList(
   list: csvLogs[],
   user: Omit<IUser, 'password'>
 ): ILogNT[] {
-  return list.map((log) => {
-    const { type, description, date, time, chars, pages, episodes, mediaId } =
-      log;
-    if (
-      type !== 'anime' &&
-      type !== 'manga' &&
-      type !== 'reading' &&
-      type !== 'vn' &&
-      type !== 'video' &&
-      type !== 'audio' &&
-      type !== 'other'
-    ) {
-      throw new customError('Invalid log type', 400);
-    }
-    const NTLogs: ILogNT = {
-      user: user._id,
-      description,
-      type: type as ILog['type'],
-      date: new Date(date),
-    };
-    if (time) {
-      NTLogs.time = Number(time);
-    }
-    if (chars) {
-      NTLogs.chars = Number(chars);
-    }
-    if (pages) {
-      NTLogs.pages = Number(pages);
-    }
-    if (episodes) {
-      NTLogs.episodes = Number(episodes);
-    }
-    if (mediaId) {
-      NTLogs.mediaId = mediaId;
-    }
-    return NTLogs;
-  });
+  const logTypeMap: ILogCSVTypeMap = {
+    anime: 'episodes',
+    manga: 'pages',
+    reading: 'chars',
+    vn: 'chars',
+    video: 'time',
+    audio: 'time',
+    other: 'time',
+  };
+
+  return list
+    .filter((log) => logTypeMap.hasOwnProperty(log.type))
+    .map((log) => {
+      const NTLogs: ILogNT = {
+        user: user._id,
+        description: log.description,
+        type: log.type,
+        [log.type]: log.quantity,
+        date: new Date(log.date),
+      };
+
+      if (log.time) {
+        NTLogs.time = parseInt(log.time);
+      }
+      if (log.chars) {
+        NTLogs.chars = parseInt(log.chars);
+      }
+      if (log.mediaId) {
+        NTLogs.mediaId = log.mediaId;
+      }
+      return NTLogs;
+    });
 }
 
 export async function getLogsFromCSV(
