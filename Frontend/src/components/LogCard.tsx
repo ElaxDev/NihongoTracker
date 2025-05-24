@@ -6,6 +6,7 @@ import { deleteLogFn } from '../api/trackerApi';
 import { toast } from 'react-toastify';
 import queryClient from '../queryClient';
 import { AxiosError } from 'axios';
+import { useUserDataStore } from '../store/userData';
 
 const logTypeText = {
   reading: 'Reading',
@@ -17,8 +18,9 @@ const logTypeText = {
   other: 'Other',
 };
 
-function LogCard({ log, own = false }: { log: ILog; own?: boolean }) {
+function LogCard({ log, user: logUser }: { log: ILog; user?: string }) {
   const { description, xp, date, type, episodes, pages, time, chars } = log;
+  const { user } = useUserDataStore();
 
   const relativeDate = date
     ? typeof date === 'string'
@@ -90,14 +92,14 @@ function LogCard({ log, own = false }: { log: ILog; own?: boolean }) {
           <h2 className="card-title tooltip" data-tip={description}>
             {logTitle}
           </h2>
-          {own && (
+          {logUser === user?.username ? (
             <button
               className="btn btn-sm btn-circle btn-ghost group"
               onClick={() => deleteLog(log._id)}
             >
               <MdDelete className="text-xl opacity-75 group-hover:opacity-100" />
             </button>
-          )}
+          ) : null}
         </div>
         <p>Type: {logTypeText[type]}</p>
         {renderQuantity()}

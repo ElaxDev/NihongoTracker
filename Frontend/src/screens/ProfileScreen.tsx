@@ -110,7 +110,7 @@ function ProfileScreen() {
                 <React.Fragment key={index}>
                   {Array.isArray(page)
                     ? page.map((log) => (
-                        <LogCard key={log._id} log={log} own={true} />
+                        <LogCard key={log._id} log={log} user={username} />
                       ))
                     : null}
                 </React.Fragment>
