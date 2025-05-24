@@ -272,7 +272,7 @@ function Hero() {
                     </div>
                     <div className="stat place-items-center">
                       <div className="stat-title">Streak</div>
-                      <div className="stat-value text-2xl text-success">14</div>
+                      <div className="stat-value text-2xl text-success">12</div>
                       <div className="stat-desc">consecutive days</div>
                     </div>
                   </div>
@@ -497,7 +497,9 @@ function Hero() {
                               {ranking.username}
                             </Link>
                           </td>
-                          <td>{numberWithCommas(ranking.stats?.userXp ?? 0)}</td>
+                          <td>
+                            {numberWithCommas(ranking.stats?.userXp ?? 0)}
+                          </td>
                         </tr>
                       ))}
                     </tbody>

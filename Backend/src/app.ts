@@ -2,6 +2,8 @@ import express, { Router } from 'express';
 import morgan from 'morgan';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import {
   errorHandler,
   notFoundHandler,
@@ -39,6 +41,14 @@ app.use(
   })
 );
 
+// Serve index.html for all non-API routes (SPA fallback)
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+app.get('*', (req, res, next) => {
+  if (req.path.startsWith('/api')) return next();
+  res.sendFile(path.join(__dirname, '../dist/index.html'));
+});
+
+// Error handlers
 app.use(notFoundHandler);
 app.use(errorHandler);
 

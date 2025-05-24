@@ -215,8 +215,7 @@ export interface csvLogs {
   description: string;
   date: string;
   time: string;
-  chars: string;
-  pages: string;
-  episodes: string;
-  mediaId: string;
+  quantity: string;
+  chars?: string;
+  mediaId?: string;
 }

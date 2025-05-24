@@ -112,10 +112,11 @@ export async function deleteLog(
   next: NextFunction
 ) {
   try {
-    const deletedLog = await Log.findByIdAndDelete(
-      new Types.ObjectId(req.params.id)
-    );
-    if (!deletedLog) throw new customError('Log not found', 404);
+    const log = await Log.findById(req.params.id);
+    if (!log) throw new customError('Log not found', 404);
+    if (log.user.toString() !== res.locals.user.id.toString()) {
+      throw new customError('You are not authorized to delete this log', 403);
+    }
     return res.sendStatus(204);
   } catch (error) {
     return next(error as customError);
