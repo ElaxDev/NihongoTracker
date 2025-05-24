@@ -30,12 +30,12 @@ export async function csvToArray(
       return {
         type,
         description,
-        mediaId,
+        mediaId: mediaId || null,
         date: new Date(date),
         time: Number(time),
-        chars: Number(chars),
-        pages: Number(pages),
-        episodes: Number(episodes),
+        chars: chars ? Number(chars) : null,
+        pages: pages ? Number(pages) : null,
+        episodes: episodes ? Number(episodes) : null,
       };
     });
     return next();

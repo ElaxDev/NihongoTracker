@@ -1,14 +1,14 @@
-import MediaNavbar from "./MediaNavbar";
-import { Outlet, useNavigate, useParams } from "react-router-dom";
-import { getAverageColorFn, getMediaFn } from "../api/trackerApi";
-import { AxiosError } from "axios";
-import { useQuery } from "@tanstack/react-query";
-import { toast } from "react-toastify";
-import { OutletMediaContextType } from "../types";
-import { useEffect, useState } from "react";
-import DOMPurify from "dompurify";
-import { convertBBCodeToHtml } from "../utils/utils";
-import QuickLog from "../components/QuickLog";
+// import MediaNavbar from './MediaNavbar';
+import { Outlet, useNavigate, useParams } from 'react-router-dom';
+import { getAverageColorFn, getMediaFn } from '../api/trackerApi';
+import { AxiosError } from 'axios';
+import { useQuery } from '@tanstack/react-query';
+import { toast } from 'react-toastify';
+import { OutletMediaContextType } from '../types';
+import { useEffect, useState } from 'react';
+import DOMPurify from 'dompurify';
+import { convertBBCodeToHtml } from '../utils/utils';
+import QuickLog from '../components/QuickLog';
 
 export default function MediaHeader() {
   const { mediaType, mediaId } = useParams<{
@@ -16,7 +16,7 @@ export default function MediaHeader() {
     mediaId: string;
   }>();
   const navigate = useNavigate();
-  const [averageColor, setAverageColor] = useState<string>("#ffffff");
+  const [averageColor, setAverageColor] = useState<string>('#ffffff');
   const [logModalOpen, setLogModalOpen] = useState(false);
 
   const {
@@ -24,18 +24,18 @@ export default function MediaHeader() {
     error: mediaError,
     isLoading: isLoadingMedia,
   } = useQuery({
-    queryKey: ["media", mediaId, mediaType],
+    queryKey: ['media', mediaId, mediaType],
     queryFn: () => getMediaFn(mediaId, mediaType),
-    refetchOnMount: "always",
+    refetchOnMount: 'always',
   });
 
   if (mediaError) {
     if (mediaError instanceof AxiosError) {
-      if (mediaError.status === 404) navigate("/404", { replace: true });
+      if (mediaError.status === 404) navigate('/404', { replace: true });
       toast.error(mediaError.response?.data.message);
     } else {
       toast.error(
-        mediaError.message ? mediaError.message : "An error occurred",
+        mediaError.message ? mediaError.message : 'An error occurred'
       );
     }
   }
@@ -48,7 +48,7 @@ export default function MediaHeader() {
 
       // Then sanitize and render the HTML
       const sanitizedDescription = DOMPurify.sanitize(
-        htmlFromBBCode.replace(/<br\s*\/?>/gi, "<br />"),
+        htmlFromBBCode.replace(/<br\s*\/?>/gi, '<br />')
       );
       return <div dangerouslySetInnerHTML={{ __html: sanitizedDescription }} />;
     }
@@ -56,7 +56,7 @@ export default function MediaHeader() {
     // Check for regular HTML
     if (!/<[a-z][\s\S]*>/i.test(description)) {
       // No HTML tags, render as plain text
-      return description.split("\n").map((line, index) => (
+      return description.split('\n').map((line, index) => (
         <p key={index}>
           {line}
           <br />
@@ -66,20 +66,20 @@ export default function MediaHeader() {
 
     // Render HTML safely
     const sanitizedDescription = DOMPurify.sanitize(
-      description.replace(/<br\s*\/?>/gi, "<br />"),
+      description.replace(/<br\s*\/?>/gi, '<br />')
     );
     return <div dangerouslySetInnerHTML={{ __html: sanitizedDescription }} />;
   };
 
   useEffect(() => {
     if (
-      mediaType !== "anime" &&
-      mediaType !== "manga" &&
-      mediaType !== "vn" &&
-      mediaType !== "video" &&
-      mediaType !== "reading"
+      mediaType !== 'anime' &&
+      mediaType !== 'manga' &&
+      mediaType !== 'vn' &&
+      mediaType !== 'video' &&
+      mediaType !== 'reading'
     ) {
-      navigate("/404");
+      navigate('/404');
     }
   }, [mediaType, navigate, media]);
 
@@ -90,7 +90,7 @@ export default function MediaHeader() {
         if (color) {
           return setAverageColor(color.hex);
         }
-        setAverageColor("#ffffff");
+        setAverageColor('#ffffff');
       }
     }
 
@@ -106,10 +106,10 @@ export default function MediaHeader() {
       />
       <div
         className={`h-96 w-full bg-cover bg-center bg-no-repeat ${
-          isLoadingMedia ? "skeleton" : ""
+          isLoadingMedia ? 'skeleton' : ''
         }`}
         style={{
-          backgroundImage: `url(${!isLoadingMedia ? media?.coverImage : ""})`,
+          backgroundImage: `url(${!isLoadingMedia ? media?.coverImage : ''})`,
           backgroundColor: averageColor,
         }}
       >
@@ -126,7 +126,7 @@ export default function MediaHeader() {
             <div className="w-52 -mt-32">
               <img
                 className="drop-shadow-md"
-                src={media?.contentImage ? media.contentImage : ""}
+                src={media?.contentImage ? media.contentImage : ''}
               />
             </div>
             <button
@@ -147,7 +147,7 @@ export default function MediaHeader() {
         </div>
       </div>
 
-      <MediaNavbar mediaName={media?.title.contentTitleNative} />
+      {/* <MediaNavbar mediaName={media?.title.contentTitleNative} /> */}
       <Outlet
         context={
           { mediaDocument: media, mediaType } satisfies OutletMediaContextType
