@@ -9,10 +9,10 @@ import { AxiosError } from 'axios';
 import Loader from '../components/Loader';
 
 function RegisterScreen() {
-  const [username, setUsername] = useState('');
+  const { user, setUser } = useUserDataStore();
+  const [username, setUsername] = useState(user?.username || '');
   const [password, setPassword] = useState('');
   const [passwordConfirmation, setPasswordConfirmation] = useState('');
-  const { setUser } = useUserDataStore();
   const navigate = useNavigate();
 
   const { mutate, isPending, isSuccess } = useMutation({
