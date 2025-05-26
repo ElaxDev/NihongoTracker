@@ -71,6 +71,7 @@ function ReadingLogs({ logs }: ReadingLogsProps) {
     if (!logs) return [];
     const groupedLogs = new Map<string, ILog[]>();
     logs.forEach((log) => {
+      // Only include logs that have a description, are of type "reading", and don't have mediaId
       if (!log.description || log.type !== 'reading' || log.mediaId) return;
       let foundGroup = false;
       for (const [key, group] of groupedLogs) {
