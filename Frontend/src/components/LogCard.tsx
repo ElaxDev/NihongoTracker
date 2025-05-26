@@ -96,24 +96,28 @@ function LogCard({ log, user: logUser }: { log: ILog; user?: string }) {
   }
 
   return (
-    <div className="card card-side h-full w-full min-h-8 max-w-[450px] bg-base-100 text-base-content">
-      <div className="card-body w-full">
+    <div className="card sm:card-side h-full w-full min-h-8 max-w-[450px] bg-base-100 text-base-content">
+      <div className="card-body w-full p-4 sm:p-6">
         <div className="flex items-center justify-between">
-          <h2 className="card-title tooltip" data-tip={description}>
+          <h2
+            className="card-title text-base sm:text-lg tooltip"
+            data-tip={description}
+          >
             {logTitle}
           </h2>
           {logUser === user?.username ? (
             <button
               className="btn btn-sm btn-circle btn-ghost group"
               onClick={() => deleteModalRef.current?.showModal()}
+              aria-label="Delete log"
             >
               <MdDelete className="text-xl opacity-75 group-hover:opacity-100" />
             </button>
           ) : null}
         </div>
-        <p>Type: {logTypeText[type]}</p>
+        <p className="text-sm sm:text-base">Type: {logTypeText[type]}</p>
         {renderQuantity()}
-        <div className="flex justify-between w-full">
+        <div className="flex justify-between w-full text-sm sm:text-base">
           <p>XP: {xp}</p>
           <p className="text-right">{relativeDate}</p>
         </div>
@@ -132,16 +136,23 @@ function LogCard({ log, user: logUser }: { log: ILog; user?: string }) {
             Are you sure you want to delete this log? This action cannot be
             undone.
           </p>
-          <div className="modal-action">
+          <div className="modal-action flex-col sm:flex-row gap-2">
             <button
               onClick={() => deleteLog(log._id)}
-              className="btn btn-error"
+              className="btn btn-error w-full sm:w-auto"
               disabled={loadingDeleteLog}
             >
-              {loadingDeleteLog ? 'Deleting...' : 'Delete Log'}
+              {loadingDeleteLog ? (
+                <>
+                  <span className="loading loading-spinner loading-sm"></span>
+                  Deleting...
+                </>
+              ) : (
+                'Delete Log'
+              )}
             </button>
-            <form method="dialog">
-              <button className="btn btn-outline">Cancel</button>
+            <form method="dialog" className="w-full sm:w-auto">
+              <button className="btn btn-outline w-full">Cancel</button>
             </form>
           </div>
         </div>

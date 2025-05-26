@@ -105,7 +105,7 @@ export default function MediaHeader() {
         media={media}
       />
       <div
-        className={`h-96 w-full bg-cover bg-center bg-no-repeat ${
+        className={`h-48 sm:h-64 md:h-96 w-full bg-cover bg-center bg-no-repeat ${
           isLoadingMedia ? 'skeleton' : ''
         }`}
         style={{
@@ -121,33 +121,35 @@ export default function MediaHeader() {
       </div>
 
       <div className="min-h-12 bg-base-100">
-        <div className="grid grid-cols-[215px_auto] min-w-80 px-5 md:px-7 lg:max-w-6xl lg:px-12 2xl:px-24 mx-auto w-full">
-          <div>
-            <div className="w-52 -mt-32">
-              <img
-                className="drop-shadow-md"
-                src={media?.contentImage ? media.contentImage : ''}
-              />
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-1 md:grid-cols-[180px_1fr] lg:grid-cols-[215px_1fr] gap-6">
+            <div className="flex flex-col items-center md:items-start">
+              <div className="w-full max-w-[180px] md:w-full -mt-16 sm:-mt-24 md:-mt-32">
+                <img
+                  className="w-full h-auto rounded shadow-md"
+                  src={media?.contentImage ? media.contentImage : ''}
+                  alt={media?.title?.contentTitleNative || 'Media image'}
+                />
+              </div>
+              <button
+                className="btn btn-primary w-full max-w-[180px] mt-4"
+                onClick={() => setLogModalOpen(true)}
+              >
+                Log
+              </button>
             </div>
-            <button
-              className="btn w-52 btn-primary mt-2"
-              onClick={() => setLogModalOpen(true)}
-            >
-              Log
-            </button>
-          </div>
-          <div className="py-22px px-25px">
-            <h1 className="text-xl font-bold inline-block text-base-content">
-              {media?.title.contentTitleNative}
-            </h1>
-            <div className="text-base-content text-opacity-75 mt-2">
-              {media?.description && renderDescription(media.description)}
+            <div className="py-4 px-0 md:py-5 md:px-4">
+              <h1 className="text-xl sm:text-2xl font-bold text-base-content">
+                {media?.title?.contentTitleNative}
+              </h1>
+              <div className="text-base-content text-opacity-75 mt-4 text-sm sm:text-base">
+                {media?.description && renderDescription(media.description)}
+              </div>
             </div>
           </div>
         </div>
       </div>
 
-      {/* <MediaNavbar mediaName={media?.title.contentTitleNative} /> */}
       <Outlet
         context={
           { mediaDocument: media, mediaType } satisfies OutletMediaContextType

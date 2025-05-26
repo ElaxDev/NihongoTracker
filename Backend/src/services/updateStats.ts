@@ -73,11 +73,6 @@ export default async function updateStats(
         throw new customError('Invalid content type', 400);
     }
 
-    if (log) {
-      log.editedFields = null;
-      await log.save();
-    }
-
     // Update levels and XP
     updateLevelAndXp(userStats, 'listening');
     updateLevelAndXp(userStats, 'reading');

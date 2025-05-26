@@ -56,13 +56,15 @@ function ProfileScreen() {
   const readingProgressPercentage =
     (readingProgressXP / totalReadingXpToLevelUp) * 100;
   return (
-    <div className="flex flex-col items-center py-8">
-      <div className="2xl:max-w-(--breakpoint-2xl) min-w-[50%] px-0">
-        <div className="grid grid-cols-2 gap-10">
-          <div className="flex flex-col shrink gap-5">
-            <div className="card w-full bg-base-100">
-              <div className="card-body w-full">
-                <p>User Progress</p>
+    <div className="flex flex-col items-center py-4 sm:py-8 px-4 sm:px-6">
+      <div className="w-full max-w-7xl">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5 md:gap-10">
+          <div className="flex flex-col shrink gap-4 md:gap-5">
+            <div className="card w-full bg-base-100 shadow-sm">
+              <div className="card-body w-full p-4 sm:p-6">
+                <h2 className="card-title mb-2">Progress Stats</h2>
+
+                <p className="mt-2">User Progress</p>
                 <ProgressBar
                   progress={userProgressPercentage}
                   maxProgress={100}
@@ -75,7 +77,7 @@ function ProfileScreen() {
                   </p>
                 </div>
 
-                <p>Listening Progress</p>
+                <p className="mt-3">Listening Progress</p>
                 <ProgressBar
                   progress={listeningProgressPercentage}
                   maxProgress={100}
@@ -88,7 +90,7 @@ function ProfileScreen() {
                   </p>
                 </div>
 
-                <p>Reading Progress</p>
+                <p className="mt-3">Reading Progress</p>
                 <ProgressBar
                   progress={readingProgressPercentage}
                   maxProgress={100}
@@ -104,7 +106,8 @@ function ProfileScreen() {
             </div>
           </div>
 
-          <div className="flex flex-col gap-5 items-center">
+          <div className="flex flex-col gap-4 md:gap-5 items-center">
+            <h2 className="card-title self-start mb-2">Activity Logs</h2>
             {logs?.pages ? (
               logs.pages.map((page, index) => (
                 <React.Fragment key={index}>
@@ -116,10 +119,12 @@ function ProfileScreen() {
                 </React.Fragment>
               ))
             ) : (
-              <p>No logs available</p>
+              <div className="card w-full bg-base-100 shadow-sm p-4">
+                <p className="text-center">No logs available</p>
+              </div>
             )}
             <button
-              className="btn btn-wide bg-base-100"
+              className="btn btn-primary w-full sm:btn-wide mt-2"
               onClick={() => fetchNextPage()}
               disabled={!hasNextPage || isFetchingNextPage}
             >

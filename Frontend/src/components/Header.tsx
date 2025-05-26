@@ -1,14 +1,14 @@
-import React from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { MdLogout, MdPerson, MdSettings } from "react-icons/md";
-import { useUserDataStore } from "../store/userData";
-import { useMutation } from "@tanstack/react-query";
-import { logoutUserFn } from "../api/trackerApi";
-import { toast } from "react-toastify";
-import { AxiosError } from "axios";
-import { logoutResponseType } from "../types";
-import Loader from "./Loader";
-import { IconContext } from "react-icons";
+import React from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { MdLogout, MdPerson, MdSettings } from 'react-icons/md';
+import { useUserDataStore } from '../store/userData';
+import { useMutation } from '@tanstack/react-query';
+import { logoutUserFn } from '../api/trackerApi';
+import { toast } from 'react-toastify';
+import { AxiosError } from 'axios';
+import { logoutResponseType } from '../types';
+import Loader from './Loader';
+import { IconContext } from 'react-icons';
 
 function Header() {
   const { user, logout } = useUserDataStore();
@@ -20,13 +20,13 @@ function Header() {
       logout();
       useUserDataStore.persist.clearStorage();
       toast.success(data.message);
-      navigate("/");
+      navigate('/');
     },
     onError: (error) => {
       if (error instanceof AxiosError) {
         toast.error(error.response?.data.message);
       } else {
-        toast.error(error.message ? error.message : "An error occurred");
+        toast.error(error.message ? error.message : 'An error occurred');
       }
     },
   });
@@ -60,14 +60,35 @@ function Header() {
             {user ? (
               <ul
                 tabIndex={0}
-                className="menu menu-sm dropdown-content mt-3 z-1 p-2 shadow-sm rounded-box w-52"
+                className="menu menu-sm dropdown-content mt-3 z-[50] p-2 shadow-md bg-base-100 text-base-content rounded-box w-64"
               >
+                <li>
+                  <Link to="/ranking">Ranking</Link>
+                </li>
                 <li>{/* <QuickLog /> */}</li>
+                <li className="lg:hidden">
+                  <Link to={`/user/${user.username}`}>
+                    <MdPerson className="text-lg" />
+                    Profile
+                  </Link>
+                </li>
+                <li className="lg:hidden">
+                  <Link to="/settings">
+                    <MdSettings className="text-lg" />
+                    Settings
+                  </Link>
+                </li>
+                <li className="lg:hidden">
+                  <a onClick={logoutHandler}>
+                    <MdLogout className="text-lg" />
+                    Logout
+                  </a>
+                </li>
               </ul>
             ) : (
               <ul
                 tabIndex={0}
-                className="menu menu-sm dropdown-content mt-3 z-1 p-2 shadow-sm bg-base-100 rounded-box w-52"
+                className="menu menu-sm dropdown-content mt-3 z-[50] p-2 shadow-md bg-base-100 text-base-content rounded-box w-64"
               >
                 <li>
                   <Link to="/">Home</Link>
@@ -78,8 +99,11 @@ function Header() {
               </ul>
             )}
           </div>
-          <Link className="btn btn-ghost text-xl" to="/">
+          <Link className="btn btn-ghost text-xl hidden sm:flex" to="/">
             NihongoTracker
+          </Link>
+          <Link className="btn btn-ghost text-base sm:hidden" to="/">
+            NT
           </Link>
         </div>
         {user ? (
@@ -115,22 +139,29 @@ function Header() {
           </div>
         )}
 
-        <div className="navbar-end gap-3 mx-3">
+        <div className="navbar-end gap-1 sm:gap-3 mx-1 sm:mx-3">
           {user ? (
             <>
-              <Link className="btn btn-primary" to="/createlog">
+              <Link
+                className="btn btn-primary btn-sm sm:btn-md"
+                to="/createlog"
+              >
                 Create Log
               </Link>
               <div className="dropdown dropdown-hover dropdown-bottom dropdown-end">
-                <div tabIndex={0} role="button" className="btn m-1">
+                <div
+                  tabIndex={0}
+                  role="button"
+                  className="btn btn-sm sm:btn-md m-1"
+                >
                   {user.username}
                 </div>
                 <ul
                   tabIndex={0}
-                  className="dropdown-content z-1 menu p-2 shadow-sm bg-base-100 text-base-content rounded-box w-52"
+                  className="dropdown-content z-[50] menu p-2 shadow-md bg-base-100 text-base-content rounded-box w-52"
                 >
                   <IconContext.Provider
-                    value={{ className: "text-lg currentColor" }}
+                    value={{ className: 'text-lg currentColor' }}
                   >
                     <li>
                       <Link to={`/user/${user.username}`}>
@@ -156,10 +187,13 @@ function Header() {
             </>
           ) : (
             <>
-              <Link className="btn btn-primary" to="/login">
+              <Link className="btn btn-primary btn-sm sm:btn-md" to="/login">
                 Sign In
               </Link>
-              <Link className="btn btn-primary btn-outline" to="/register">
+              <Link
+                className="btn btn-primary btn-outline btn-sm sm:btn-md"
+                to="/register"
+              >
                 Sign Up
               </Link>
             </>

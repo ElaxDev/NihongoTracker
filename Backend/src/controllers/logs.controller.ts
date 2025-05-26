@@ -129,9 +129,13 @@ export async function deleteLog(
       _id: req.params.id,
       user: res.locals.user.id,
     });
+
+    res.locals.log = deletedLog;
+
     if (!deletedLog) {
       throw new customError('Log not found or not authorized', 404);
     }
+    await updateStats(res, next);
     return res.sendStatus(204);
   } catch (error) {
     return next(error as customError);
@@ -182,6 +186,10 @@ export async function updateLog(
     const updatedLog = await log.save();
     res.locals.log = updatedLog;
     await updateStats(res, next);
+
+    log.editedFields = null;
+    await log.save();
+
     return res.sendStatus(204);
   } catch (error) {
     return next(error as customError);
