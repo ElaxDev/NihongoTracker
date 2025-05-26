@@ -180,7 +180,6 @@ export async function getLogsFromCSV(
 ) {
   try {
     const logs = transformCSVLogsList(req.body.logs, res.locals.user);
-    console.log(logs);
     if (!logs) throw new customError('No logs found', 404);
     if (logs.length === 0) throw new customError('No logs found', 404);
     req.body.logs = logs;

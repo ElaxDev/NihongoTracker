@@ -31,7 +31,7 @@ const MediaBaseSchema = new Schema<IMediaDocument>(
 const MediaBase = model<IMediaDocument>('Media', MediaBaseSchema);
 
 const AnimeSchema = new Schema({
-  episodes: { type: Number, required: true },
+  episodes: { type: Number },
   episodeDuration: { type: Number },
 });
 

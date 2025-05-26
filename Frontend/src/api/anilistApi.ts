@@ -92,7 +92,7 @@ export async function searchAnilist(
       synonyms: media.synonyms.map((synonym) => synonym.trim()),
     }),
     ...(media.type === 'ANIME' && {
-      episodes: media.episodes,
+      ...(media.episodes ? { episodes: media.episodes } : {}),
       episodeDuration: media.duration,
     }),
     ...(media.type === 'MANGA' && {
