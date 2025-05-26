@@ -8,6 +8,7 @@ import Tabs from '../components/Tabs';
 import AnimeLogs from '../components/AnimeLogs';
 import VNLogs from '../components/VNLogs';
 import MangaLogs from '../components/MangaLogs';
+import ReadingLogs from '../components/ReadingLogs';
 
 function AssignMedia() {
   const { user } = useUserDataStore();
@@ -39,6 +40,7 @@ function AssignMedia() {
             { label: 'Anime', component: <AnimeLogs logs={logs} /> },
             { label: 'Manga', component: <MangaLogs logs={logs} /> },
             { label: 'VN', component: <VNLogs logs={logs} /> },
+            { label: 'Reading', component: <ReadingLogs logs={logs} /> },
           ]}
         />
       </div>

@@ -61,6 +61,20 @@ export async function getUserLogs(
           'user.username': req.params.username,
         },
       },
+      {
+        $lookup: {
+          from: 'media', // or the actual collection name for your media model
+          localField: 'mediaId',
+          foreignField: 'contentId',
+          as: 'media',
+        },
+      },
+      {
+        $unwind: {
+          path: '$media',
+          preserveNullAndEmptyArrays: true,
+        },
+      },
       ...(req.query.mediaId
         ? [{ $match: { mediaId: req.query.mediaId } }]
         : []),
@@ -87,8 +101,8 @@ export async function getUserLogs(
     const logs = await Log.aggregate(pipeline, {
       collation: { locale: 'en', strength: 2 },
     });
-
-    if (!logs.length) return res.status(204);
+    console.log(logs);
+    if (!logs.length) return res.sendStatus(204); // Use sendStatus instead of status
 
     return res.status(200).json(logs);
   } catch (error) {
@@ -237,9 +251,9 @@ export async function createLog(
       user,
       type,
       mediaId: logMedia
-        ? logMedia._id
+        ? logMedia.contentId
         : newLogMedia
-          ? newLogMedia._id
+          ? newLogMedia.contentId
           : undefined,
       pages,
       episodes,
@@ -469,27 +483,32 @@ export async function assignMedia(
   }
   try {
     const assignData: Array<IAssignData> = req.body;
-    assignData.forEach(async (logsData) => {
-      let media = await MediaBase.findOne({
-        contentId: logsData.contentMedia.contentId,
-      });
-      if (!media) {
-        media = await MediaBase.create(logsData.contentMedia);
-      }
-      const updatedLogs = await Log.updateMany(
-        {
-          _id: { $in: logsData.logsId },
-        },
-        { mediaId: media.contentId }
-      );
-      if (!updatedLogs)
-        throw new customError(
-          `Log${logsData.logsId.length > 1 || 's'} not found`,
-          404
-        );
 
-      return res.status(200).json(updatedLogs);
-    });
+    const results = await Promise.all(
+      assignData.map(async (logsData) => {
+        let media = await MediaBase.findOne({
+          contentId: logsData.contentMedia.contentId,
+        });
+        if (!media) {
+          media = await MediaBase.create(logsData.contentMedia);
+        }
+        const updatedLogs = await Log.updateMany(
+          {
+            _id: { $in: logsData.logsId },
+          },
+          { mediaId: media.contentId }
+        );
+        if (!updatedLogs)
+          throw new customError(
+            `Log${logsData.logsId.length > 1 ? 's' : ''} not found`,
+            404
+          );
+
+        return updatedLogs;
+      })
+    );
+
+    return res.status(200).json({ results });
   } catch (error) {
     return next(error as customError);
   }
