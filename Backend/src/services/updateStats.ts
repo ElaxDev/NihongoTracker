@@ -23,7 +23,7 @@ function updateLevelAndXp(userStats: any, field: string) {
 
 export default async function updateStats(
   res: Response,
-  next: NextFunction
+  _next: NextFunction
 ): Promise<void | IStats> {
   try {
     const user: IUser | null = await User.findById(res.locals.user.id);
@@ -83,11 +83,19 @@ export default async function updateStats(
     updateLevelAndXp(userStats, 'reading');
     updateLevelAndXp(userStats, 'user');
 
+    // Ensure we're handling NaN values
+    if (isNaN(userStats.listeningXp)) {
+      userStats.listeningXp = 0;
+    }
+    if (isNaN(userStats.readingXp)) {
+      userStats.readingXp = 0;
+    }
+
     user.markModified('stats');
     await user.save();
 
     return userStats as IStats;
   } catch (error) {
-    return next(error as customError);
+    throw error as customError;
   }
 }

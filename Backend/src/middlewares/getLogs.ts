@@ -156,7 +156,7 @@ function transformCSVLogsList(
         user: user._id,
         description: log.description,
         type: log.type,
-        [log.type]: log.quantity,
+        [logTypeMap[log.type]]: log.quantity,
         date: new Date(log.date),
       };
 
@@ -180,6 +180,7 @@ export async function getLogsFromCSV(
 ) {
   try {
     const logs = transformCSVLogsList(req.body.logs, res.locals.user);
+    console.log(logs);
     if (!logs) throw new customError('No logs found', 404);
     if (logs.length === 0) throw new customError('No logs found', 404);
     req.body.logs = logs;

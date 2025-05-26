@@ -102,7 +102,7 @@ export async function getUserLogs(
       collation: { locale: 'en', strength: 2 },
     });
     console.log(logs);
-    if (!logs.length) return res.status(204);
+    if (!logs.length) return res.sendStatus(204); // Use sendStatus instead of status
 
     return res.status(200).json(logs);
   } catch (error) {
@@ -483,27 +483,32 @@ export async function assignMedia(
   }
   try {
     const assignData: Array<IAssignData> = req.body;
-    assignData.forEach(async (logsData) => {
-      let media = await MediaBase.findOne({
-        contentId: logsData.contentMedia.contentId,
-      });
-      if (!media) {
-        media = await MediaBase.create(logsData.contentMedia);
-      }
-      const updatedLogs = await Log.updateMany(
-        {
-          _id: { $in: logsData.logsId },
-        },
-        { mediaId: media.contentId }
-      );
-      if (!updatedLogs)
-        throw new customError(
-          `Log${logsData.logsId.length > 1 || 's'} not found`,
-          404
-        );
 
-      return res.status(200).json(updatedLogs);
-    });
+    const results = await Promise.all(
+      assignData.map(async (logsData) => {
+        let media = await MediaBase.findOne({
+          contentId: logsData.contentMedia.contentId,
+        });
+        if (!media) {
+          media = await MediaBase.create(logsData.contentMedia);
+        }
+        const updatedLogs = await Log.updateMany(
+          {
+            _id: { $in: logsData.logsId },
+          },
+          { mediaId: media.contentId }
+        );
+        if (!updatedLogs)
+          throw new customError(
+            `Log${logsData.logsId.length > 1 ? 's' : ''} not found`,
+            404
+          );
+
+        return updatedLogs;
+      })
+    );
+
+    return res.status(200).json({ results });
   } catch (error) {
     return next(error as customError);
   }
