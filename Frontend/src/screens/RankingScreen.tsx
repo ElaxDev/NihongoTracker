@@ -2,6 +2,7 @@ import { useInfiniteQuery } from '@tanstack/react-query';
 import { getRankingFn } from '../api/trackerApi';
 import { useState } from 'react';
 import { filterTypes } from '../types';
+import { Link } from 'react-router-dom';
 
 function RankingScreen() {
   const [limit] = useState(10);
@@ -184,9 +185,13 @@ function RankingScreen() {
                                   </div>
                                 </div>
                                 <div>
-                                  <div className="font-bold">
+                                  <Link
+                                    to={`/user/${user.username}`}
+                                    className="font-bold hover:underline"
+                                    title={`View ${user.username}'s profile`}
+                                  >
                                     {user.username}
-                                  </div>
+                                  </Link>
                                   <div className="text-sm opacity-70">
                                     Lv.{user.stats?.userLevel ?? 1}
                                   </div>

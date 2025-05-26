@@ -12,7 +12,7 @@ function Hero() {
 
   // Fetch logs for the logged-in user
   const { data: logs } = useQuery({
-    queryKey: ['logs', username],
+    queryKey: ['logsHero', username],
     queryFn: () =>
       getUserLogsFn(username || '', {
         limit: 0,

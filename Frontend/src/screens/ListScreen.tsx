@@ -31,35 +31,35 @@ function ListScreen() {
   }
 
   return (
-    <div>
-      <div className="min-w-96 m-10">
-        <div className="w-full grid grid-cols-[20%_80%] gap-4">
-          <div className="card bg-base-100 p-4">
-            <div className="font-bold text-xl">Lists</div>
-            <ul className="menu card-body">
-              <li className="capitalize">
-                <a onClick={() => setCurrentList('anime')}>Anime</a>
-              </li>
-              <li className="capitalize">
-                <a onClick={() => setCurrentList('manga')}>Manga</a>
-              </li>
-              <li className="capitalize">
-                <a onClick={() => setCurrentList('vn')}>Visual Novel</a>
-              </li>
-              <li className="capitalize">
-                <a onClick={() => setCurrentList('video')}>Video</a>
-              </li>
-              <li className="capitalize">
-                <a onClick={() => setCurrentList('reading')}>Reading</a>
-              </li>
+    <div className="px-4 py-6 sm:p-6 md:p-8">
+      <div className="w-full max-w-7xl mx-auto">
+        <div className="grid grid-cols-1 md:grid-cols-[250px_1fr] gap-4 md:gap-6">
+          {/* Sidebar with lists */}
+          <div className="card bg-base-100 shadow-sm">
+            <div className="p-4 border-b border-base-200">
+              <div className="font-bold text-xl">Lists</div>
+            </div>
+            <ul className="menu menu-md p-2">
+              {['anime', 'manga', 'vn', 'video', 'reading'].map((item) => (
+                <li key={item} className="capitalize">
+                  <a
+                    onClick={() => setCurrentList(item as keyof IImmersionList)}
+                    className={currentList === item ? 'active' : ''}
+                  >
+                    {item === 'vn' ? 'Visual Novel' : item}
+                  </a>
+                </li>
+              ))}
             </ul>
           </div>
+
+          {/* Main content area */}
           <div className="flex flex-col gap-4">
             {untrackedLogs &&
               untrackedLogs.length > 0 &&
               username === user?.username && (
-                <div className="alert alert-info shadow-lg">
-                  <div className="flex flex-row gap-2 items-center">
+                <div className="alert alert-info shadow-sm">
+                  <div>
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
                       fill="none"
@@ -75,48 +75,52 @@ function ListScreen() {
                     </svg>
                     <span>
                       You have {untrackedLogs.length} unmatched logs.{' '}
-                      {
-                        <Link className="link" to="/matchmedia">
-                          Click here
-                        </Link>
-                      }{' '}
+                      <Link className="link" to="/matchmedia">
+                        Click here
+                      </Link>{' '}
                       to match them!
                     </span>
                   </div>
                 </div>
               )}
-            <div className="card bg-base-100 p-4 flex flex-row">
-              <div className="flex flex-row flex-wrap gap-2 w-full">
+            <div className="card bg-base-100 shadow-sm">
+              <div className="p-4 border-b border-base-200">
+                <h2 className="font-bold text-xl capitalize">{currentList}</h2>
+              </div>
+              <div className="p-4">
                 {listLoading ? (
-                  <div className="flex justify-center items-center w-full h-full">
+                  <div className="flex justify-center items-center w-full h-40">
                     <Loader />
                   </div>
                 ) : list &&
                   list[currentList] &&
                   list[currentList].length > 0 ? (
-                  list[currentList].map((item, index) => (
-                    <div key={index}>
-                      <Link
-                        to={`/${currentList}/${item.contentId}`}
-                        className="w-52 h-52"
-                      >
-                        <img
-                          src={item.contentImage}
-                          alt={item.title.contentTitleNative}
-                          className="transition hover:shadow-md rounded-md duration-300 h-52 w-full"
-                        />
-                      </Link>
-                    </div>
-                  ))
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-4">
+                    {list[currentList].map((item, index) => (
+                      <div key={index} className="flex flex-col">
+                        <Link
+                          to={`/${currentList}/${item.contentId}`}
+                          className="h-auto w-full aspect-[3/4] rounded-md overflow-hidden"
+                        >
+                          <img
+                            src={item.contentImage}
+                            alt={item.title.contentTitleNative}
+                            className="transition hover:shadow-md rounded-md duration-300 w-full h-full object-cover"
+                          />
+                        </Link>
+                        <div className="mt-2 text-sm text-center truncate">
+                          {item.title.contentTitleEnglish ||
+                            item.title.contentTitleRomaji ||
+                            item.title.contentTitleNative}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 ) : (
-                  <div className="flex justify-center items-center w-full h-full">
+                  <div className="flex justify-center items-center w-full py-10">
                     <div className="flex flex-col items-center">
-                      <p className="text-center">
-                        {'No elements in this list.'}
-                      </p>
-                      <p className="text-center">
-                        {'Go immerse to fill it up!'}
-                      </p>
+                      <p className="text-center">No elements in this list.</p>
+                      <p className="text-center">Go immerse to fill it up!</p>
                     </div>
                   </div>
                 )}
