@@ -384,7 +384,10 @@ function Hero() {
                     </table>
                   </div>
                   <div className="card-actions justify-end">
-                    <Link to="/logs" className="btn btn-sm btn-ghost">
+                    <Link
+                      to={`/user/${user.username}`}
+                      className="btn btn-sm btn-ghost"
+                    >
                       View All Logs
                     </Link>
                   </div>
