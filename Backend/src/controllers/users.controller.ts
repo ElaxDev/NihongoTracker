@@ -1,7 +1,7 @@
 import User from '../models/user.model.js';
 import Log from '../models/log.model.js';
 import { Request, Response, NextFunction } from 'express';
-import { IUpdateRequest } from '../types.js';
+import { IMediaDocument, IUpdateRequest } from '../types.js';
 import { customError } from '../middlewares/errorMiddleware.js';
 import uploadFile from '../services/uploadFile.js';
 
@@ -331,11 +331,6 @@ export async function clearUserData(
   }
 }
 
-interface ImmersionGroup {
-  _id: 'anime' | 'manga' | 'reading' | 'vn' | 'video';
-  media: any[];
-}
-
 export async function getImmersionList(
   req: Request,
   res: Response,
@@ -344,6 +339,15 @@ export async function getImmersionList(
   try {
     const user = await User.findOne({ username: req.params.username });
     if (!user) throw new customError('User not found', 404);
+
+    // Define valid media types
+    type MediaType = 'anime' | 'manga' | 'reading' | 'vn' | 'video';
+
+    // Update your interface definition
+    interface ImmersionGroup {
+      _id: MediaType;
+      media: Array<IMediaDocument>;
+    }
 
     const immersionList: ImmersionGroup[] = await Log.aggregate([
       { $match: { user: user._id } },
@@ -354,7 +358,7 @@ export async function getImmersionList(
       },
       {
         $lookup: {
-          from: 'media', // The name of the Media collection
+          from: 'media',
           localField: '_id',
           foreignField: 'contentId',
           as: 'mediaDetails',
@@ -372,7 +376,7 @@ export async function getImmersionList(
       },
     ]);
 
-    const result: { [key in ImmersionGroup['_id']]: any[] } = {
+    const result: Record<MediaType, IMediaDocument[]> = {
       anime: [],
       manga: [],
       reading: [],
@@ -381,9 +385,18 @@ export async function getImmersionList(
     };
 
     immersionList.forEach((group) => {
-      if (result[group._id]) {
-        result[group._id] = group.media;
-      }
+      const mediaType = group._id as MediaType;
+      result[mediaType] = group.media;
+    });
+
+    // Sort each media type alphabetically
+    (Object.keys(result) as MediaType[]).forEach((key) => {
+      result[key].sort(
+        (a, b) =>
+          a.title?.contentTitleNative?.localeCompare(
+            b.title?.contentTitleNative || ''
+          ) || 0
+      );
     });
 
     return res.status(200).json(result);
