@@ -350,14 +350,7 @@ function SettingsScreen() {
                 <button
                   className="btn btn-primary"
                   type="submit"
-                  disabled={
-                    isPending ||
-                    (!username &&
-                      !password &&
-                      !newPassword &&
-                      !newPasswordConfirm &&
-                      !discordId)
-                  }
+                  disabled={isPending}
                 >
                   {isPending ? (
                     <span className="loading loading-spinner loading-sm"></span>
