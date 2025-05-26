@@ -19,7 +19,8 @@ const logTypeText = {
 };
 
 function LogCard({ log, user: logUser }: { log: ILog; user?: string }) {
-  const { description, xp, date, type, episodes, pages, time, chars } = log;
+  const { description, xp, date, type, episodes, pages, time, chars, media } =
+    log;
   const { user } = useUserDataStore();
 
   const relativeDate = date
@@ -29,9 +30,15 @@ function LogCard({ log, user: logUser }: { log: ILog; user?: string }) {
     : '';
 
   const logTitle =
-    description && description.length > 30
-      ? `${description.substring(0, 30)}...`
-      : description || '';
+    media && typeof media === 'object' && media.title?.contentTitleNative
+      ? media.title.contentTitleNative.length > 30
+        ? `${media.title.contentTitleNative.slice(0, 30)}...`
+        : media.title.contentTitleNative
+      : description
+        ? description.length > 30
+          ? `${description.slice(0, 30)}...`
+          : description
+        : '';
 
   const { mutate: deleteLog } = useMutation({
     mutationFn: (id: string) => deleteLogFn(id),

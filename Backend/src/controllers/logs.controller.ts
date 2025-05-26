@@ -61,6 +61,20 @@ export async function getUserLogs(
           'user.username': req.params.username,
         },
       },
+      {
+        $lookup: {
+          from: 'media', // or the actual collection name for your media model
+          localField: 'mediaId',
+          foreignField: 'contentId',
+          as: 'media',
+        },
+      },
+      {
+        $unwind: {
+          path: '$media',
+          preserveNullAndEmptyArrays: true,
+        },
+      },
       ...(req.query.mediaId
         ? [{ $match: { mediaId: req.query.mediaId } }]
         : []),
@@ -87,7 +101,7 @@ export async function getUserLogs(
     const logs = await Log.aggregate(pipeline, {
       collation: { locale: 'en', strength: 2 },
     });
-
+    console.log(logs);
     if (!logs.length) return res.status(204);
 
     return res.status(200).json(logs);
@@ -237,9 +251,9 @@ export async function createLog(
       user,
       type,
       mediaId: logMedia
-        ? logMedia._id
+        ? logMedia.contentId
         : newLogMedia
-          ? newLogMedia._id
+          ? newLogMedia.contentId
           : undefined,
       pages,
       episodes,

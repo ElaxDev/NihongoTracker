@@ -178,6 +178,7 @@ export interface ILog {
   date: Date;
   createdAt: Date;
   updatedAt: Date;
+  media?: IMediaDocument;
 }
 
 export interface IRankingResponse {
