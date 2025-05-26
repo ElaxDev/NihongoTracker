@@ -101,7 +101,6 @@ export async function getUserLogs(
     const logs = await Log.aggregate(pipeline, {
       collation: { locale: 'en', strength: 2 },
     });
-    console.log(logs);
     if (!logs.length) return res.sendStatus(204); // Use sendStatus instead of status
 
     return res.status(200).json(logs);
