@@ -7,6 +7,7 @@ import { toast } from 'react-toastify';
 import queryClient from '../queryClient';
 import { AxiosError } from 'axios';
 import { useUserDataStore } from '../store/userData';
+import { useRef } from 'react';
 
 const logTypeText = {
   reading: 'Reading',
@@ -22,6 +23,7 @@ function LogCard({ log, user: logUser }: { log: ILog; user?: string }) {
   const { description, xp, date, type, episodes, pages, time, chars, media } =
     log;
   const { user } = useUserDataStore();
+  const deleteModalRef = useRef<HTMLDialogElement>(null);
 
   const relativeDate = date
     ? typeof date === 'string'
@@ -40,7 +42,7 @@ function LogCard({ log, user: logUser }: { log: ILog; user?: string }) {
           : description
         : '';
 
-  const { mutate: deleteLog } = useMutation({
+  const { mutate: deleteLog, isPending: loadingDeleteLog } = useMutation({
     mutationFn: (id: string) => deleteLogFn(id),
     onSuccess: () => {
       void queryClient.invalidateQueries({
@@ -57,6 +59,7 @@ function LogCard({ log, user: logUser }: { log: ILog; user?: string }) {
       toast.error(errorMessage);
     },
   });
+
   function renderQuantity() {
     if (type === 'anime') {
       return <p>Episodes: {episodes}</p>;
@@ -102,7 +105,7 @@ function LogCard({ log, user: logUser }: { log: ILog; user?: string }) {
           {logUser === user?.username ? (
             <button
               className="btn btn-sm btn-circle btn-ghost group"
-              onClick={() => deleteLog(log._id)}
+              onClick={() => deleteModalRef.current?.showModal()}
             >
               <MdDelete className="text-xl opacity-75 group-hover:opacity-100" />
             </button>
@@ -115,6 +118,37 @@ function LogCard({ log, user: logUser }: { log: ILog; user?: string }) {
           <p className="text-right">{relativeDate}</p>
         </div>
       </div>
+
+      {/* Delete Confirmation Modal */}
+      <dialog
+        id={`delete-modal-${log._id}`}
+        className="modal modal-bottom sm:modal-middle"
+        ref={deleteModalRef}
+      >
+        <div className="modal-box">
+          <h3 className="font-bold text-lg text-error">Confirm Deletion</h3>
+          <div className="divider"></div>
+          <p className="py-4">
+            Are you sure you want to delete this log? This action cannot be
+            undone.
+          </p>
+          <div className="modal-action">
+            <button
+              onClick={() => deleteLog(log._id)}
+              className="btn btn-error"
+              disabled={loadingDeleteLog}
+            >
+              {loadingDeleteLog ? 'Deleting...' : 'Delete Log'}
+            </button>
+            <form method="dialog">
+              <button className="btn btn-outline">Cancel</button>
+            </form>
+          </div>
+        </div>
+        <form method="dialog" className="modal-backdrop">
+          <button>close</button>
+        </form>
+      </dialog>
     </div>
   );
 }
