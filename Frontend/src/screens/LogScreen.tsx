@@ -221,8 +221,8 @@ function LogScreen() {
       },
       episodes: logData.watchedEpisodes,
       time: totalMinutes || undefined,
-      chars: logData.chars,
-      pages: logData.pages,
+      chars: logData.readChars || undefined,
+      pages: logData.readPages,
       date: logData.date,
     } as ICreateLog);
   };
@@ -534,31 +534,6 @@ function LogScreen() {
                               />
                             </svg>
                           </button>
-
-                          <dialog
-                            ref={datePickerRef}
-                            className="modal modal-middle"
-                          >
-                            <div className="modal-box bg-base-100 flex flex-col justify-center">
-                              <DayPicker
-                                className="react-day-picker mx-auto"
-                                mode="single"
-                                selected={logData.date || undefined}
-                                onSelect={(date) => {
-                                  handleInputChange('date', date || undefined);
-                                  datePickerRef.current?.close();
-                                }}
-                              />
-                              <div className="modal-action justify-center">
-                                <form method="dialog">
-                                  <button className="btn">Close</button>
-                                </form>
-                              </div>
-                            </div>
-                            <form method="dialog" className="modal-backdrop">
-                              <button>close</button>
-                            </form>
-                          </dialog>
                         </div>
                       </div>
 
@@ -696,6 +671,29 @@ function LogScreen() {
           </form>
         </div>
       </div>
+
+      {/* Move date picker dialog outside the form */}
+      <dialog ref={datePickerRef} className="modal modal-middle">
+        <div className="modal-box bg-base-100 flex flex-col justify-center">
+          <DayPicker
+            className="react-day-picker mx-auto"
+            mode="single"
+            selected={logData.date || undefined}
+            onSelect={(date) => {
+              handleInputChange('date', date || undefined);
+              datePickerRef.current?.close();
+            }}
+          />
+          <div className="modal-action justify-center">
+            <form method="dialog">
+              <button className="btn">Close</button>
+            </form>
+          </div>
+        </div>
+        <form method="dialog" className="modal-backdrop">
+          <button>close</button>
+        </form>
+      </dialog>
     </div>
   );
 }
