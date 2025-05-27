@@ -11,6 +11,7 @@ import {
   getDashboardHours,
   getRecentLogs,
   getUserLogs,
+  getUserStats,
 } from '../controllers/logs.controller.js';
 import { protect } from '../libs/authMiddleware.js';
 import multer from 'multer';
@@ -27,6 +28,8 @@ router.get('/ranking', getRanking);
 router.get('/:username', getUser);
 
 router.get('/:username/logs', getUserLogs);
+
+router.get('/:username/stats', getUserStats);
 
 router.get('/:username/dashboard', protect, getDashboardHours);
 

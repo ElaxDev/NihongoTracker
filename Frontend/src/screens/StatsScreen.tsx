@@ -1,10 +1,9 @@
 import { useQuery } from '@tanstack/react-query';
-import { getUserLogsFn } from '../api/trackerApi';
+import { getUserStatsFn } from '../api/trackerApi';
 import { useOutletContext } from 'react-router-dom';
 import { OutletProfileContextType } from '../types';
-import { ILog } from '../types';
 import PieChart from '../components/PieChart';
-import { useEffect, useState, useCallback } from 'react';
+import { useState } from 'react';
 import SpeedChart from '../components/SpeedChart';
 import ProgressChart from '../components/ProgressChart';
 import { numberWithCommas } from '../utils/utils';
@@ -12,76 +11,18 @@ import { numberWithCommas } from '../utils/utils';
 function StatsScreen() {
   const { username } = useOutletContext<OutletProfileContextType>();
   const [currentType, setCurrentType] = useState<string>('all');
-  const [typeFilteredLogs, setTypeFilteredLogs] = useState<ILog[]>([]);
   const [timeRange, setTimeRange] = useState<
     'today' | 'month' | 'year' | 'total'
   >('total');
 
-  const { data: logs } = useQuery({
-    queryKey: ['logsStats', username],
+  // Use the getUserStatsFn instead of getUserLogsFn
+  const { data: userStats, isLoading } = useQuery({
+    queryKey: ['userStats', username, timeRange, currentType],
     queryFn: () =>
-      getUserLogsFn(username as string, {
-        limit: 0,
-        page: 1,
-      }),
+      getUserStatsFn(username as string, { timeRange, type: currentType }),
     staleTime: Infinity,
+    enabled: !!username,
   });
-
-  const filterLogsByTimeRange = (logs: ILog[]) => {
-    if (!logs) return [];
-
-    const now = new Date();
-
-    switch (timeRange) {
-      case 'today':
-        return logs.filter((log) => {
-          const logDate = new Date(log.date);
-          return (
-            logDate.getDate() === now.getDate() &&
-            logDate.getMonth() === now.getMonth() &&
-            logDate.getFullYear() === now.getFullYear()
-          );
-        });
-      case 'month':
-        return logs.filter((log) => {
-          const logDate = new Date(log.date);
-          return (
-            logDate.getMonth() === now.getMonth() &&
-            logDate.getFullYear() === now.getFullYear()
-          );
-        });
-      case 'year':
-        return logs.filter((log) => {
-          const logDate = new Date(log.date);
-          return logDate.getFullYear() === now.getFullYear();
-        });
-      case 'total':
-      default:
-        return logs;
-    }
-  };
-
-  const timeFilteredLogs = filterLogsByTimeRange(logs || []);
-
-  const totalHours = timeFilteredLogs
-    ? timeFilteredLogs
-        .reduce((total, log: ILog) => {
-          if (log.type === 'anime' && log.time) {
-            return total + log.time / 60;
-          } else if (log.type === 'anime' && !log.time) {
-            if (log.episodes) {
-              return total + (log.episodes * 24) / 60;
-            }
-            return total;
-          } else {
-            if (log.time) {
-              return total + log.time / 60;
-            }
-            return total;
-          }
-        }, 0)
-        .toFixed(1)
-    : '0.0';
 
   const logTypes = [
     'reading',
@@ -93,39 +34,16 @@ function StatsScreen() {
     'other',
   ];
 
-  const filteredLogs = timeFilteredLogs
-    ? currentType === 'all'
-      ? timeFilteredLogs
-      : timeFilteredLogs.filter((log: ILog) => log.type === currentType)
-    : [];
-
-  const filterLogsByType = useCallback(
-    (type: string): ILog[] => {
-      if (currentType !== 'all' && type !== currentType) {
-        return [];
-      }
-      return timeFilteredLogs?.filter((log: ILog) => log.type === type) ?? [];
-    },
-    [currentType, timeFilteredLogs]
-  );
-
-  useEffect(() => {
-    if (logs) {
-      setTypeFilteredLogs(
-        currentType === 'all' ? logs : filterLogsByType(currentType)
-      );
-    }
-  }, [logs, currentType, filterLogsByType]);
-
+  // Create chart data from the pre-aggregated stats
   const logCountData = {
-    labels: currentType === 'all' ? logTypes : [currentType],
+    labels:
+      userStats?.statsByType.map((stat) =>
+        stat.type === 'vn' ? 'Visual Novel' : stat.type
+      ) || [],
     datasets: [
       {
         label: 'Count',
-        data:
-          currentType === 'all'
-            ? logTypes.map((type) => filterLogsByType(type).length)
-            : [filteredLogs.length],
+        data: userStats?.statsByType.map((stat) => stat.count) || [],
         backgroundColor: [
           'rgba(255, 99, 132, 1)',
           'rgba(54, 162, 235, 1)',
@@ -147,67 +65,17 @@ function StatsScreen() {
         borderWidth: 1,
       },
     ],
-  };
-
-  const untrackedLogs = filteredLogs.filter(
-    (log: ILog) =>
-      (log.type === 'anime' && !log.time && !log.episodes) ||
-      (log.type !== 'anime' && !log.time)
-  );
-
-  const getTimeSpentData = (type: string) => {
-    if (currentType !== 'all' && type !== currentType) {
-      return 0;
-    }
-
-    const totalHours =
-      timeFilteredLogs
-        ?.filter((log: ILog) => log.type === type)
-        .reduce((total, log) => {
-          if (log.type === 'anime' && log.time) {
-            return total + log.time / 60;
-          } else if (log.type === 'anime' && !log.time) {
-            if (log.episodes) {
-              return total + (log.episodes * 24) / 60;
-            }
-            return total;
-          } else {
-            if (log.time) {
-              return total + log.time / 60;
-            }
-            return total;
-          }
-        }, 0) ?? 0;
-    return totalHours;
-  };
-
-  const calculateTimeSpent = () => {
-    return filteredLogs.reduce((total, log) => {
-      if (log.type === 'anime' && log.time) {
-        return total + log.time / 60;
-      } else if (log.type === 'anime' && !log.time) {
-        if (log.episodes) {
-          return total + (log.episodes * 24) / 60;
-        }
-        return total;
-      } else {
-        if (log.time) {
-          return total + log.time / 60;
-        }
-        return total;
-      }
-    }, 0);
   };
 
   const logTimeData = {
-    labels: currentType === 'all' ? logTypes : [currentType],
+    labels:
+      userStats?.statsByType.map((stat) =>
+        stat.type === 'vn' ? 'Visual Novel' : stat.type
+      ) || [],
     datasets: [
       {
         label: 'Time Spent (hours)',
-        data:
-          currentType === 'all'
-            ? logTypes.map((type) => getTimeSpentData(type))
-            : [calculateTimeSpent()],
+        data: userStats?.statsByType.map((stat) => stat.totalTimeHours) || [],
         backgroundColor: [
           'rgba(255, 99, 132, 1)',
           'rgba(54, 162, 235, 1)',
@@ -229,33 +97,17 @@ function StatsScreen() {
         borderWidth: 1,
       },
     ],
-  };
-
-  const getXpData = (type: string) => {
-    if (currentType !== 'all' && type !== currentType) {
-      return 0;
-    }
-
-    return (
-      timeFilteredLogs
-        ?.filter((log: ILog) => log.type === type)
-        .reduce((acc, log) => acc + log.xp, 0) ?? 0
-    );
-  };
-
-  const calculateTotalXp = () => {
-    return filteredLogs.reduce((acc, log) => acc + log.xp, 0);
   };
 
   const logXpData = {
-    labels: currentType === 'all' ? logTypes : [currentType],
+    labels:
+      userStats?.statsByType.map((stat) =>
+        stat.type === 'vn' ? 'Visual Novel' : stat.type
+      ) || [],
     datasets: [
       {
         label: 'XP',
-        data:
-          currentType === 'all'
-            ? logTypes.map((type) => getXpData(type))
-            : [calculateTotalXp()],
+        data: userStats?.statsByType.map((stat) => stat.totalXp) || [],
         backgroundColor: [
           'rgba(255, 99, 132, 1)',
           'rgba(54, 162, 235, 1)',
@@ -278,6 +130,20 @@ function StatsScreen() {
       },
     ],
   };
+
+  // Get the current type stats or use the aggregated totals
+  const currentTypeStats =
+    currentType === 'all'
+      ? userStats?.totals
+      : userStats?.statsByType.find((stat) => stat.type === currentType);
+
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <span className="loading loading-spinner loading-lg text-primary"></span>
+      </div>
+    );
+  }
 
   return (
     <div className="2xl:max-w-(--breakpoint-2xl) 2xl:min-w-[50%] min-w-full 2xl:px-0 px-10 mb-24 mt-4">
@@ -328,11 +194,9 @@ function StatsScreen() {
             <div className="stat">
               <div className="stat-title">Total XP</div>
               <div className="stat-value text-primary">
-                {currentType === 'all'
-                  ? numberWithCommas(
-                      filteredLogs.reduce((sum, log) => sum + log.xp, 0)
-                    )
-                  : numberWithCommas(getXpData(currentType))}
+                {currentTypeStats
+                  ? numberWithCommas(currentTypeStats.totalXp)
+                  : 0}
               </div>
               <div className="stat-desc">
                 {currentType === 'all'
@@ -344,11 +208,11 @@ function StatsScreen() {
             <div className="stat">
               <div className="stat-title">Time Spent</div>
               <div className="stat-value text-secondary">
-                {currentType === 'all'
-                  ? numberWithCommas(parseFloat(totalHours))
-                  : numberWithCommas(
-                      parseFloat(getTimeSpentData(currentType).toFixed(1))
-                    )}
+                {currentTypeStats
+                  ? numberWithCommas(
+                      parseFloat(currentTypeStats.totalTimeHours.toFixed(1))
+                    )
+                  : 0}
                 <span className="text-lg">h</span>
               </div>
               <div className="stat-desc">
@@ -361,15 +225,23 @@ function StatsScreen() {
             <div className="stat">
               <div className="stat-title">Logs Count</div>
               <div className="stat-value text-accent">
-                {currentType === 'all'
-                  ? numberWithCommas(filteredLogs.length)
-                  : numberWithCommas(filterLogsByType(currentType).length)}
+                {currentTypeStats
+                  ? numberWithCommas(
+                      currentType === 'all'
+                        ? userStats?.totals.totalLogs
+                        : 'count' in currentTypeStats
+                          ? currentTypeStats.count
+                          : 0
+                    )
+                  : 0}
               </div>
               <div className="stat-desc">
                 {currentType !== 'all' &&
                   `${currentType.charAt(0).toUpperCase() + currentType.slice(1)} logs`}
-                {untrackedLogs.length > 0 && currentType === 'all' && (
-                  <span className="text-warning">{` (${untrackedLogs.length} untracked)`}</span>
+                {currentType === 'all' && (
+                  <span className={userStats?.totals.untrackedCount ? "text-warning" : ""}>
+                    {` (${userStats?.totals.untrackedCount || 0} untracked)`}
+                  </span>
                 )}
               </div>
             </div>
@@ -397,28 +269,33 @@ function StatsScreen() {
               </div>
             </div>
           )}
-          {currentType === 'all' ||
-          currentType === 'reading' ||
-          currentType === 'manga' ||
-          currentType === 'vn' ? (
-            <div className="card bg-base-100 grow p-8 mb-4">
-              <div className="h-full w-full">
-                <h2 className="text-2xl font-bold text-primary mb-2">
-                  Reading Speed
-                </h2>
+          {(currentType === 'all' ||
+            currentType === 'reading' ||
+            currentType === 'manga' ||
+            currentType === 'vn') &&
+            userStats?.readingSpeedData && (
+              <div className="card bg-base-100 grow p-8 mb-4">
                 <div className="h-full w-full">
-                  <SpeedChart
-                    timeframe={timeRange}
-                    readingData={typeFilteredLogs}
-                  />
+                  <h2 className="text-2xl font-bold text-primary mb-2">
+                    Reading Speed
+                  </h2>
+                  <div className="h-full w-full">
+                    <SpeedChart
+                      timeframe={timeRange}
+                      readingSpeedData={userStats.readingSpeedData}
+                    />
+                  </div>
                 </div>
               </div>
-            </div>
-          ) : null}
+            )}
 
           <div className="card bg-base-100 grow p-8 mb-4">
             <div className="h-full w-full">
-              <ProgressChart timeframe={timeRange} logs={typeFilteredLogs} />
+              <ProgressChart
+                timeframe={timeRange}
+                statsData={userStats?.statsByType}
+                selectedType={currentType}
+              />
             </div>
           </div>
         </div>

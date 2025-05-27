@@ -28,9 +28,18 @@ ChartJS.register(
 type TimeframeType = 'total' | 'month' | 'year' | 'today';
 type ReadingType = 'reading' | 'vn' | 'manga';
 
+// Updated to include the readingSpeedData format from IUserStats
 interface SpeedChartProps {
   timeframe?: TimeframeType;
-  readingData: ILog[];
+  readingData?: ILog[];
+  readingSpeedData?: Array<{
+    date: Date;
+    type: string;
+    time: number;
+    chars?: number;
+    pages?: number;
+    charsPerHour?: number | null;
+  }>;
 }
 
 // Define specific types instead of using 'any'
@@ -46,6 +55,7 @@ type FilteredData = {
 function SpeedChart({
   timeframe: externalTimeframe,
   readingData,
+  readingSpeedData,
 }: SpeedChartProps) {
   // Use state to manage the timeframe
   const [timeframe, setTimeframe] = useState<TimeframeType>('total');
@@ -70,52 +80,107 @@ function SpeedChart({
       filtered[type] = [];
     });
 
-    // Process logs and calculate reading speed
-    readingData.forEach((log) => {
-      // Only process logs that have the types we're interested in
-      if (!readingTypes.includes(log.type as ReadingType)) return;
+    // If readingSpeedData is provided, use it (already pre-processed)
+    if (readingSpeedData && readingSpeedData.length > 0) {
+      readingSpeedData.forEach((item) => {
+        // Only process data for the reading types we're interested in
+        if (!readingTypes.includes(item.type as ReadingType)) return;
 
-      // Skip if no characters or time data
-      if (!log.chars || !log.time || log.time <= 0) return;
+        // Format date string
+        const itemDate = new Date(item.date);
+        // Format date as YYYY-MM-DD for consistent comparison
+        const dateStr = itemDate.toISOString().split('T')[0];
+        // For year and total views, use YYYY-MM format for grouping by month
+        const monthStr = `${itemDate.getFullYear()}-${String(
+          itemDate.getMonth() + 1
+        ).padStart(2, '0')}`;
 
-      // Calculate reading speed (chars per minute)
-      const speed = log.chars / (log.time / 60); // time is in seconds, convert to minutes
+        // Filter based on timeframe
+        let include = false;
+        switch (timeframe) {
+          case 'today':
+            include = itemDate.toDateString() === now.toDateString();
+            break;
+          case 'month':
+            include =
+              itemDate.getMonth() === now.getMonth() &&
+              itemDate.getFullYear() === now.getFullYear();
+            break;
+          case 'year':
+            include = itemDate.getFullYear() === now.getFullYear();
+            break;
+          case 'total':
+            include = true;
+            break;
+        }
 
-      // Format date as YYYY-MM-DD for consistent comparison
-      const logDate = new Date(log.date);
-      const dateStr = logDate.toISOString().split('T')[0];
+        if (include) {
+          const type = item.type as ReadingType;
+          // Use charsPerHour if available, otherwise calculate speed
+          let speed = item.charsPerHour || 0;
+          if (!speed && item.chars && item.time) {
+            // Calculate characters per hour (time is in seconds)
+            speed = item.chars / (item.time / 3600);
+          }
 
-      // For year and total views, we'll use YYYY-MM format for grouping by month
-      const monthStr = `${logDate.getFullYear()}-${String(logDate.getMonth() + 1).padStart(2, '0')}`;
+          filtered[type]?.push({
+            date:
+              timeframe === 'year' || timeframe === 'total' ? monthStr : dateStr,
+            speed: Math.round(speed),
+          });
+        }
+      });
+    }
+    // If readingData is provided, process logs and calculate reading speed
+    else if (readingData && readingData.length > 0) {
+      readingData.forEach((log) => {
+        // Only process logs that have the types we're interested in
+        if (!readingTypes.includes(log.type as ReadingType)) return;
 
-      // Filter based on timeframe
-      let include = false;
-      switch (timeframe) {
-        case 'today':
-          include = logDate.toDateString() === now.toDateString();
-          break;
-        case 'month':
-          include =
-            logDate.getMonth() === now.getMonth() &&
-            logDate.getFullYear() === now.getFullYear();
-          break;
-        case 'year':
-          include = logDate.getFullYear() === now.getFullYear();
-          break;
-        case 'total':
-          include = true;
-          break;
-      }
+        // Skip if no characters or time data
+        if (!log.chars || !log.time || log.time <= 0) return;
 
-      if (include) {
-        const type = log.type as ReadingType;
-        filtered[type]?.push({
-          date:
-            timeframe === 'year' || timeframe === 'total' ? monthStr : dateStr,
-          speed: Math.round(speed),
-        });
-      }
-    });
+        // Calculate reading speed (chars per hour)
+        const speed = (log.chars / (log.time / 60)) * 60; // Convert chars per minute to chars per hour
+
+        // Format date as YYYY-MM-DD for consistent comparison
+        const logDate = new Date(log.date);
+        const dateStr = logDate.toISOString().split('T')[0];
+
+        // For year and total views, we'll use YYYY-MM format for grouping by month
+        const monthStr = `${logDate.getFullYear()}-${String(
+          logDate.getMonth() + 1
+        ).padStart(2, '0')}`;
+
+        // Filter based on timeframe
+        let include = false;
+        switch (timeframe) {
+          case 'today':
+            include = logDate.toDateString() === now.toDateString();
+            break;
+          case 'month':
+            include =
+              logDate.getMonth() === now.getMonth() &&
+              logDate.getFullYear() === now.getFullYear();
+            break;
+          case 'year':
+            include = logDate.getFullYear() === now.getFullYear();
+            break;
+          case 'total':
+            include = true;
+            break;
+        }
+
+        if (include) {
+          const type = log.type as ReadingType;
+          filtered[type]?.push({
+            date:
+              timeframe === 'year' || timeframe === 'total' ? monthStr : dateStr,
+            speed: Math.round(speed),
+          });
+        }
+      });
+    }
 
     // Group by date/month and calculate average speed
     readingTypes.forEach((type) => {
@@ -145,7 +210,7 @@ function SpeedChart({
     });
 
     setFilteredData(filtered);
-  }, [timeframe, readingData, readingTypes]);
+  }, [timeframe, readingData, readingSpeedData, readingTypes]);
 
   // Get all unique dates across all reading types
   const getAllDates = () => {

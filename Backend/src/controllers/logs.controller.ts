@@ -136,12 +136,12 @@ export async function getDashboardHours(
                 {
                   $and: [
                     { $eq: ['$type', 'anime'] },
-                    { 
+                    {
                       $or: [
-                        { $eq: ['$time', 0] }, 
+                        { $eq: ['$time', 0] },
                         { $eq: ['$time', null] },
-                        { $eq: [{ $type: '$time' }, 'missing'] }
-                      ] 
+                        { $eq: [{ $type: '$time' }, 'missing'] },
+                      ],
                     },
                     { $gt: ['$episodes', 0] },
                   ],
@@ -162,12 +162,12 @@ export async function getDashboardHours(
                 {
                   $and: [
                     { $eq: ['$type', 'anime'] },
-                    { 
+                    {
                       $or: [
-                        { $eq: ['$time', 0] }, 
+                        { $eq: ['$time', 0] },
                         { $eq: ['$time', null] },
-                        { $eq: [{ $type: '$time' }, 'missing'] }
-                      ] 
+                        { $eq: [{ $type: '$time' }, 'missing'] },
+                      ],
                     },
                     { $gt: ['$episodes', 0] },
                   ],
@@ -200,12 +200,12 @@ export async function getDashboardHours(
                 {
                   $and: [
                     { $eq: ['$type', 'anime'] },
-                    { 
+                    {
                       $or: [
-                        { $eq: ['$time', 0] }, 
+                        { $eq: ['$time', 0] },
                         { $eq: ['$time', null] },
-                        { $eq: [{ $type: '$time' }, 'missing'] }
-                      ] 
+                        { $eq: [{ $type: '$time' }, 'missing'] },
+                      ],
                     },
                     { $gt: ['$episodes', 0] },
                   ],
@@ -226,12 +226,12 @@ export async function getDashboardHours(
                 {
                   $and: [
                     { $eq: ['$type', 'anime'] },
-                    { 
+                    {
                       $or: [
-                        { $eq: ['$time', 0] }, 
+                        { $eq: ['$time', 0] },
                         { $eq: ['$time', null] },
-                        { $eq: [{ $type: '$time' }, 'missing'] }
-                      ] 
+                        { $eq: [{ $type: '$time' }, 'missing'] },
+                      ],
                     },
                     { $gt: ['$episodes', 0] },
                   ],
@@ -790,5 +790,271 @@ export async function assignMedia(
     return res.status(200).json({ results });
   } catch (error) {
     return next(error as customError);
+  }
+}
+
+interface IGetUserStatsQuery {
+  timeRange?: 'today' | 'month' | 'year' | 'total';
+  type?: 'all' | 'anime' | 'manga' | 'reading' | 'audio' | 'video';
+}
+
+interface IUserStats {
+  totals: {
+    totalLogs: number;
+    totalXp: number;
+    totalTimeHours: number;
+    untrackedCount: number;
+  };
+  statsByType: Array<{
+    type: string;
+    count: number;
+    totalXp: number;
+    totalTimeMinutes: number;
+    totalTimeHours: number;
+    untrackedCount: number;
+    dates: Array<{
+      date: Date;
+      xp: number;
+      time?: number;
+      episodes?: number;
+    }>;
+  }>;
+  readingSpeedData?: Array<{
+    date: Date;
+    type: string;
+    time: number;
+    chars?: number;
+    pages?: number;
+    charsPerHour?: number | null;
+  }>;
+  timeRange: 'today' | 'month' | 'year' | 'total';
+  selectedType: string;
+}
+
+export async function getUserStats(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<Response<IUserStats> | void> {
+  try {
+    const { username } = req.params;
+    const { timeRange = 'total', type = 'all' } =
+      req.query as IGetUserStatsQuery;
+    // Validate timeRange
+    const validTimeRanges = ['today', 'month', 'year', 'total'];
+    if (!validTimeRanges.includes(timeRange)) {
+      return res.status(400).json({ message: 'Invalid time range' });
+    }
+    // Validate type
+    const validTypes = [
+      'all',
+      'anime',
+      'manga',
+      'reading',
+      'audio',
+      'video',
+      'vn',
+      'other',
+    ];
+    if (!validTypes.includes(type)) {
+      return res.status(400).json({ message: 'Invalid type' });
+    }
+
+    const user = await User.findOne({ username });
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    // Build date filter
+    let dateFilter: any = {};
+    const now = new Date();
+    if (timeRange === 'today') {
+      const start = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      dateFilter = { date: { $gte: start } };
+    } else if (timeRange === 'month') {
+      const start = new Date(now.getFullYear(), now.getMonth(), 1);
+      dateFilter = { date: { $gte: start } };
+    } else if (timeRange === 'year') {
+      const start = new Date(now.getFullYear(), 0, 1);
+      dateFilter = { date: { $gte: start } };
+    }
+
+    // Build type filter
+    let match: any = { user: user._id, ...dateFilter };
+    if (type !== 'all') {
+      match.type = type;
+    }
+
+    const logTypes = [
+      'reading',
+      'anime',
+      'vn',
+      'video',
+      'manga',
+      'audio',
+      'other',
+    ];
+
+    // Aggregate stats by type
+    const statsByType = await Log.aggregate([
+      { $match: match },
+      {
+        $group: {
+          _id: '$type',
+          count: { $sum: 1 },
+          totalXp: { $sum: '$xp' },
+          totalTime: {
+            $sum: {
+              $cond: [
+                { $eq: ['$type', 'anime'] },
+                {
+                  $cond: [
+                    { $ifNull: ['$time', false] },
+                    '$time',
+                    {
+                      $cond: [
+                        { $ifNull: ['$episodes', false] },
+                        { $multiply: ['$episodes', 24] },
+                        0,
+                      ],
+                    },
+                  ],
+                },
+                {
+                  $cond: [{ $ifNull: ['$time', false] }, '$time', 0],
+                },
+              ],
+            },
+          },
+          // Add additional fields for detailed charts
+          untrackedCount: {
+            $sum: {
+              $cond: [
+                {
+                  $or: [
+                    {
+                      $and: [
+                        { $eq: ['$type', 'anime'] },
+                        { $eq: ['$time', null] },
+                        { $eq: ['$episodes', null] },
+                      ],
+                    },
+                    {
+                      $and: [
+                        { $ne: ['$type', 'anime'] },
+                        { $eq: ['$time', null] },
+                      ],
+                    },
+                  ],
+                },
+                1,
+                0,
+              ],
+            },
+          },
+          // Collect dates for progress charts
+          dates: {
+            $push: {
+              date: '$date',
+              xp: '$xp',
+              time: '$time',
+              episodes: '$episodes',
+            },
+          },
+        },
+      },
+      {
+        $project: {
+          _id: 0,
+          type: '$_id',
+          count: 1,
+          totalXp: 1,
+          totalTimeMinutes: '$totalTime',
+          totalTimeHours: { $divide: ['$totalTime', 60] },
+          untrackedCount: 1,
+          dates: 1,
+        },
+      },
+    ]);
+
+    // Create a complete dataset with all types (even if empty)
+    const completeStats = logTypes.map((type) => {
+      const typeStat = statsByType.find((stat) => stat.type === type);
+      return (
+        typeStat || {
+          type,
+          count: 0,
+          totalXp: 0,
+          totalTimeMinutes: 0,
+          totalTimeHours: 0,
+          untrackedCount: 0,
+          dates: [],
+        }
+      );
+    });
+
+    // Calculate overall totals
+    const totals = statsByType.reduce(
+      (acc, stat) => {
+        acc.totalLogs += stat.count;
+        acc.totalXp += stat.totalXp;
+        acc.totalTimeHours += stat.totalTimeHours;
+        acc.untrackedCount += stat.untrackedCount;
+        return acc;
+      },
+      {
+        totalLogs: 0,
+        totalXp: 0,
+        totalTimeHours: 0,
+        untrackedCount: 0,
+      }
+    );
+
+    // Calculate reading speed data for reading-type logs
+    const readingSpeedData =
+      type === 'all' || ['reading', 'manga', 'vn'].includes(type)
+        ? await Log.aggregate([
+            {
+              $match: {
+                user: user._id,
+                ...dateFilter,
+                type: { $in: ['reading', 'manga', 'vn'] },
+                time: { $ne: null, $gt: 0 },
+                $or: [
+                  { chars: { $ne: null, $gt: 0 } },
+                  { pages: { $ne: null, $gt: 0 } },
+                ],
+              },
+            },
+            {
+              $project: {
+                date: 1,
+                type: 1,
+                time: 1,
+                chars: 1,
+                pages: 1,
+                charsPerHour: {
+                  $cond: [
+                    { $and: [{ $gt: ['$chars', 0] }, { $gt: ['$time', 0] }] },
+                    { $divide: [{ $multiply: ['$chars', 60] }, '$time'] },
+                    null,
+                  ],
+                },
+              },
+            },
+            {
+              $sort: { date: 1 },
+            },
+          ])
+        : [];
+
+    // Return comprehensive stats object
+    return res.json({
+      totals,
+      statsByType: completeStats,
+      readingSpeedData,
+      timeRange,
+      selectedType: type,
+    });
+  } catch (error) {
+    return next(error);
   }
 }

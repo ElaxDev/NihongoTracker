@@ -317,3 +317,36 @@ export interface ILogData {
   cover: string;
   date: Date | null;
 }
+
+interface IUserStats {
+  totals: {
+    totalLogs: number;
+    totalXp: number;
+    totalTimeHours: number;
+    untrackedCount: number;
+  };
+  statsByType: Array<{
+    type: string;
+    count: number;
+    totalXp: number;
+    totalTimeMinutes: number;
+    totalTimeHours: number;
+    untrackedCount: number;
+    dates: Array<{
+      date: Date;
+      xp: number;
+      time?: number;
+      episodes?: number;
+    }>;
+  }>;
+  readingSpeedData?: Array<{
+    date: Date;
+    type: string;
+    time: number;
+    chars?: number;
+    pages?: number;
+    charsPerHour?: number | null;
+  }>;
+  timeRange: 'today' | 'month' | 'year' | 'total';
+  selectedType: string;
+}

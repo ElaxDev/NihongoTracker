@@ -109,59 +109,57 @@ function MediaDetails() {
           </div>
 
           {/* Immersion Overview Card - Full width on mobile */}
-          <div className="card bg-base-100 shadow-sm p-4 sm:p-6 w-full h-full flex flex-col gap-3 md:gap-4 md:col-span-2 lg:col-span-2">
+          <div className="card bg-base-100 shadow-sm p-4 sm:p-6 w-full h-full flex flex-col gap-3 md:gap-4">
             <p className="font-bold text-lg sm:text-xl">Immersion Overview</p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-              <div className="flex flex-col gap-2">
-                <p className="font-bold text-sm sm:text-base">Total XP</p>
-                <p>{totalXp}</p>
-              </div>
-              {totalTime && totalTime > 0 ? (
-                <div className="flex flex-col gap-2">
-                  <p className="font-bold text-sm sm:text-base">Total Time</p>
-                  <p>
-                    {totalTime && totalTime >= 60
-                      ? `${Math.floor(totalTime / 60)} hour `
-                      : ''}
-                    {totalTime && totalTime % 60 > 0
-                      ? `${totalTime % 60} mins`
-                      : ''}
-                  </p>
-                </div>
-              ) : null}
-              {mediaDocument?.type === 'anime' && (
-                <div className="flex flex-col gap-2">
-                  <p className="font-bold text-sm sm:text-base">
-                    Total Episodes Watched
-                  </p>
-                  <p>
-                    {logs?.reduce((acc, log) => acc + (log.episodes ?? 0), 0)}
-                  </p>
-                </div>
-              )}
-              {mediaDocument?.type === 'manga' && (
-                <div className="flex flex-col gap-2">
-                  <p className="font-bold text-sm sm:text-base">
-                    Total Pages Read
-                  </p>
-                  <p>{logs?.reduce((acc, log) => acc + (log.pages ?? 0), 0)}</p>
-                </div>
-              )}
-              {(mediaDocument?.type === 'vn' ||
-                mediaDocument?.type === 'manga' ||
-                mediaDocument?.type === 'reading') && (
-                <div className="flex flex-col gap-2">
-                  <p className="font-bold text-sm sm:text-base">
-                    Total Characters Read
-                  </p>
-                  <p>
-                    {numberWithCommas(
-                      logs?.reduce((acc, log) => acc + (log.chars ?? 0), 0)
-                    )}
-                  </p>
-                </div>
-              )}
+            <div className="flex flex-col gap-2">
+              <p className="font-bold">Total XP</p>
+              <p>{totalXp}</p>
             </div>
+            {totalTime && totalTime > 0 ? (
+              <div className="flex flex-col gap-2">
+                <p className="font-bold text-sm sm:text-base">Total Time</p>
+                <p>
+                  {totalTime && totalTime >= 60
+                    ? `${Math.floor(totalTime / 60)} hour `
+                    : ''}
+                  {totalTime && totalTime % 60 > 0
+                    ? `${totalTime % 60} mins`
+                    : ''}
+                </p>
+              </div>
+            ) : null}
+            {mediaDocument?.type === 'anime' && (
+              <div className="flex flex-col gap-2">
+                <p className="font-bold text-sm sm:text-base">
+                  Total Episodes Watched
+                </p>
+                <p>
+                  {logs?.reduce((acc, log) => acc + (log.episodes ?? 0), 0)}
+                </p>
+              </div>
+            )}
+            {mediaDocument?.type === 'manga' && (
+              <div className="flex flex-col gap-2">
+                <p className="font-bold text-sm sm:text-base">
+                  Total Pages Read
+                </p>
+                <p>{logs?.reduce((acc, log) => acc + (log.pages ?? 0), 0)}</p>
+              </div>
+            )}
+            {(mediaDocument?.type === 'vn' ||
+              mediaDocument?.type === 'manga' ||
+              mediaDocument?.type === 'reading') && (
+              <div className="flex flex-col gap-2">
+                <p className="font-bold text-sm sm:text-base">
+                  Total Characters Read
+                </p>
+                <p>
+                  {numberWithCommas(
+                    logs?.reduce((acc, log) => acc + (log.chars ?? 0), 0)
+                  )}
+                </p>
+              </div>
+            )}
           </div>
         </div>
       </div>
