@@ -8,6 +8,13 @@ import { ObjectId, PipelineStage, Types } from 'mongoose';
 import { customError } from '../middlewares/errorMiddleware.js';
 import updateStats from '../services/updateStats.js';
 import { searchAnilist } from '../services/searchAnilist.js';
+import { updateLevelAndXp } from '../services/updateStats.js';
+import {
+  XP_FACTOR_TIME,
+  XP_FACTOR_CHARS,
+  XP_FACTOR_EPISODES,
+  XP_FACTOR_PAGES,
+} from '../middlewares/calculateXp.js';
 
 export async function getUntrackedLogs(
   _req: Request,
@@ -490,6 +497,7 @@ export async function createLog(
     if (!type) throw new customError('Log type is required', 400);
     if (!description) throw new customError('Description is required', 400);
     let logMedia;
+    console.log(req.body);
     if (mediaId) {
       logMedia = await MediaBase.findOne({ contentId: mediaId });
     }
@@ -1056,5 +1064,124 @@ export async function getUserStats(
     });
   } catch (error) {
     return next(error);
+  }
+}
+
+export async function recalculateXp(
+  _req: Request,
+  res: Response,
+  next: NextFunction
+) {
+  try {
+    // Check admin permission
+    if (!res.locals.user.roles.includes('admin')) {
+      return res.status(403).json({ message: 'Admin permission required' });
+    }
+
+    // Get all users
+    const users = await User.find({});
+
+    if (!users.length) {
+      return res.status(404).json({ message: 'No users found' });
+    }
+
+    const results = {
+      totalUsers: users.length,
+      processedUsers: 0,
+      updatedLogs: 0,
+      errors: [] as string[],
+    };
+
+    // Process each user
+    for (const user of users) {
+      try {
+        // Reset user's stats
+        if (user.stats) {
+          user.stats.readingXp = 0;
+          user.stats.listeningXp = 0;
+          user.stats.userXp = 0;
+        }
+
+        // Get all logs for this user
+        const logs = await Log.find({ user: user._id });
+
+        if (!logs.length) {
+          continue;
+        }
+
+        // Process each log
+        for (const log of logs) {
+          // Recalculate XP
+          const timeXp = log.time
+            ? Math.floor(((log.time * 45) / 100) * XP_FACTOR_TIME)
+            : 0;
+          const charsXp = log.chars
+            ? Math.floor((log.chars / 350) * XP_FACTOR_CHARS)
+            : 0;
+          const pagesXp = log.pages
+            ? Math.floor(log.pages * XP_FACTOR_PAGES)
+            : 0;
+          const episodesXp = log.episodes
+            ? Math.floor(((log.episodes * 45) / 100) * XP_FACTOR_EPISODES)
+            : 0;
+
+          const oldXp = log.xp;
+
+          // Calculate new XP based on log type
+          switch (log.type) {
+            case 'anime':
+              log.xp = timeXp || episodesXp || 0;
+              break;
+            case 'reading':
+            case 'manga':
+            case 'vn':
+            case 'video':
+            case 'other':
+            case 'audio':
+              log.xp = Math.max(timeXp, pagesXp, charsXp, episodesXp, 0);
+              break;
+          }
+
+          // Only save if XP changed
+          if (log.xp !== oldXp) {
+            await log.save();
+            results.updatedLogs++;
+          }
+
+          // Update user's stats totals
+          if (user.stats) {
+            if (['anime', 'video', 'audio'].includes(log.type)) {
+              user.stats.listeningXp += log.xp;
+            } else if (['reading', 'manga', 'vn'].includes(log.type)) {
+              user.stats.readingXp += log.xp;
+            }
+            user.stats.userXp += log.xp;
+          }
+        }
+
+        // Recalculate levels
+        if (user.stats) {
+          updateLevelAndXp(user.stats, 'reading');
+          updateLevelAndXp(user.stats, 'listening');
+          updateLevelAndXp(user.stats, 'user');
+
+          // Save user with updated stats
+          await user.save();
+        }
+        results.processedUsers++;
+      } catch (error) {
+        const customError = error as customError;
+        results.errors.push(
+          `Error processing user ${user.username}: ${customError.message}`
+        );
+      }
+    }
+
+    return res.status(200).json({
+      message: `Recalculated stats for ${results.processedUsers} users (${results.updatedLogs} logs updated)`,
+      results,
+    });
+  } catch (error) {
+    return next(error as customError);
   }
 }
