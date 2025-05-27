@@ -26,6 +26,259 @@ export async function getUntrackedLogs(
   }
 }
 
+export async function getRecentLogs(
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
+  const { user } = res.locals;
+  const limit = req.query.limit ? parseInt(req.query.limit as string) : 3;
+
+  try {
+    const recentLogs = await Log.aggregate([
+      {
+        $match: {
+          user: user._id,
+        },
+      },
+      {
+        $sort: {
+          date: -1,
+        },
+      },
+      {
+        $limit: limit,
+      },
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'user',
+          foreignField: '_id',
+          as: 'user',
+        },
+      },
+      {
+        $unwind: {
+          path: '$user',
+          preserveNullAndEmptyArrays: true,
+        },
+      },
+      {
+        $lookup: {
+          from: 'media',
+          localField: 'mediaId',
+          foreignField: 'contentId',
+          as: 'media',
+        },
+      },
+      {
+        $unwind: {
+          path: '$media',
+          preserveNullAndEmptyArrays: true,
+        },
+      },
+      {
+        $project: {
+          _id: 1,
+          date: 1,
+          description: 1,
+          type: 1,
+          time: 1,
+          episodes: 1,
+          mediaId: 1,
+          media: 1,
+          xp: 1,
+        },
+      },
+    ]);
+
+    return res.status(200).json(recentLogs);
+  } catch (error) {
+    return next(error as customError);
+  }
+}
+
+export async function getDashboardHours(
+  _req: Request,
+  res: Response,
+  next: NextFunction
+) {
+  const { user } = res.locals;
+  try {
+    // Get date ranges for current month and previous month
+    const now = new Date();
+    const currentMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    const previousMonthStart = new Date(
+      now.getFullYear(),
+      now.getMonth() - 1,
+      1
+    );
+    const previousMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0);
+
+    // Define reading and listening types
+    const readingTypes = ['reading', 'manga', 'vn'];
+    const listeningTypes = ['anime', 'audio', 'video'];
+
+    // Get current month stats
+    const currentMonthStats = await Log.aggregate([
+      {
+        $match: {
+          user: user._id,
+          date: { $gte: currentMonthStart, $lte: now },
+        },
+      },
+      {
+        $group: {
+          _id: null,
+          totalTime: {
+            $sum: {
+              $cond: [
+                {
+                  $and: [
+                    { $eq: ['$type', 'anime'] },
+                    { 
+                      $or: [
+                        { $eq: ['$time', 0] }, 
+                        { $eq: ['$time', null] },
+                        { $eq: [{ $type: '$time' }, 'missing'] }
+                      ] 
+                    },
+                    { $gt: ['$episodes', 0] },
+                  ],
+                },
+                { $multiply: ['$episodes', 24] }, // 24 minutes per episode
+                '$time',
+              ],
+            },
+          },
+          readingTime: {
+            $sum: {
+              $cond: [{ $in: ['$type', readingTypes] }, '$time', 0],
+            },
+          },
+          listeningTime: {
+            $sum: {
+              $cond: [
+                {
+                  $and: [
+                    { $eq: ['$type', 'anime'] },
+                    { 
+                      $or: [
+                        { $eq: ['$time', 0] }, 
+                        { $eq: ['$time', null] },
+                        { $eq: [{ $type: '$time' }, 'missing'] }
+                      ] 
+                    },
+                    { $gt: ['$episodes', 0] },
+                  ],
+                },
+                { $multiply: ['$episodes', 24] }, // 24 minutes per episode
+                {
+                  $cond: [{ $in: ['$type', listeningTypes] }, '$time', 0],
+                },
+              ],
+            },
+          },
+        },
+      },
+    ]);
+
+    // Get previous month stats
+    const previousMonthStats = await Log.aggregate([
+      {
+        $match: {
+          user: user._id,
+          date: { $gte: previousMonthStart, $lte: previousMonthEnd },
+        },
+      },
+      {
+        $group: {
+          _id: null,
+          totalTime: {
+            $sum: {
+              $cond: [
+                {
+                  $and: [
+                    { $eq: ['$type', 'anime'] },
+                    { 
+                      $or: [
+                        { $eq: ['$time', 0] }, 
+                        { $eq: ['$time', null] },
+                        { $eq: [{ $type: '$time' }, 'missing'] }
+                      ] 
+                    },
+                    { $gt: ['$episodes', 0] },
+                  ],
+                },
+                { $multiply: ['$episodes', 24] }, // 24 minutes per episode
+                '$time',
+              ],
+            },
+          },
+          readingTime: {
+            $sum: {
+              $cond: [{ $in: ['$type', readingTypes] }, '$time', 0],
+            },
+          },
+          listeningTime: {
+            $sum: {
+              $cond: [
+                {
+                  $and: [
+                    { $eq: ['$type', 'anime'] },
+                    { 
+                      $or: [
+                        { $eq: ['$time', 0] }, 
+                        { $eq: ['$time', null] },
+                        { $eq: [{ $type: '$time' }, 'missing'] }
+                      ] 
+                    },
+                    { $gt: ['$episodes', 0] },
+                  ],
+                },
+                { $multiply: ['$episodes', 24] }, // 24 minutes per episode
+                {
+                  $cond: [{ $in: ['$type', listeningTypes] }, '$time', 0],
+                },
+              ],
+            },
+          },
+        },
+      },
+    ]);
+
+    // Ensure we have default values if no logs were found
+    const current =
+      currentMonthStats.length > 0
+        ? currentMonthStats[0]
+        : {
+            totalTime: 0,
+            readingTime: 0,
+            listeningTime: 0,
+          };
+
+    const previous =
+      previousMonthStats.length > 0
+        ? previousMonthStats[0]
+        : {
+            totalTime: 0,
+            readingTime: 0,
+            listeningTime: 0,
+          };
+
+    // Remove _id from the results
+    delete current._id;
+    delete previous._id;
+
+    return res.status(200).json({
+      currentMonth: current,
+      previousMonth: previous,
+    });
+  } catch (error) {
+    return next(error as customError);
+  }
+}
+
 export async function getUserLogs(
   req: Request,
   res: Response,

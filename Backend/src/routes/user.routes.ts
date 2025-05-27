@@ -7,7 +7,11 @@ import {
   clearUserData,
   getImmersionList,
 } from '../controllers/users.controller.js';
-import { getUserLogs } from '../controllers/logs.controller.js';
+import {
+  getDashboardHours,
+  getRecentLogs,
+  getUserLogs,
+} from '../controllers/logs.controller.js';
 import { protect } from '../libs/authMiddleware.js';
 import multer from 'multer';
 
@@ -23,6 +27,10 @@ router.get('/ranking', getRanking);
 router.get('/:username', getUser);
 
 router.get('/:username/logs', getUserLogs);
+
+router.get('/:username/dashboard', protect, getDashboardHours);
+
+router.get('/:username/recentlogs', protect, getRecentLogs);
 
 router.get('/:username/immersionlist', getImmersionList);
 
