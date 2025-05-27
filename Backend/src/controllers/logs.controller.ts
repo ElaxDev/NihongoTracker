@@ -41,6 +41,12 @@ export async function getUserLogs(
       : 10;
   const skip = (page - 1) * limit;
 
+  // Add start and end date filters
+  const startDate = req.query.start
+    ? new Date(req.query.start as string)
+    : null;
+  const endDate = req.query.end ? new Date(req.query.end as string) : null;
+
   try {
     let pipeline: PipelineStage[] = [
       {
@@ -80,6 +86,19 @@ export async function getUserLogs(
         : []),
       ...(req.query.mediaType
         ? [{ $match: { type: req.query.mediaType } }]
+        : []),
+      // Add date filter if start or end date is provided
+      ...(startDate || endDate
+        ? [
+            {
+              $match: {
+                date: {
+                  ...(startDate && { $gte: startDate }),
+                  ...(endDate && { $lte: endDate }),
+                },
+              },
+            },
+          ]
         : []),
       {
         $project: {

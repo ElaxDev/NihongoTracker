@@ -18,7 +18,7 @@ function StatsScreen() {
   >('total');
 
   const { data: logs } = useQuery({
-    queryKey: ['logs'],
+    queryKey: ['logsStats', username],
     queryFn: () =>
       getUserLogsFn(username as string, {
         limit: 0,
