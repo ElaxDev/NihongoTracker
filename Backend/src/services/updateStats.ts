@@ -11,7 +11,7 @@ function updateField(
   return (newValue || 0) - (oldValue || 0);
 }
 
-function updateLevelAndXp(userStats: any, field: string) {
+export function updateLevelAndXp(userStats: any, field: string) {
   userStats[`${field}Level`] = calculateLevel(userStats[`${field}Xp`]);
   userStats[`${field}XpToNextLevel`] = calculateXp(
     userStats[`${field}Level`] + 1

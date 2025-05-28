@@ -8,6 +8,13 @@ import { ObjectId, PipelineStage, Types } from 'mongoose';
 import { customError } from '../middlewares/errorMiddleware.js';
 import updateStats from '../services/updateStats.js';
 import { searchAnilist } from '../services/searchAnilist.js';
+import { updateLevelAndXp } from '../services/updateStats.js';
+import {
+  XP_FACTOR_TIME,
+  XP_FACTOR_CHARS,
+  XP_FACTOR_EPISODES,
+  XP_FACTOR_PAGES,
+} from '../middlewares/calculateXp.js';
 
 export async function getUntrackedLogs(
   _req: Request,
@@ -21,6 +28,259 @@ export async function getUntrackedLogs(
       mediaId: { $exists: false },
     });
     return res.status(200).json(untrackedLogs);
+  } catch (error) {
+    return next(error as customError);
+  }
+}
+
+export async function getRecentLogs(
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
+  const { user } = res.locals;
+  const limit = req.query.limit ? parseInt(req.query.limit as string) : 3;
+
+  try {
+    const recentLogs = await Log.aggregate([
+      {
+        $match: {
+          user: user._id,
+        },
+      },
+      {
+        $sort: {
+          date: -1,
+        },
+      },
+      {
+        $limit: limit,
+      },
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'user',
+          foreignField: '_id',
+          as: 'user',
+        },
+      },
+      {
+        $unwind: {
+          path: '$user',
+          preserveNullAndEmptyArrays: true,
+        },
+      },
+      {
+        $lookup: {
+          from: 'media',
+          localField: 'mediaId',
+          foreignField: 'contentId',
+          as: 'media',
+        },
+      },
+      {
+        $unwind: {
+          path: '$media',
+          preserveNullAndEmptyArrays: true,
+        },
+      },
+      {
+        $project: {
+          _id: 1,
+          date: 1,
+          description: 1,
+          type: 1,
+          time: 1,
+          episodes: 1,
+          mediaId: 1,
+          media: 1,
+          xp: 1,
+        },
+      },
+    ]);
+
+    return res.status(200).json(recentLogs);
+  } catch (error) {
+    return next(error as customError);
+  }
+}
+
+export async function getDashboardHours(
+  _req: Request,
+  res: Response,
+  next: NextFunction
+) {
+  const { user } = res.locals;
+  try {
+    // Get date ranges for current month and previous month
+    const now = new Date();
+    const currentMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    const previousMonthStart = new Date(
+      now.getFullYear(),
+      now.getMonth() - 1,
+      1
+    );
+    const previousMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0);
+
+    // Define reading and listening types
+    const readingTypes = ['reading', 'manga', 'vn'];
+    const listeningTypes = ['anime', 'audio', 'video'];
+
+    // Get current month stats
+    const currentMonthStats = await Log.aggregate([
+      {
+        $match: {
+          user: user._id,
+          date: { $gte: currentMonthStart, $lte: now },
+        },
+      },
+      {
+        $group: {
+          _id: null,
+          totalTime: {
+            $sum: {
+              $cond: [
+                {
+                  $and: [
+                    { $eq: ['$type', 'anime'] },
+                    {
+                      $or: [
+                        { $eq: ['$time', 0] },
+                        { $eq: ['$time', null] },
+                        { $eq: [{ $type: '$time' }, 'missing'] },
+                      ],
+                    },
+                    { $gt: ['$episodes', 0] },
+                  ],
+                },
+                { $multiply: ['$episodes', 24] }, // 24 minutes per episode
+                '$time',
+              ],
+            },
+          },
+          readingTime: {
+            $sum: {
+              $cond: [{ $in: ['$type', readingTypes] }, '$time', 0],
+            },
+          },
+          listeningTime: {
+            $sum: {
+              $cond: [
+                {
+                  $and: [
+                    { $eq: ['$type', 'anime'] },
+                    {
+                      $or: [
+                        { $eq: ['$time', 0] },
+                        { $eq: ['$time', null] },
+                        { $eq: [{ $type: '$time' }, 'missing'] },
+                      ],
+                    },
+                    { $gt: ['$episodes', 0] },
+                  ],
+                },
+                { $multiply: ['$episodes', 24] }, // 24 minutes per episode
+                {
+                  $cond: [{ $in: ['$type', listeningTypes] }, '$time', 0],
+                },
+              ],
+            },
+          },
+        },
+      },
+    ]);
+
+    // Get previous month stats
+    const previousMonthStats = await Log.aggregate([
+      {
+        $match: {
+          user: user._id,
+          date: { $gte: previousMonthStart, $lte: previousMonthEnd },
+        },
+      },
+      {
+        $group: {
+          _id: null,
+          totalTime: {
+            $sum: {
+              $cond: [
+                {
+                  $and: [
+                    { $eq: ['$type', 'anime'] },
+                    {
+                      $or: [
+                        { $eq: ['$time', 0] },
+                        { $eq: ['$time', null] },
+                        { $eq: [{ $type: '$time' }, 'missing'] },
+                      ],
+                    },
+                    { $gt: ['$episodes', 0] },
+                  ],
+                },
+                { $multiply: ['$episodes', 24] }, // 24 minutes per episode
+                '$time',
+              ],
+            },
+          },
+          readingTime: {
+            $sum: {
+              $cond: [{ $in: ['$type', readingTypes] }, '$time', 0],
+            },
+          },
+          listeningTime: {
+            $sum: {
+              $cond: [
+                {
+                  $and: [
+                    { $eq: ['$type', 'anime'] },
+                    {
+                      $or: [
+                        { $eq: ['$time', 0] },
+                        { $eq: ['$time', null] },
+                        { $eq: [{ $type: '$time' }, 'missing'] },
+                      ],
+                    },
+                    { $gt: ['$episodes', 0] },
+                  ],
+                },
+                { $multiply: ['$episodes', 24] }, // 24 minutes per episode
+                {
+                  $cond: [{ $in: ['$type', listeningTypes] }, '$time', 0],
+                },
+              ],
+            },
+          },
+        },
+      },
+    ]);
+
+    // Ensure we have default values if no logs were found
+    const current =
+      currentMonthStats.length > 0
+        ? currentMonthStats[0]
+        : {
+            totalTime: 0,
+            readingTime: 0,
+            listeningTime: 0,
+          };
+
+    const previous =
+      previousMonthStats.length > 0
+        ? previousMonthStats[0]
+        : {
+            totalTime: 0,
+            readingTime: 0,
+            listeningTime: 0,
+          };
+
+    // Remove _id from the results
+    delete current._id;
+    delete previous._id;
+
+    return res.status(200).json({
+      currentMonth: current,
+      previousMonth: previous,
+    });
   } catch (error) {
     return next(error as customError);
   }
@@ -40,6 +300,12 @@ export async function getUserLogs(
       ? parseInt(req.query.limit as string)
       : 10;
   const skip = (page - 1) * limit;
+
+  // Add start and end date filters
+  const startDate = req.query.start
+    ? new Date(req.query.start as string)
+    : null;
+  const endDate = req.query.end ? new Date(req.query.end as string) : null;
 
   try {
     let pipeline: PipelineStage[] = [
@@ -80,6 +346,19 @@ export async function getUserLogs(
         : []),
       ...(req.query.mediaType
         ? [{ $match: { type: req.query.mediaType } }]
+        : []),
+      // Add date filter if start or end date is provided
+      ...(startDate || endDate
+        ? [
+            {
+              $match: {
+                date: {
+                  ...(startDate && { $gte: startDate }),
+                  ...(endDate && { $lte: endDate }),
+                },
+              },
+            },
+          ]
         : []),
       {
         $project: {
@@ -218,6 +497,7 @@ export async function createLog(
     if (!type) throw new customError('Log type is required', 400);
     if (!description) throw new customError('Description is required', 400);
     let logMedia;
+    console.log(req.body);
     if (mediaId) {
       logMedia = await MediaBase.findOne({ contentId: mediaId });
     }
@@ -516,6 +796,391 @@ export async function assignMedia(
     );
 
     return res.status(200).json({ results });
+  } catch (error) {
+    return next(error as customError);
+  }
+}
+
+interface IGetUserStatsQuery {
+  timeRange?: 'today' | 'month' | 'year' | 'total';
+  type?: 'all' | 'anime' | 'manga' | 'reading' | 'audio' | 'video';
+}
+
+interface IUserStats {
+  totals: {
+    totalLogs: number;
+    totalXp: number;
+    totalTimeHours: number;
+    untrackedCount: number;
+  };
+  statsByType: Array<{
+    type: string;
+    count: number;
+    totalXp: number;
+    totalTimeMinutes: number;
+    totalTimeHours: number;
+    untrackedCount: number;
+    dates: Array<{
+      date: Date;
+      xp: number;
+      time?: number;
+      episodes?: number;
+    }>;
+  }>;
+  readingSpeedData?: Array<{
+    date: Date;
+    type: string;
+    time: number;
+    chars?: number;
+    pages?: number;
+    charsPerHour?: number | null;
+  }>;
+  timeRange: 'today' | 'month' | 'year' | 'total';
+  selectedType: string;
+}
+
+export async function getUserStats(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<Response<IUserStats> | void> {
+  try {
+    const { username } = req.params;
+    const { timeRange = 'total', type = 'all' } =
+      req.query as IGetUserStatsQuery;
+    // Validate timeRange
+    const validTimeRanges = ['today', 'month', 'year', 'total'];
+    if (!validTimeRanges.includes(timeRange)) {
+      return res.status(400).json({ message: 'Invalid time range' });
+    }
+    // Validate type
+    const validTypes = [
+      'all',
+      'anime',
+      'manga',
+      'reading',
+      'audio',
+      'video',
+      'vn',
+      'other',
+    ];
+    if (!validTypes.includes(type)) {
+      return res.status(400).json({ message: 'Invalid type' });
+    }
+
+    const user = await User.findOne({ username });
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    // Build date filter
+    let dateFilter: any = {};
+    const now = new Date();
+    if (timeRange === 'today') {
+      const start = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      dateFilter = { date: { $gte: start } };
+    } else if (timeRange === 'month') {
+      const start = new Date(now.getFullYear(), now.getMonth(), 1);
+      dateFilter = { date: { $gte: start } };
+    } else if (timeRange === 'year') {
+      const start = new Date(now.getFullYear(), 0, 1);
+      dateFilter = { date: { $gte: start } };
+    }
+
+    // Build type filter
+    let match: any = { user: user._id, ...dateFilter };
+    if (type !== 'all') {
+      match.type = type;
+    }
+
+    const logTypes = [
+      'reading',
+      'anime',
+      'vn',
+      'video',
+      'manga',
+      'audio',
+      'other',
+    ];
+
+    // Aggregate stats by type
+    const statsByType = await Log.aggregate([
+      { $match: match },
+      {
+        $group: {
+          _id: '$type',
+          count: { $sum: 1 },
+          totalXp: { $sum: '$xp' },
+          totalTime: {
+            $sum: {
+              $cond: [
+                { $eq: ['$type', 'anime'] },
+                {
+                  $cond: [
+                    { $ifNull: ['$time', false] },
+                    '$time',
+                    {
+                      $cond: [
+                        { $ifNull: ['$episodes', false] },
+                        { $multiply: ['$episodes', 24] },
+                        0,
+                      ],
+                    },
+                  ],
+                },
+                {
+                  $cond: [{ $ifNull: ['$time', false] }, '$time', 0],
+                },
+              ],
+            },
+          },
+          // Add additional fields for detailed charts
+          untrackedCount: {
+            $sum: {
+              $cond: [
+                {
+                  $or: [
+                    {
+                      $and: [
+                        { $eq: ['$type', 'anime'] },
+                        { $eq: ['$time', null] },
+                        { $eq: ['$episodes', null] },
+                      ],
+                    },
+                    {
+                      $and: [
+                        { $ne: ['$type', 'anime'] },
+                        { $eq: ['$time', null] },
+                      ],
+                    },
+                  ],
+                },
+                1,
+                0,
+              ],
+            },
+          },
+          // Collect dates for progress charts
+          dates: {
+            $push: {
+              date: '$date',
+              xp: '$xp',
+              time: '$time',
+              episodes: '$episodes',
+            },
+          },
+        },
+      },
+      {
+        $project: {
+          _id: 0,
+          type: '$_id',
+          count: 1,
+          totalXp: 1,
+          totalTimeMinutes: '$totalTime',
+          totalTimeHours: { $divide: ['$totalTime', 60] },
+          untrackedCount: 1,
+          dates: 1,
+        },
+      },
+    ]);
+
+    // Create a complete dataset with all types (even if empty)
+    const completeStats = logTypes.map((type) => {
+      const typeStat = statsByType.find((stat) => stat.type === type);
+      return (
+        typeStat || {
+          type,
+          count: 0,
+          totalXp: 0,
+          totalTimeMinutes: 0,
+          totalTimeHours: 0,
+          untrackedCount: 0,
+          dates: [],
+        }
+      );
+    });
+
+    // Calculate overall totals
+    const totals = statsByType.reduce(
+      (acc, stat) => {
+        acc.totalLogs += stat.count;
+        acc.totalXp += stat.totalXp;
+        acc.totalTimeHours += stat.totalTimeHours;
+        acc.untrackedCount += stat.untrackedCount;
+        return acc;
+      },
+      {
+        totalLogs: 0,
+        totalXp: 0,
+        totalTimeHours: 0,
+        untrackedCount: 0,
+      }
+    );
+
+    // Calculate reading speed data for reading-type logs
+    const readingSpeedData =
+      type === 'all' || ['reading', 'manga', 'vn'].includes(type)
+        ? await Log.aggregate([
+            {
+              $match: {
+                user: user._id,
+                ...dateFilter,
+                type: { $in: ['reading', 'manga', 'vn'] },
+                time: { $ne: null, $gt: 0 },
+                $or: [
+                  { chars: { $ne: null, $gt: 0 } },
+                  { pages: { $ne: null, $gt: 0 } },
+                ],
+              },
+            },
+            {
+              $project: {
+                date: 1,
+                type: 1,
+                time: 1,
+                chars: 1,
+                pages: 1,
+                charsPerHour: {
+                  $cond: [
+                    { $and: [{ $gt: ['$chars', 0] }, { $gt: ['$time', 0] }] },
+                    { $divide: [{ $multiply: ['$chars', 60] }, '$time'] },
+                    null,
+                  ],
+                },
+              },
+            },
+            {
+              $sort: { date: 1 },
+            },
+          ])
+        : [];
+
+    // Return comprehensive stats object
+    return res.json({
+      totals,
+      statsByType: completeStats,
+      readingSpeedData,
+      timeRange,
+      selectedType: type,
+    });
+  } catch (error) {
+    return next(error);
+  }
+}
+
+export async function recalculateXp(
+  _req: Request,
+  res: Response,
+  next: NextFunction
+) {
+  try {
+    // Check admin permission
+    if (!res.locals.user.roles.includes('admin')) {
+      return res.status(403).json({ message: 'Admin permission required' });
+    }
+
+    // Get all users
+    const users = await User.find({});
+
+    if (!users.length) {
+      return res.status(404).json({ message: 'No users found' });
+    }
+
+    const results = {
+      totalUsers: users.length,
+      processedUsers: 0,
+      updatedLogs: 0,
+      errors: [] as string[],
+    };
+
+    // Process each user
+    for (const user of users) {
+      try {
+        // Reset user's stats
+        if (user.stats) {
+          user.stats.readingXp = 0;
+          user.stats.listeningXp = 0;
+          user.stats.userXp = 0;
+        }
+
+        // Get all logs for this user
+        const logs = await Log.find({ user: user._id });
+
+        if (!logs.length) {
+          continue;
+        }
+
+        // Process each log
+        for (const log of logs) {
+          // Recalculate XP
+          const timeXp = log.time
+            ? Math.floor(((log.time * 45) / 100) * XP_FACTOR_TIME)
+            : 0;
+          const charsXp = log.chars
+            ? Math.floor((log.chars / 350) * XP_FACTOR_CHARS)
+            : 0;
+          const pagesXp = log.pages
+            ? Math.floor(log.pages * XP_FACTOR_PAGES)
+            : 0;
+          const episodesXp = log.episodes
+            ? Math.floor(((log.episodes * 45) / 100) * XP_FACTOR_EPISODES)
+            : 0;
+
+          const oldXp = log.xp;
+
+          // Calculate new XP based on log type
+          switch (log.type) {
+            case 'anime':
+              log.xp = timeXp || episodesXp || 0;
+              break;
+            case 'reading':
+            case 'manga':
+            case 'vn':
+            case 'video':
+            case 'other':
+            case 'audio':
+              log.xp = Math.max(timeXp, pagesXp, charsXp, episodesXp, 0);
+              break;
+          }
+
+          // Only save if XP changed
+          if (log.xp !== oldXp) {
+            await log.save();
+            results.updatedLogs++;
+          }
+
+          // Update user's stats totals
+          if (user.stats) {
+            if (['anime', 'video', 'audio'].includes(log.type)) {
+              user.stats.listeningXp += log.xp;
+            } else if (['reading', 'manga', 'vn'].includes(log.type)) {
+              user.stats.readingXp += log.xp;
+            }
+            user.stats.userXp += log.xp;
+          }
+        }
+
+        // Recalculate levels
+        if (user.stats) {
+          updateLevelAndXp(user.stats, 'reading');
+          updateLevelAndXp(user.stats, 'listening');
+          updateLevelAndXp(user.stats, 'user');
+
+          // Save user with updated stats
+          await user.save();
+        }
+        results.processedUsers++;
+      } catch (error) {
+        const customError = error as customError;
+        results.errors.push(
+          `Error processing user ${user.username}: ${customError.message}`
+        );
+      }
+    }
+
+    return res.status(200).json({
+      message: `Recalculated stats for ${results.processedUsers} users (${results.updatedLogs} logs updated)`,
+      results,
+    });
   } catch (error) {
     return next(error as customError);
   }

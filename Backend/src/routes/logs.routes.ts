@@ -9,6 +9,7 @@ import {
   importLogs,
   assignMedia,
   getUntrackedLogs,
+  recalculateXp,
 } from '../controllers/logs.controller.js';
 import { calculateXp } from '../middlewares/calculateXp.js';
 import { protect } from '../libs/authMiddleware.js';
@@ -44,6 +45,8 @@ router.post<ParamsDictionary, any, ICreateLog>(
 );
 
 router.get('/untrackedlogs', protect, getUntrackedLogs);
+
+router.get('/recalculateStats', protect, recalculateXp);
 
 router.get('/:id', getLog);
 

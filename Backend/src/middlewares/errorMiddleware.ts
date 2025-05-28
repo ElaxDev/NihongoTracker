@@ -36,6 +36,10 @@ export function errorHandler(
     : 500;
   let message = err.message ? err.message : 'Internal Server Error';
 
+  if (err.statusCode === 500) {
+    console.error(err.message);
+  }
+
   if (err.name === 'CastError' && err.kind === 'ObjectId') {
     statusCode = 404;
     message = 'Resource not found';

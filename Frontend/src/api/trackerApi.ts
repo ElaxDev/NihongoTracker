@@ -13,6 +13,7 @@ import {
   IMediaDocument,
   IImmersionList,
   IAverageColor,
+  IUserStats,
 } from '../types';
 
 const BASE_URL = '/api/';
@@ -170,6 +171,53 @@ export async function importFromCSV(file: FormData) {
     headers: {
       'Content-Type': 'multipart/form-data',
     },
+  });
+  return data;
+}
+
+interface IDashboardHours {
+  currentMonth: {
+    totalTime: number;
+    readingTime: number;
+    listeningTime: number;
+  };
+  previousMonth: {
+    totalTime: number;
+    readingTime: number;
+    listeningTime: number;
+  };
+}
+
+export async function getDashboardHoursFn(username: string | undefined) {
+  if (!username) {
+    throw new Error('Username is required to fetch dashboard hours');
+  }
+  const { data } = await api.get<IDashboardHours>(
+    `users/${username}/dashboard`
+  );
+  return data;
+}
+
+export async function getRecentLogsFn(username: string | undefined) {
+  if (!username) {
+    throw new Error('Username is required to fetch recent logs');
+  }
+  const { data } = await api.get<ILog[]>(`users/${username}/recentlogs`);
+  return data;
+}
+
+export async function getUserStatsFn(
+  username: string | undefined,
+  params?: {
+    timeRange?: string;
+    type?: string;
+  }
+) {
+  if (!username) {
+    throw new Error('Username is required to fetch user stats');
+  }
+  const { data } = await api.get<IUserStats>(`users/${username}/stats`, {
+    params,
   });
   return data;
 }

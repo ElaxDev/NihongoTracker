@@ -4,10 +4,10 @@ import Log from '../models/log.model.js';
 import { IImportLogs, ILog } from '../types.js';
 import { customError } from './errorMiddleware.js';
 
-const XP_FACTOR_TIME = 5;
-const XP_FACTOR_PAGES = 5;
-const XP_FACTOR_CHARS = 5;
-const XP_FACTOR_EPISODES = XP_FACTOR_TIME * 24;
+export const XP_FACTOR_TIME = 5;
+export const XP_FACTOR_PAGES = 1.23;
+export const XP_FACTOR_CHARS = 5;
+export const XP_FACTOR_EPISODES = XP_FACTOR_TIME * 24;
 
 async function calculateXpForLog(log: ILog, req: Request): Promise<ILog> {
   let type = log.type || '';

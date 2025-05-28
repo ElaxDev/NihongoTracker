@@ -91,6 +91,16 @@ function AnimeLogs({ logs }: AnimeLogsProps) {
     assignedLogs
   );
 
+  // Add a function to reset the component state
+  const resetState = useCallback(() => {
+    setAssignedLogs((prev) => [...prev, ...selectedLogs]);
+    setSelectedLogs([]);
+    setSelectedAnime(undefined);
+    setSearchQuery('');
+    setSelectedGroup(null);
+    setShouldAnilistSearch(false);
+  }, [selectedLogs]);
+
   const { mutate: assignMedia, isPending: isAssigning } = useMutation({
     mutationFn: (
       data: {
@@ -99,27 +109,27 @@ function AnimeLogs({ logs }: AnimeLogsProps) {
       }[]
     ) => assignMediaFn(data),
     onSuccess: () => {
-      setAssignedLogs((prev) => [...prev, ...selectedLogs]);
-      setSelectedLogs([]);
-      setSelectedAnime(undefined);
-      setSearchQuery('');
-      setSelectedGroup(null);
+      resetState();
 
-      setTimeout(() => {
-        queryClient.invalidateQueries({ queryKey: ['logsAssign'] });
-        queryClient.invalidateQueries({ queryKey: ['logs', username] });
-        queryClient.invalidateQueries({
-          queryKey: ['ImmersionList', username],
-        });
-        toast.success('Media assigned successfully');
-      }, 0);
+      // Invalidate queries without setTimeout
+      queryClient.invalidateQueries({ queryKey: ['logsAssign'] });
+      queryClient.invalidateQueries({ queryKey: ['logs', username] });
+      queryClient.invalidateQueries({ queryKey: ['ImmersionList', username] });
+
+      // Show count of logs assigned in the success message
+      toast.success(
+        `Successfully assigned ${selectedLogs.length} logs to anime`
+      );
     },
     onError: (error) => {
-      if (error instanceof AxiosError) {
-        toast.error(error.response?.data.message);
-      } else {
-        toast.error('Error assigning media');
-      }
+      const errorMessage =
+        error instanceof AxiosError
+          ? error.response?.data.message || 'Server error during assignment'
+          : error instanceof Error
+            ? error.message
+            : 'Unknown error during assignment';
+
+      toast.error(errorMessage);
     },
   });
 

@@ -1,7 +1,11 @@
 import { Link } from 'react-router-dom';
 import { useUserDataStore } from '../store/userData';
 import { useQuery } from '@tanstack/react-query';
-import { getRankingFn, getUserLogsFn } from '../api/trackerApi';
+import {
+  getDashboardHoursFn,
+  getRankingFn,
+  getRecentLogsFn,
+} from '../api/trackerApi';
 // import { ILog } from '../types';
 import { useMemo } from 'react';
 import { numberWithCommas } from '../utils/utils';
@@ -10,19 +14,22 @@ function Hero() {
   const { user } = useUserDataStore();
   const username = user?.username;
 
-  // Fetch logs for the logged-in user
-  const { data: logs } = useQuery({
+  // Fetch hours for the logged-in user
+  const { data: hours, isError: hoursError } = useQuery({
     queryKey: ['logsHero', username],
-    queryFn: () =>
-      getUserLogsFn(username || '', {
-        limit: 0,
-        page: 1,
-      }),
+    queryFn: () => getDashboardHoursFn(username),
     staleTime: Infinity,
     enabled: !!username,
   });
 
-  // Fetch logs for the logged-in user
+  const { data: logs } = useQuery({
+    queryKey: ['recentLogs', username],
+    queryFn: () => getRecentLogsFn(username).catch(() => []),
+    staleTime: Infinity,
+    enabled: !!username,
+  });
+
+  // Fetch ranking for the logged-in user
   const { data: ranking } = useQuery({
     queryKey: ['ranking'],
     queryFn: () =>
@@ -31,14 +38,14 @@ function Hero() {
         page: 1,
         filter: 'userXp',
         timeFilter: 'all-time',
-      }),
+      }).catch(() => []),
     staleTime: Infinity,
     enabled: !!username,
   });
 
   // Calculate immersion statistics
   const immersionStats = useMemo(() => {
-    if (!logs || !logs.length) {
+    if (!hours) {
       return {
         currentMonth: { reading: 0, listening: 0, total: 0 },
         lastMonth: { reading: 0, listening: 0, total: 0 },
@@ -46,63 +53,14 @@ function Hero() {
       };
     }
 
-    const now = new Date();
-    const currentMonth = now.getMonth();
-    const currentYear = now.getFullYear();
+    // Convert from minutes to hours
+    const currentReadingTime = hours.currentMonth.readingTime / 60;
+    const currentListeningTime = hours.currentMonth.listeningTime / 60;
+    const currentTotal = hours.currentMonth.totalTime / 60;
 
-    // Previous month - handle January edge case
-    const lastMonth = currentMonth === 0 ? 11 : currentMonth - 1;
-    const lastMonthYear = currentMonth === 0 ? currentYear - 1 : currentYear;
-
-    // Filter logs by month
-    const currentMonthLogs = logs.filter((log) => {
-      const logDate = new Date(log.date);
-      return (
-        logDate.getMonth() === currentMonth &&
-        logDate.getFullYear() === currentYear
-      );
-    });
-
-    const lastMonthLogs = logs.filter((log) => {
-      const logDate = new Date(log.date);
-      return (
-        logDate.getMonth() === lastMonth &&
-        logDate.getFullYear() === lastMonthYear
-      );
-    });
-
-    // Calculate reading time (manga, vn, reading)
-    const currentReadingTime = currentMonthLogs
-      .filter((log) => ['manga', 'vn', 'reading'].includes(log.type))
-      .reduce((total, log) => total + (log.time || 0) / 60, 0);
-
-    const lastReadingTime = lastMonthLogs
-      .filter((log) => ['manga', 'vn', 'reading'].includes(log.type))
-      .reduce((total, log) => total + (log.time || 0) / 60, 0);
-
-    // Calculate listening time (anime, audio, video)
-    const currentListeningTime = currentMonthLogs
-      .filter((log) => ['anime', 'audio', 'video'].includes(log.type))
-      .reduce((total, log) => {
-        if (log.type === 'anime' && !log.time && log.episodes) {
-          // If no time but episodes exist, estimate 24 minutes per episode
-          return total + (log.episodes * 24) / 60;
-        }
-        return total + (log.time || 0) / 60;
-      }, 0);
-
-    const lastListeningTime = lastMonthLogs
-      .filter((log) => ['anime', 'audio', 'video'].includes(log.type))
-      .reduce((total, log) => {
-        if (log.type === 'anime' && !log.time && log.episodes) {
-          return total + (log.episodes * 24) / 60;
-        }
-        return total + (log.time || 0) / 60;
-      }, 0);
-
-    // Calculate total immersion time
-    const currentTotal = currentReadingTime + currentListeningTime;
-    const lastTotal = lastReadingTime + lastListeningTime;
+    const lastReadingTime = hours.previousMonth.readingTime / 60;
+    const lastListeningTime = hours.previousMonth.listeningTime / 60;
+    const lastTotal = hours.previousMonth.totalTime / 60;
 
     // Calculate percentage changes
     const calculatePercentChange = (current: number, previous: number) => {
@@ -137,7 +95,7 @@ function Hero() {
         total: totalChange,
       },
     };
-  }, [logs]);
+  }, [hours]);
 
   // Get recent logs
   const recentLogs = useMemo(() => {
@@ -364,11 +322,21 @@ function Hero() {
                         </tr>
                       </thead>
                       <tbody>
-                        {recentLogs.length > 0 ? (
+                        {hoursError ? (
+                          <tr>
+                            <td colSpan={4} className="text-center text-error">
+                              Error loading recent logs
+                            </td>
+                          </tr>
+                        ) : recentLogs.length > 0 ? (
                           recentLogs.map((log) => (
                             <tr key={log._id}>
                               <td>{log.formattedDate}</td>
-                              <td>{log.description}</td>
+                              <td>
+                                {log.media?.title.contentTitleNative
+                                  ? log.media.title.contentTitleNative
+                                  : log.description}
+                              </td>
                               <td className="capitalize">{log.type}</td>
                               <td>{log.formattedTime}</td>
                             </tr>
@@ -376,7 +344,7 @@ function Hero() {
                         ) : (
                           <tr>
                             <td colSpan={4} className="text-center">
-                              No recent logs found
+                              View your detailed logs in your profile page
                             </td>
                           </tr>
                         )}
