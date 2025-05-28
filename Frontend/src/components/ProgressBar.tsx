@@ -1,22 +1,16 @@
 function ProgressBar({
   progress,
   maxProgress,
-  progressColor,
 }: {
   progress?: number;
   maxProgress?: number;
-  progressColor?: string;
 }) {
   return (
     <progress
-      className={
-        progressColor
-          ? `progress w-full progress-${progressColor}`
-          : 'progress w-full'
-      }
+      className="progress w-full progress-primary"
       value={progress ? progress : 0}
       max={maxProgress ? maxProgress : 100}
-    ></progress>
+    />
   );
 }
 

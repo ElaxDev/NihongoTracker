@@ -9,7 +9,6 @@ import { OutletProfileContextType } from '../types';
 function ProfileScreen() {
   const limit = 10;
   const { user, username } = useOutletContext<OutletProfileContextType>();
-  const accent = 'primary';
 
   const {
     data: logs,
@@ -68,7 +67,6 @@ function ProfileScreen() {
                 <ProgressBar
                   progress={userProgressPercentage}
                   maxProgress={100}
-                  progressColor={accent}
                 />
                 <div className="flex justify-between text-sm">
                   <p>Level: {user?.stats?.userLevel}</p>
@@ -81,7 +79,6 @@ function ProfileScreen() {
                 <ProgressBar
                   progress={listeningProgressPercentage}
                   maxProgress={100}
-                  progressColor={`primary`}
                 />
                 <div className="flex justify-between text-sm">
                   <p>Level: {user?.stats?.listeningLevel}</p>
@@ -94,7 +91,6 @@ function ProfileScreen() {
                 <ProgressBar
                   progress={readingProgressPercentage}
                   maxProgress={100}
-                  progressColor={accent}
                 />
                 <div className="flex justify-between text-sm">
                   <p>Level: {user?.stats?.readingLevel}</p>
