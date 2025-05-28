@@ -1,6 +1,6 @@
 import { ParamsDictionary } from 'express-serve-static-core';
 import { ICreateLog } from '../types.js';
-import { Router } from 'express';
+import {Router} from 'express';
 import {
   getLog,
   createLog,
@@ -15,7 +15,11 @@ import { calculateXp } from '../middlewares/calculateXp.js';
 import { protect } from '../libs/authMiddleware.js';
 import { csvToArray } from '../middlewares/csvToArray.js';
 import multer from 'multer';
-import { getLogsFromAPI, getLogsFromCSV } from '../middlewares/getLogs.js';
+import {
+  getLogsFromAPI,
+  getLogsFromCSV,
+  importManabeLog
+} from '../middlewares/getLogs.js';
 
 const router = Router();
 
@@ -53,5 +57,7 @@ router.get('/:id', getLog);
 router.delete('/:id', protect, deleteLog);
 
 router.put('/:id', protect, calculateXp, updateLog);
+
+router.post("/manabe-webhook",importManabeLog,calculateXp,importLogs)
 
 export default router;
