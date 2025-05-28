@@ -104,8 +104,21 @@ export interface IRankingParams {
 }
 
 export interface ILogsParams extends Pick<IRankingParams, 'page' | 'limit'> {
+  type?: ILog['type'];
+}
+
+// Add interface for MatchMedia logs (minimal required fields)
+export interface IMatchMediaLog {
+  _id: string;
+  type: 'anime' | 'manga' | 'reading' | 'vn' | 'video' | 'audio' | 'other';
+  description: string;
   mediaId?: string;
-  mediaType?: string;
+  date: Date;
+  episodes?: number;
+  pages?: number;
+  chars?: number;
+  time?: number;
+  xp: number;
 }
 
 export interface updateUserRequest {

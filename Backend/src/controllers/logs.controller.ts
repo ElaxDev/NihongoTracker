@@ -307,7 +307,21 @@ export async function getUserLogs(
     : null;
   const endDate = req.query.end ? new Date(req.query.end as string) : null;
 
+  // Add type filter
+  const type = req.query.type as string;
+
   try {
+    // Check if username exists
+    if (!req.params.username) {
+      throw new customError('Username is required', 400);
+    }
+
+    // First verify the user exists
+    const userExists = await User.findOne({ username: req.params.username });
+    if (!userExists) {
+      throw new customError('User not found', 404);
+    }
+
     let pipeline: PipelineStage[] = [
       {
         $lookup: {
@@ -318,18 +332,23 @@ export async function getUserLogs(
         },
       },
       {
-        $sort: {
-          date: -1,
-        },
+        $unwind: '$user',
       },
       {
         $match: {
           'user.username': req.params.username,
         },
       },
+      // Add type filter if provided
+      ...(type ? [{ $match: { type } }] : []),
+      {
+        $sort: {
+          date: -1,
+        },
+      },
       {
         $lookup: {
-          from: 'media', // or the actual collection name for your media model
+          from: 'media',
           localField: 'mediaId',
           foreignField: 'contentId',
           as: 'media',
@@ -362,8 +381,20 @@ export async function getUserLogs(
         : []),
       {
         $project: {
-          user: 0,
-          editedFields: 0,
+          _id: 1,
+          type: 1,
+          mediaId: 1,
+          xp: 1,
+          description: 1,
+          episodes: 1,
+          pages: 1,
+          chars: 1,
+          time: 1,
+          date: 1,
+          'media.contentId': 1,
+          'media.title': 1,
+          'media.contentImage': 1,
+          'media.type': 1,
         },
       },
       {
@@ -377,13 +408,23 @@ export async function getUserLogs(
       });
     }
 
+    console.log(
+      `Fetching logs for user: ${req.params.username}, type: ${type || 'all'}, limit: ${limit}`
+    );
+
     const logs = await Log.aggregate(pipeline, {
       collation: { locale: 'en', strength: 2 },
     });
-    if (!logs.length) return res.sendStatus(204); // Use sendStatus instead of status
+
+    console.log(
+      `Found ${logs.length} ${type || 'all'} logs for user: ${req.params.username}`
+    );
+
+    if (!logs.length) return res.sendStatus(204);
 
     return res.status(200).json(logs);
   } catch (error) {
+    console.error('Error in getUserLogs:', error);
     return next(error as customError);
   }
 }
