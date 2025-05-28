@@ -150,7 +150,7 @@ function StatsScreen() {
       <div className="grid lg:grid-cols-[20%_80%] gap-5">
         <div className="lg:sticky lg:top-4 lg:self-start h-fit card bg-base-100 p-4">
           <div className="font-bold text-xl">Types</div>
-          <ul className="menu card-body">
+          <ul className="menu card-body w-full">
             <li
               className={currentType === 'all' ? 'bg-base-200 rounded-btn' : ''}
             >
