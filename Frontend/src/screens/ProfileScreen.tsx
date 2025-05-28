@@ -106,7 +106,7 @@ function ProfileScreen() {
             </div>
           </div>
 
-          <div className="flex flex-col gap-4 md:gap-5 items-center">
+          <div className="flex flex-col gap-4 md:gap-5">
             <h2 className="card-title self-start mb-2">Activity Logs</h2>
             {logs?.pages ? (
               logs.pages.map((page, index) => (
