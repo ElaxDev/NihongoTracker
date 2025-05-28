@@ -104,6 +104,7 @@ export interface IRankingParams {
 }
 
 export interface ILogsParams extends Pick<IRankingParams, 'page' | 'limit'> {
+  mediaId?: string;
   type?: ILog['type'];
 }
 

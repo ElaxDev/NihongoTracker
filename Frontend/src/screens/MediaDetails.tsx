@@ -16,7 +16,7 @@ function MediaDetails() {
     queryFn: () =>
       getUserLogsFn(user?.username ?? '', {
         mediaId: mediaDocument?.contentId,
-        mediaType: mediaDocument?.type,
+        type: mediaDocument?.type,
         limit: 0,
         page: 1,
       }),
