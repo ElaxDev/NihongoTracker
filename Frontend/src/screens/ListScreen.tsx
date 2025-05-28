@@ -17,7 +17,7 @@ function ListScreen() {
     error: listError,
     isLoading: listLoading,
   } = useQuery({
-    queryKey: ['ImmersionList', username],
+    queryKey: ['ImmersionList', username, currentList],
     queryFn: () => getImmersionListFn(username as string),
   });
 
@@ -88,13 +88,7 @@ function ListScreen() {
                 <h2 className="font-bold text-xl capitalize">{currentList}</h2>
               </div>
               <div className="p-4">
-                {listLoading ? (
-                  <div className="flex justify-center items-center w-full h-40">
-                    <Loader />
-                  </div>
-                ) : list &&
-                  list[currentList] &&
-                  list[currentList].length > 0 ? (
+                {list && list[currentList] && list[currentList].length > 0 ? (
                   <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-4">
                     {list[currentList].map((item, index) => (
                       <div key={index} className="flex flex-col">
@@ -115,6 +109,10 @@ function ListScreen() {
                         </div>
                       </div>
                     ))}
+                  </div>
+                ) : listLoading ? (
+                  <div className="flex justify-center items-center w-full h-40">
+                    <Loader />
                   </div>
                 ) : (
                   <div className="flex justify-center items-center w-full py-10">
