@@ -1,18 +1,20 @@
 import { ILog, IMediaDocument } from '../types';
 import { useState, useMemo, useCallback } from 'react';
 import { fuzzy } from 'fast-fuzzy';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { assignMediaFn } from '../api/trackerApi';
+import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
+import { assignMediaFn, getUserLogsFn } from '../api/trackerApi';
 import { toast } from 'react-toastify';
 import { AxiosError } from 'axios';
 import useSearch from '../hooks/useSearch';
 import { useUserDataStore } from '../store/userData';
 import { useFilteredGroupedLogs } from '../hooks/useFilteredGroupedLogs.tsx';
+
 interface AnimeLogsProps {
-  logs: ILog[] | undefined;
+  username?: string;
+  isActive?: boolean;
 }
 
-function AnimeLogs({ logs }: AnimeLogsProps) {
+function AnimeLogs({ username, isActive = true }: AnimeLogsProps) {
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [selectedAnime, setSelectedAnime] = useState<
     IMediaDocument | undefined
@@ -23,7 +25,7 @@ function AnimeLogs({ logs }: AnimeLogsProps) {
   const [shouldAnilistSearch, setShouldAnilistSearch] = useState<boolean>(true);
 
   const { user } = useUserDataStore();
-  const username = user?.username;
+  const usernameFromStore = user?.username;
 
   const {
     data: animeResult,
@@ -31,10 +33,26 @@ function AnimeLogs({ logs }: AnimeLogsProps) {
     isLoading: isSearchingAnilist,
   } = useSearch('anime', shouldAnilistSearch ? searchQuery : '');
 
+  const {
+    data: logs,
+    error: logError,
+    isLoading: isLoadingLogs,
+  } = useQuery({
+    queryKey: ['animeLogs', username, 'anime'],
+    queryFn: () =>
+      getUserLogsFn(username as string, { limit: 0, type: 'anime' }),
+    enabled: !!username && isActive,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+
   const queryClient = useQueryClient();
 
   if (searchAnimeError && searchAnimeError instanceof AxiosError) {
     toast.error(searchAnimeError.response?.data.message);
+  }
+
+  if (logError && logError instanceof AxiosError) {
+    toast.error(logError.response?.data.message);
   }
 
   const handleCheckboxChange = useCallback((log: ILog) => {
@@ -113,8 +131,10 @@ function AnimeLogs({ logs }: AnimeLogsProps) {
 
       // Invalidate queries without setTimeout
       queryClient.invalidateQueries({ queryKey: ['logsAssign'] });
-      queryClient.invalidateQueries({ queryKey: ['logs', username] });
-      queryClient.invalidateQueries({ queryKey: ['ImmersionList', username] });
+      queryClient.invalidateQueries({ queryKey: ['logs', usernameFromStore] });
+      queryClient.invalidateQueries({
+        queryKey: ['ImmersionList', usernameFromStore],
+      });
 
       // Show count of logs assigned in the success message
       toast.success(
@@ -168,6 +188,74 @@ function AnimeLogs({ logs }: AnimeLogsProps) {
     ]);
     setShouldAnilistSearch(false);
   }, [selectedAnime, selectedLogs, assignMedia]);
+
+  if (isLoadingLogs) {
+    return (
+      <div className="min-h-screen bg-base-200 flex flex-col items-center justify-center p-4">
+        <div className="card bg-base-100 shadow-xl w-full max-w-md">
+          <div className="card-body text-center">
+            <div className="flex justify-center mb-4">
+              <span className="loading loading-spinner loading-lg text-primary"></span>
+            </div>
+
+            <h2 className="card-title justify-center text-2xl mb-2">
+              Loading Media Matcher
+            </h2>
+
+            <p className="text-base-content/70 mb-4">
+              Preparing your logs for media matching...
+            </p>
+
+            <div className="divider">Please wait</div>
+
+            <div className="alert alert-info">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+                className="stroke-current shrink-0 w-6 h-6"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                ></path>
+              </svg>
+              <div className="text-sm">
+                <div className="font-semibold">This may take a moment</div>
+                <div>Loading and processing your media logs</div>
+              </div>
+            </div>
+
+            <div className="flex justify-center gap-2 mt-4">
+              <span className="loading loading-dots loading-sm"></span>
+              <span
+                className="loading loading-dots loading-sm"
+                style={{ animationDelay: '0.2s' }}
+              ></span>
+              <span
+                className="loading loading-dots loading-sm"
+                style={{ animationDelay: '0.4s' }}
+              ></span>
+            </div>
+
+            <div className="text-xs text-base-content/50 mt-2">
+              Fetching logs from database...
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (logError) {
+    return (
+      <div className="alert alert-error">
+        <span>Error loading anime logs</span>
+      </div>
+    );
+  }
 
   return (
     <div className="w-full p-4">

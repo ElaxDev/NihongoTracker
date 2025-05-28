@@ -39,7 +39,7 @@ function ListScreen() {
             <div className="p-4 border-b border-base-200">
               <div className="font-bold text-xl">Lists</div>
             </div>
-            <ul className="menu menu-md p-2">
+            <ul className="menu menu-md p-2 w-full">
               {['anime', 'manga', 'vn', 'video', 'reading'].map((item) => (
                 <li key={item} className="capitalize">
                   <a
@@ -59,7 +59,7 @@ function ListScreen() {
               untrackedLogs.length > 0 &&
               username === user?.username && (
                 <div className="alert alert-info shadow-sm">
-                  <div>
+                  <div className=" flex flex-row items-center gap-2">
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
                       fill="none"

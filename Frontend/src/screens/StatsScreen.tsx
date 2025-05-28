@@ -148,7 +148,7 @@ function StatsScreen() {
   return (
     <div className="2xl:max-w-(--breakpoint-2xl) 2xl:min-w-[50%] min-w-full 2xl:px-0 px-10 mb-24 mt-4">
       <div className="grid lg:grid-cols-[20%_80%] gap-5">
-        <div className="sticky top-4 self-start h-fit card bg-base-100 p-4">
+        <div className="lg:sticky lg:top-4 lg:self-start h-fit card bg-base-100 p-4">
           <div className="font-bold text-xl">Types</div>
           <ul className="menu card-body">
             <li
@@ -239,7 +239,11 @@ function StatsScreen() {
                 {currentType !== 'all' &&
                   `${currentType.charAt(0).toUpperCase() + currentType.slice(1)} logs`}
                 {currentType === 'all' && (
-                  <span className={userStats?.totals.untrackedCount ? "text-warning" : ""}>
+                  <span
+                    className={
+                      userStats?.totals.untrackedCount ? 'text-warning' : ''
+                    }
+                  >
                     {` (${userStats?.totals.untrackedCount || 0} untracked)`}
                   </span>
                 )}

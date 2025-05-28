@@ -1,8 +1,8 @@
 import { ILog, IMediaDocument } from '../types';
 import { useState, useMemo, useCallback } from 'react';
 import { fuzzy } from 'fast-fuzzy';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { assignMediaFn } from '../api/trackerApi';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { assignMediaFn, getUserLogsFn } from '../api/trackerApi';
 import { toast } from 'react-toastify';
 import { AxiosError } from 'axios';
 import useSearch from '../hooks/useSearch';
@@ -10,10 +10,11 @@ import { useUserDataStore } from '../store/userData';
 import { useFilteredGroupedLogs } from '../hooks/useFilteredGroupedLogs.tsx';
 
 interface MangaLogsProps {
-  logs: ILog[] | undefined;
+  username?: string;
+  isActive?: boolean;
 }
 
-function MangaLogs({ logs }: MangaLogsProps) {
+function MangaLogs({ username, isActive = true }: MangaLogsProps) {
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [selectedManga, setSelectedManga] = useState<
     IMediaDocument | undefined
@@ -24,13 +25,25 @@ function MangaLogs({ logs }: MangaLogsProps) {
   const [shouldSearch, setShouldSearch] = useState<boolean>(true);
 
   const { user } = useUserDataStore();
-  const username = user?.username;
+  const currentUsername = user?.username;
 
   const {
     data: mangaResult,
     error: searchMangaError,
     isLoading: isSearchingManga,
   } = useSearch('manga', shouldSearch ? searchQuery : '');
+
+  const {
+    data: logs,
+    error: logError,
+    isLoading: isLoadingLogs,
+  } = useQuery({
+    queryKey: ['mangaLogs', username, 'manga'],
+    queryFn: () =>
+      getUserLogsFn(username as string, { limit: 0, type: 'manga' }),
+    enabled: !!username && isActive,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
 
   const queryClient = useQueryClient();
 
@@ -109,9 +122,9 @@ function MangaLogs({ logs }: MangaLogsProps) {
 
       setTimeout(() => {
         queryClient.invalidateQueries({ queryKey: ['logsAssign'] });
-        queryClient.invalidateQueries({ queryKey: ['logs', username] });
+        queryClient.invalidateQueries({ queryKey: ['logs', currentUsername] });
         queryClient.invalidateQueries({
-          queryKey: ['ImmersionList', username],
+          queryKey: ['ImmersionList', currentUsername],
         });
         toast.success('Media assigned successfully');
       }, 0);
@@ -160,6 +173,74 @@ function MangaLogs({ logs }: MangaLogsProps) {
     ]);
     setShouldSearch(false);
   }, [selectedManga, selectedLogs, assignMedia]);
+
+  if (isLoadingLogs) {
+    return (
+      <div className="min-h-screen bg-base-200 flex flex-col items-center justify-center p-4">
+        <div className="card bg-base-100 shadow-xl w-full max-w-md">
+          <div className="card-body text-center">
+            <div className="flex justify-center mb-4">
+              <span className="loading loading-spinner loading-lg text-primary"></span>
+            </div>
+
+            <h2 className="card-title justify-center text-2xl mb-2">
+              Loading Media Matcher
+            </h2>
+
+            <p className="text-base-content/70 mb-4">
+              Preparing your logs for media matching...
+            </p>
+
+            <div className="divider">Please wait</div>
+
+            <div className="alert alert-info">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+                className="stroke-current shrink-0 w-6 h-6"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                ></path>
+              </svg>
+              <div className="text-sm">
+                <div className="font-semibold">This may take a moment</div>
+                <div>Loading and processing your media logs</div>
+              </div>
+            </div>
+
+            <div className="flex justify-center gap-2 mt-4">
+              <span className="loading loading-dots loading-sm"></span>
+              <span
+                className="loading loading-dots loading-sm"
+                style={{ animationDelay: '0.2s' }}
+              ></span>
+              <span
+                className="loading loading-dots loading-sm"
+                style={{ animationDelay: '0.4s' }}
+              ></span>
+            </div>
+
+            <div className="text-xs text-base-content/50 mt-2">
+              Fetching logs from database...
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (logError) {
+    return (
+      <div className="alert alert-error">
+        <span>Error loading manga logs</span>
+      </div>
+    );
+  }
 
   return (
     <div className="w-full p-4">
