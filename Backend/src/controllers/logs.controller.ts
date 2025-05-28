@@ -1179,9 +1179,11 @@ export async function recalculateXp(
             case 'manga':
             case 'vn':
             case 'video':
-            case 'other':
             case 'audio':
               log.xp = Math.max(timeXp, pagesXp, charsXp, episodesXp, 0);
+              break;
+            case 'other':
+              log.xp = 0;
               break;
           }
 
