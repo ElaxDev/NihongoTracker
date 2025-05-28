@@ -46,9 +46,11 @@ async function calculateXpForLog(log: ILog, req: Request): Promise<ILog> {
     case 'manga':
     case 'vn':
     case 'video':
-    case 'other':
     case 'audio':
       log.xp = Math.max(timeXp, pagesXp, charsXp, episodesXp);
+      break;
+    case 'other':
+      log.xp = 0;
       break;
     default:
       throw new customError('Invalid log type', 400);

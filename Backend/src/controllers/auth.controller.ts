@@ -49,7 +49,7 @@ export async function login(req: Request, res: Response, next: NextFunction) {
     if (!username || !password)
       throw new customError('Please provide username and password', 400);
 
-    const user = await User.findOne({ username: username }).collation({
+    const user = await User.findOne({ username: username.trim() }).collation({
       locale: 'en',
       strength: 2,
     });

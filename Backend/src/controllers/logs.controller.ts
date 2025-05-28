@@ -25,6 +25,7 @@ export async function getUntrackedLogs(
   try {
     const untrackedLogs = await Log.find({
       user: user._id,
+      type: { $in: ['anime', 'manga', 'reading', 'vn'] },
       mediaId: { $exists: false },
     });
     return res.status(200).json(untrackedLogs);
@@ -455,7 +456,8 @@ export async function deleteLog(
     if (!deletedLog) {
       throw new customError('Log not found or not authorized', 404);
     }
-    await updateStats(res, next);
+
+    await updateStats(res, next, true); // Pass true for deletion
     return res.sendStatus(204);
   } catch (error) {
     return next(error as customError);
@@ -1177,9 +1179,11 @@ export async function recalculateXp(
             case 'manga':
             case 'vn':
             case 'video':
-            case 'other':
             case 'audio':
               log.xp = Math.max(timeXp, pagesXp, charsXp, episodesXp, 0);
+              break;
+            case 'other':
+              log.xp = 0;
               break;
           }
 
