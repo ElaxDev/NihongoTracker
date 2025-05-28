@@ -376,6 +376,16 @@ export async function getImmersionList(
       },
     ]);
 
+    if (immersionList.length === 0) {
+      return res.status(200).json({
+        anime: [],
+        manga: [],
+        reading: [],
+        vn: [],
+        video: [],
+      });
+    }
+
     const result: Record<MediaType, IMediaDocument[]> = {
       anime: [],
       manga: [],
