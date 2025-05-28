@@ -391,7 +391,7 @@ function LogScreen() {
                             Number(e.target.value)
                           )
                         }
-                        value={logData.watchedEpisodes}
+                        value={logData.watchedEpisodes || ''}
                       />
                       {logData.episodes > 0 && (
                         <label className="label">
@@ -424,34 +424,38 @@ function LogScreen() {
                             <span className="label-text">Time Spent</span>
                           </label>
                           <div className="join">
-                            <input
-                              type="number"
-                              min="0"
-                              placeholder="Hours"
-                              className="input input-bordered join-item w-1/2"
-                              onChange={(e) =>
-                                handleInputChange(
-                                  'hours',
-                                  Number(e.target.value)
-                                )
-                              }
-                              value={logData.hours}
-                              onInput={preventNegativeValues}
-                            />
-                            <input
-                              type="number"
-                              min="0"
-                              placeholder="Minutes"
-                              className="input input-bordered join-item w-1/2"
-                              onChange={(e) =>
-                                handleInputChange(
-                                  'minutes',
-                                  Number(e.target.value)
-                                )
-                              }
-                              value={logData.minutes}
-                              onInput={preventNegativeValues}
-                            />
+                            <label className="input input-bordered join-item w-1/2">
+                              <span className="label">Hours</span>
+                              <input
+                                type="number"
+                                min="0"
+                                placeholder="0"
+                                onChange={(e) =>
+                                  handleInputChange(
+                                    'hours',
+                                    Number(e.target.value)
+                                  )
+                                }
+                                value={logData.hours || ''}
+                                onInput={preventNegativeValues}
+                              />
+                            </label>
+                            <label className="input input-bordered join-item w-1/2">
+                              <span className="label">Minutes</span>
+                              <input
+                                type="number"
+                                min="0"
+                                placeholder="0"
+                                onChange={(e) =>
+                                  handleInputChange(
+                                    'minutes',
+                                    Number(e.target.value)
+                                  )
+                                }
+                                value={logData.minutes || ''}
+                                onInput={preventNegativeValues}
+                              />
+                            </label>
                           </div>
                         </div>
                       )}
@@ -477,7 +481,7 @@ function LogScreen() {
                                 Number(e.target.value)
                               )
                             }
-                            value={logData.readChars}
+                            value={logData.readChars || ''}
                           />
                         </div>
                       )}
@@ -500,7 +504,7 @@ function LogScreen() {
                                 Number(e.target.value)
                               )
                             }
-                            value={logData.readPages}
+                            value={logData.readPages || ''}
                           />
                         </div>
                       )}
