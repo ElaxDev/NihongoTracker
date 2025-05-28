@@ -38,21 +38,37 @@ const themes = [
   'silk',
 ];
 
-export default function ThemeSwitcher() {
-  const [theme, setTheme] = useState(
-    () => localStorage.getItem('theme') || 'dark'
-  );
+// Initialize theme immediately (before React renders)
+const getInitialTheme = () => {
+  if (typeof window !== 'undefined') {
+    const saved = localStorage.getItem('theme');
+    return saved || 'dark';
+  }
+  return 'dark';
+};
 
-  // Cambia el tema y guarda en localStorage
+// Set theme on document immediately
+const initialTheme = getInitialTheme();
+if (typeof document !== 'undefined') {
+  document.documentElement.setAttribute('data-theme', initialTheme);
+}
+
+export default function ThemeSwitcher() {
+  const [theme, setTheme] = useState(initialTheme);
+
+  // Update theme and save to localStorage
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
     localStorage.setItem('theme', theme);
   }, [theme]);
 
-  // Sincroniza el tema entre pestañas
+  // Sync theme between tabs
   useEffect(() => {
     const onStorage = (e: StorageEvent) => {
-      if (e.key === 'theme' && e.newValue) setTheme(e.newValue);
+      if (e.key === 'theme' && e.newValue) {
+        setTheme(e.newValue);
+        document.documentElement.setAttribute('data-theme', e.newValue);
+      }
     };
     window.addEventListener('storage', onStorage);
     return () => window.removeEventListener('storage', onStorage);
