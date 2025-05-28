@@ -23,7 +23,8 @@ export function updateLevelAndXp(userStats: any, field: string) {
 
 export default async function updateStats(
   res: Response,
-  _next: NextFunction
+  _next: NextFunction,
+  isDelete: boolean = false
 ): Promise<void | IStats> {
   try {
     const user: IUser | null = await User.findById(res.locals.user.id);
@@ -48,20 +49,20 @@ export default async function updateStats(
       editedFields = log.editedFields;
     }
 
-    // Update XP fields
-    const xpUpdate = updateField(xp, editedFields?.xp);
-    userStats.userXp += xpUpdate;
+    // Modify XP update logic
+    const xpUpdate = isDelete ? -xp : updateField(xp, editedFields?.xp);
+    userStats.userXp = Math.max(0, userStats.userXp + xpUpdate);
 
     switch (type) {
       case 'anime':
       case 'video':
       case 'audio':
-        userStats.listeningXp += xpUpdate;
+        userStats.listeningXp = Math.max(0, userStats.listeningXp + xpUpdate);
         break;
       case 'manga':
       case 'reading':
       case 'vn':
-        userStats.readingXp += xpUpdate;
+        userStats.readingXp = Math.max(0, userStats.readingXp + xpUpdate);
         break;
       case 'other':
         break;

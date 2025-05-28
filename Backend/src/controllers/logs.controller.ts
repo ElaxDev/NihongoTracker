@@ -456,7 +456,8 @@ export async function deleteLog(
     if (!deletedLog) {
       throw new customError('Log not found or not authorized', 404);
     }
-    await updateStats(res, next);
+
+    await updateStats(res, next, true); // Pass true for deletion
     return res.sendStatus(204);
   } catch (error) {
     return next(error as customError);
