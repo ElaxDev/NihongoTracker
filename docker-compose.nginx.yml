@@ -9,6 +9,8 @@ services:
       - mongo
     volumes:
       - ./Backend/.env:/app/Backend/.env:ro
+    networks:
+      - nginx_default
 
   mongo:
     image: mongo:7
@@ -17,6 +19,12 @@ services:
       - "27017:27017"
     volumes:
       - mongo-data:/data/db
+    networks:
+      - nginx_default
 
 volumes:
   mongo-data:
+
+networks:
+  nginx_default:
+    external: true
