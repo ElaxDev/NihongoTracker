@@ -76,10 +76,8 @@ function AnimeLogs({ username, isActive = true }: AnimeLogsProps) {
 
   const stripSymbols = useCallback((description: string) => {
     return description
-      .replace(
-        /[^a-zA-Z\u3040-\u30FF\u4E00-\u9FFF -]|(?<![a-zA-Z\u3040-\u30FF\u4E00-\u9FFF])-|-(?![a-zA-Z\u3040-\u30FF\u4E00-\u9FFF])/g,
-        ''
-      )
+      .replace(/\s*[-–—:]\s*\d+.*$/g, '') // Remove trailing episode numbers and everything after
+      .replace(/\s+\d+\s*$/, '') // Remove standalone trailing numbers
       .trim();
   }, []);
 
