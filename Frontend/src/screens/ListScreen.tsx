@@ -35,16 +35,16 @@ function ListScreen() {
       <div className="w-full max-w-7xl mx-auto">
         <div className="grid grid-cols-1 md:grid-cols-[250px_1fr] gap-4 md:gap-6">
           {/* Sidebar with lists */}
-          <div className="card bg-base-100 shadow-sm">
-            <div className="p-4 border-b border-base-200">
-              <div className="font-bold text-xl">Lists</div>
-            </div>
-            <ul className="menu menu-md p-2 w-full">
+          <div className="lg:sticky lg:top-4 lg:self-start h-fit card bg-base-100 p-4">
+            <div className="font-bold text-xl">Lists</div>
+            <ul className="menu card-body w-full">
               {['anime', 'manga', 'vn', 'video', 'reading'].map((item) => (
-                <li key={item} className="capitalize">
+                <li
+                  key={item}
+                  className={`capitalize ${currentList === item ? 'bg-base-200 rounded-btn' : ''}`}
+                >
                   <a
                     onClick={() => setCurrentList(item as keyof IImmersionList)}
-                    className={currentList === item ? 'active' : ''}
                   >
                     {item === 'vn' ? 'Visual Novel' : item}
                   </a>
@@ -93,7 +93,9 @@ function ListScreen() {
                     {list[currentList].map((item, index) => (
                       <div key={index} className="flex flex-col">
                         <Link
-                          to={`/${currentList}/${item.contentId}`}
+                          to={`/${currentList}/${item.contentId}/${
+                            username || user?.username
+                          }`}
                           className="h-auto w-full aspect-[3/4] rounded-md overflow-hidden"
                         >
                           <img

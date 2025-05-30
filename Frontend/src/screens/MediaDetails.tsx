@@ -1,20 +1,18 @@
 import { useOutletContext } from 'react-router-dom';
 import { OutletMediaContextType } from '../types';
-import { useUserDataStore } from '../store/userData';
 import ProgressChart from '../components/ProgressChart';
 import { useQuery } from '@tanstack/react-query';
 import { getUserLogsFn } from '../api/trackerApi';
 import { numberWithCommas } from '../utils/utils';
 
 function MediaDetails() {
-  const { mediaDocument, mediaType } =
+  const { mediaDocument, mediaType, username } =
     useOutletContext<OutletMediaContextType>();
-  const { user } = useUserDataStore();
 
   const { data: logs } = useQuery({
-    queryKey: [user?.username, 'logs', 'total', mediaDocument?.contentId],
+    queryKey: [username, 'logs', 'total', mediaDocument?.contentId],
     queryFn: () =>
-      getUserLogsFn(user?.username ?? '', {
+      getUserLogsFn(username ?? '', {
         mediaId: mediaDocument?.contentId,
         type: mediaDocument?.type,
         limit: 0,
@@ -110,7 +108,9 @@ function MediaDetails() {
 
           {/* Immersion Overview Card - Full width on mobile */}
           <div className="card bg-base-100 shadow-sm p-4 sm:p-6 w-full h-full flex flex-col gap-3 md:gap-4">
-            <p className="font-bold text-lg sm:text-xl">Immersion Overview</p>
+            <p className="font-bold text-lg sm:text-xl capitalize">
+              {username}'s overview
+            </p>
             <div className="flex flex-col gap-2">
               <p className="font-bold">Total XP</p>
               <p>{totalXp}</p>
