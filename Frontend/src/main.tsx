@@ -49,7 +49,7 @@ const router = createBrowserRouter(
         <Route index path="createlog" element={<LogScreen />} />
         <Route path="matchmedia" element={<MatchMedia />} />
       </Route>
-      <Route path=":mediaType/:mediaId" element={<MediaHeader />}>
+      <Route path=":mediaType/:mediaId/:username?" element={<MediaHeader />}>
         <Route index element={<MediaDetails />} />
       </Route>
       <Route path="404" element={<NotFound />} />

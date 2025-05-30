@@ -9,12 +9,17 @@ import { useEffect, useState } from 'react';
 import DOMPurify from 'dompurify';
 import { convertBBCodeToHtml } from '../utils/utils';
 import QuickLog from '../components/QuickLog';
+import { useUserDataStore } from '../store/userData';
 
 export default function MediaHeader() {
-  const { mediaType, mediaId } = useParams<{
+  const { mediaType, mediaId, username } = useParams<{
     mediaType: string;
     mediaId: string;
+    username?: string;
   }>();
+
+  const { user } = useUserDataStore();
+
   const navigate = useNavigate();
   const [averageColor, setAverageColor] = useState<string>('#ffffff');
   const [logModalOpen, setLogModalOpen] = useState(false);
@@ -152,7 +157,11 @@ export default function MediaHeader() {
 
       <Outlet
         context={
-          { mediaDocument: media, mediaType } satisfies OutletMediaContextType
+          {
+            mediaDocument: media,
+            mediaType,
+            username: username || user?.username,
+          } satisfies OutletMediaContextType
         }
       />
     </div>

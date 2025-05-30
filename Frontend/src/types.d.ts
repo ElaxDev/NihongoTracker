@@ -27,6 +27,7 @@ export type OutletProfileContextType = {
 export type OutletMediaContextType = {
   mediaDocument: IMediaDocument | undefined;
   mediaType: string | undefined;
+  username?: string;
 };
 
 export interface IStats {
