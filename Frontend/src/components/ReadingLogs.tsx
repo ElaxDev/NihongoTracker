@@ -72,11 +72,9 @@ function ReadingLogs({ username, isActive = true }: ReadingLogsProps) {
 
   const stripSymbols = useCallback((description: string) => {
     return description
-      .replace(/\s*v\d+\s*$/i, '')
-      .replace(
-        /[^a-zA-Z\u3040-\u30FF\u4E00-\u9FFF -]|(?<![a-zA-Z\u3040-\u30FF\u4E00-\u9FFF])-|-(?![a-zA-Z\u3040-\u30FF\u4E00-\u9FFF])/g,
-        ''
-      )
+      .replace(/\s*[-–—:]\s*\d+.*$/g, '') // Remove trailing episode/chapter numbers and everything after
+      .replace(/\s+\d+\s*$/, '') // Remove standalone trailing numbers
+      .replace(/\s+v(ol(ume)?)?\s*\d+\s*$/i, '') // Remove trailing volume indicators like "v06", "vol 06", "volume 06"
       .trim();
   }, []);
 
