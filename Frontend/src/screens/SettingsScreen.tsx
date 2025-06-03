@@ -30,6 +30,11 @@ function SettingsScreen() {
     onSuccess: (data: ILoginResponse) => {
       toast.success('User updated');
       setUser(data);
+      void queryClient.invalidateQueries({
+        predicate: (query) => {
+          return ['user', 'ranking'].includes(query.queryKey[0] as string);
+        },
+      });
     },
     onError: (error) => {
       if (error instanceof AxiosError) {
@@ -46,7 +51,9 @@ function SettingsScreen() {
       toast.success(data.message);
       void queryClient.invalidateQueries({
         predicate: (query) => {
-          return ['logs', 'user'].includes(query.queryKey[0] as string);
+          return ['logs', 'user', 'ranking'].includes(
+            query.queryKey[0] as string
+          );
         },
       });
     },
