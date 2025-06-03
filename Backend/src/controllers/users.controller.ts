@@ -101,6 +101,13 @@ export async function updateUser(
     }
 
     if (discordId) {
+      if (!discordId.match(/^\d{17,19}$/)) {
+        throw new customError('Invalid Discord ID format', 400);
+      }
+      const existingUser = await User.findOne({ discordId });
+      if (existingUser && existingUser._id.toString() !== user._id.toString()) {
+        throw new customError('Discord ID already linked to another user', 400);
+      }
       user.discordId = discordId;
     }
 

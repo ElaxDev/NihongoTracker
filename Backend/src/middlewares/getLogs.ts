@@ -3,7 +3,7 @@ import axios from 'axios';
 import { customError } from './errorMiddleware.js';
 import { IUser, ILog, csvLogs } from '../types.js';
 import { Types } from 'mongoose';
-import User from "../models/user.model.js";
+import User from '../models/user.model.js';
 
 type manabeLogs = {
   descripcion: string;
@@ -41,8 +41,8 @@ interface ILogCSVTypeMap {
 
 interface ManabeWebhookBody {
   userDiscordId: string;
-  logInfo:manabeLogs;
-  token:string;
+  logInfo: manabeLogs;
+  token: string;
 }
 
 interface ILogNT {
@@ -142,32 +142,31 @@ export async function getLogsFromAPI(
   }
 }
 
-
 export async function importManabeLog(
-    req: Request,
-    res: Response,
-    next: NextFunction
-){
-    const {token, userDiscordId, logInfo} = req.body as ManabeWebhookBody;
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
+  const { token, userDiscordId, logInfo } = req.body as ManabeWebhookBody;
 
-    if(token!== process.env.MANABE_WEBHOOK_TOKEN) {
-      return res.status(403).json({message: "Forbidden"});
-    }
+  if (token !== process.env.MANABE_WEBHOOK_TOKEN) {
+    return res.status(403).json({ message: 'Forbidden' });
+  }
 
-    if(!userDiscordId || !logInfo) {
-      return res.status(400).json({message: "Bad Request"});
-    }
+  if (!userDiscordId || !logInfo) {
+    return res.status(400).json({ message: 'Bad Request' });
+  }
 
-    const user = await User.findOne({discordId: userDiscordId});
+  const user = await User.findOne({ discordId: userDiscordId });
 
-    if(!user) {
-      return res.status(404).json({message: "User not found"});
-    }
+  if (!user) {
+    return res.status(404).json({ message: 'User not found' });
+  }
 
-    res.locals.user = user;
-    req.body.logs = transformManabeLogsList([logInfo],user)
+  res.locals.user = user;
+  req.body.logs = transformManabeLogsList([logInfo], user);
 
-    return next()
+  return next();
 }
 
 function transformCSVLogsList(
