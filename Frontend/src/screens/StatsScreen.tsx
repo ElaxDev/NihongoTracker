@@ -251,6 +251,60 @@ function StatsScreen() {
             </div>
           </div>
 
+          {/* Reading and Listening Hours - only show for 'all' type */}
+          {currentType === 'all' && (
+            <div className="stats shadow bg-base-100">
+              <div className="stat">
+                <div className="stat-title">Reading Hours</div>
+                <div className="stat-value text-info">
+                  {userStats?.totals.readingHours
+                    ? numberWithCommas(
+                        parseFloat(userStats.totals.readingHours.toFixed(1))
+                      )
+                    : 0}
+                  <span className="text-lg">h</span>
+                </div>
+                <div className="stat-desc">Reading, Manga, Visual Novels</div>
+              </div>
+
+              <div className="stat">
+                <div className="stat-title">Listening Hours</div>
+                <div className="stat-value text-success">
+                  {userStats?.totals.listeningHours
+                    ? numberWithCommas(
+                        parseFloat(userStats.totals.listeningHours.toFixed(1))
+                      )
+                    : 0}
+                  <span className="text-lg">h</span>
+                </div>
+                <div className="stat-desc">Anime, Video, Audio</div>
+              </div>
+
+              <div className="stat">
+                <div className="stat-title">Balance</div>
+                <div className="stat-value text-warning">
+                  {userStats?.totals.readingHours &&
+                  userStats?.totals.listeningHours &&
+                  userStats.totals.readingHours +
+                    userStats.totals.listeningHours >
+                    0
+                    ? (() => {
+                        const total =
+                          userStats.totals.readingHours +
+                          userStats.totals.listeningHours;
+                        const readingRatio = Math.round(
+                          (userStats.totals.readingHours / total) * 10
+                        );
+                        const listeningRatio = 10 - readingRatio;
+                        return `${readingRatio}:${listeningRatio}`;
+                      })()
+                    : '0:0'}
+                </div>
+                <div className="stat-desc">Reading/Listening ratio</div>
+              </div>
+            </div>
+          )}
+
           {currentType === 'all' && (
             <div className="flex flex-col lg:flex-row justify-between gap-7">
               <div className="card bg-base-100 p-4">

@@ -849,27 +849,30 @@ interface IGetUserStatsQuery {
   type?: 'all' | 'anime' | 'manga' | 'reading' | 'audio' | 'video';
 }
 
+interface IStatByType {
+  type: string;
+  count: number;
+  totalXp: number;
+  totalTimeMinutes: number;
+  totalTimeHours: number;
+  untrackedCount: number;
+  dates: Array<{
+    date: Date;
+    xp: number;
+    time?: number;
+    episodes?: number;
+  }>;
+}
+
 interface IUserStats {
   totals: {
     totalLogs: number;
     totalXp: number;
     totalTimeHours: number;
+    readingHours: number;
+    listeningHours: number;
     untrackedCount: number;
   };
-  statsByType: Array<{
-    type: string;
-    count: number;
-    totalXp: number;
-    totalTimeMinutes: number;
-    totalTimeHours: number;
-    untrackedCount: number;
-    dates: Array<{
-      date: Date;
-      xp: number;
-      time?: number;
-      episodes?: number;
-    }>;
-  }>;
   readingSpeedData?: Array<{
     date: Date;
     type: string;
@@ -945,7 +948,7 @@ export async function getUserStats(
     ];
 
     // Aggregate stats by type
-    const statsByType = await Log.aggregate([
+    const statsByType: IStatByType[] = await Log.aggregate([
       { $match: match },
       {
         $group: {
@@ -1027,7 +1030,7 @@ export async function getUserStats(
     ]);
 
     // Create a complete dataset with all types (even if empty)
-    const completeStats = logTypes.map((type) => {
+    const completeStats: IStatByType[] = logTypes.map((type) => {
       const typeStat = statsByType.find((stat) => stat.type === type);
       return (
         typeStat || {
@@ -1049,12 +1052,22 @@ export async function getUserStats(
         acc.totalXp += stat.totalXp;
         acc.totalTimeHours += stat.totalTimeHours;
         acc.untrackedCount += stat.untrackedCount;
+
+        // Separate reading and listening hours
+        if (['reading', 'manga', 'vn'].includes(stat.type)) {
+          acc.readingHours += stat.totalTimeHours;
+        } else if (['anime', 'video', 'audio'].includes(stat.type)) {
+          acc.listeningHours += stat.totalTimeHours;
+        }
+
         return acc;
       },
       {
         totalLogs: 0,
         totalXp: 0,
         totalTimeHours: 0,
+        readingHours: 0,
+        listeningHours: 0,
         untrackedCount: 0,
       }
     );

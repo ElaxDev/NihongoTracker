@@ -338,6 +338,8 @@ interface IUserStats {
     totalLogs: number;
     totalXp: number;
     totalTimeHours: number;
+    readingHours: number;
+    listeningHours: number;
     untrackedCount: number;
   };
   statsByType: Array<{
