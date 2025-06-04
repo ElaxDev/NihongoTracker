@@ -409,9 +409,17 @@ export async function getUserLogs(
       });
     }
 
+    console.log(
+      `Fetching logs for user: ${req.params.username}, type: ${type || 'all'}, limit: ${limit}`
+    );
+
     const logs = await Log.aggregate(pipeline, {
       collation: { locale: 'en', strength: 2 },
     });
+
+    console.log(
+      `Found ${logs.length} ${type || 'all'} logs for user: ${req.params.username}`
+    );
 
     if (!logs.length) return res.sendStatus(204);
 
@@ -532,7 +540,7 @@ export async function createLog(
     if (!type) throw new customError('Log type is required', 400);
     if (!description) throw new customError('Description is required', 400);
     let logMedia;
-
+    console.log(req.body);
     if (mediaId) {
       logMedia = await MediaBase.findOne({ contentId: mediaId });
     }
@@ -866,6 +874,7 @@ interface IUserStats {
     listeningHours: number;
     untrackedCount: number;
     totalChars: number;
+    dailyAverageHours: number;
   };
   readingSpeedData?: Array<{
     date: Date;
@@ -914,16 +923,36 @@ export async function getUserStats(
 
     // Build date filter
     let dateFilter: any = {};
+    let daysPeriod = 1; // Default for 'today'
     const now = new Date();
     if (timeRange === 'today') {
       const start = new Date(now.getFullYear(), now.getMonth(), now.getDate());
       dateFilter = { date: { $gte: start } };
+      daysPeriod = 1;
     } else if (timeRange === 'month') {
       const start = new Date(now.getFullYear(), now.getMonth(), 1);
       dateFilter = { date: { $gte: start } };
+      daysPeriod = now.getDate(); // Days elapsed in current month
     } else if (timeRange === 'year') {
       const start = new Date(now.getFullYear(), 0, 1);
       dateFilter = { date: { $gte: start } };
+      const dayOfYear =
+        Math.floor((now.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) +
+        1;
+      daysPeriod = dayOfYear;
+    } else if (timeRange === 'total') {
+      // For total, calculate days from first log to now
+      const firstLog = await Log.findOne({ user: user._id }).sort({ date: 1 });
+      if (firstLog) {
+        const firstLogDate = firstLog.date ?? new Date(0);
+        const daysDiff =
+          Math.floor(
+            (now.getTime() - firstLogDate.getTime()) / (1000 * 60 * 60 * 24)
+          ) + 1;
+        daysPeriod = daysDiff;
+      } else {
+        daysPeriod = 1; // Fallback if no logs exist
+      }
     }
 
     // Build match filter for aggregation (this affects what gets aggregated)
@@ -934,6 +963,21 @@ export async function getUserStats(
     if (type !== 'all') {
       totalsMatch.type = type;
     }
+
+    // First, let's get the raw logs to see what we're working with
+    const rawLogs = await Log.find(totalsMatch).select(
+      'type chars description date'
+    );
+
+    let totalCharsFromRaw = 0;
+    rawLogs.forEach((log, index) => {
+      if (log.chars && log.chars > 0) {
+        console.log(
+          `Log ${index + 1}: type=${log.type}, chars=${log.chars}, description="${log.description}", date=${log.date}`
+        );
+        totalCharsFromRaw += log.chars;
+      }
+    });
 
     const logTypes = [
       'reading',
@@ -1027,6 +1071,13 @@ export async function getUserStats(
       },
     ]);
 
+    console.log('Stats by type from aggregation:');
+    statsByType.forEach((stat) => {
+      console.log(
+        `  ${stat.type}: ${stat.totalChars} chars from ${stat.count} logs`
+      );
+    });
+
     // Calculate totals based on the filtered data (respects type filter)
     const filteredStatsByType =
       type === 'all'
@@ -1058,8 +1109,13 @@ export async function getUserStats(
         listeningHours: 0,
         untrackedCount: 0,
         totalChars: 0,
+        dailyAverageHours: 0,
       }
     );
+
+    // Calculate daily average hours
+    totals.dailyAverageHours =
+      daysPeriod > 0 ? totals.totalTimeHours / daysPeriod : 0;
 
     // Create a complete dataset with all types (for charts)
     const completeStats: IStatByType[] = logTypes.map((type) => {

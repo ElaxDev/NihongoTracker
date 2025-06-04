@@ -340,8 +340,9 @@ interface IUserStats {
     totalTimeHours: number;
     readingHours: number;
     listeningHours: number;
-    totalChars: number;
     untrackedCount: number;
+    totalChars: number;
+    dailyAverageHours: number;
   };
   statsByType: Array<{
     type: string;
