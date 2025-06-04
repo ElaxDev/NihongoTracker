@@ -340,6 +340,7 @@ interface IUserStats {
     totalTimeHours: number;
     readingHours: number;
     listeningHours: number;
+    totalChars: number;
     untrackedCount: number;
   };
   statsByType: Array<{
@@ -348,6 +349,7 @@ interface IUserStats {
     totalXp: number;
     totalTimeMinutes: number;
     totalTimeHours: number;
+    totalChars: number;
     untrackedCount: number;
     dates: Array<{
       date: Date;

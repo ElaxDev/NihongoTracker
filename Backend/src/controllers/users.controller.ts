@@ -324,10 +324,9 @@ export async function clearUserData(
     }
 
     await user.updateOne({
-      discordId: '',
       clubs: [],
       titles: [],
-      $unset: { stats: '', lastImport: '' },
+      $unset: { stats: '', lastImport: '', discordId: '' },
     });
 
     await Log.deleteMany({ user: user._id });

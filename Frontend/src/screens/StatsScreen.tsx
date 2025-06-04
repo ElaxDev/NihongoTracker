@@ -305,6 +305,36 @@ function StatsScreen() {
             </div>
           )}
 
+          {/* Total Characters - only show for reading types or all */}
+          {(currentType === 'all' ||
+            ['reading', 'manga', 'vn'].includes(currentType)) && (
+            <div className="stats shadow bg-base-100">
+              <div className="stat">
+                <div className="stat-title">Total Characters</div>
+                <div className="stat-value text-info">
+                  {(() => {
+                    if (currentType === 'all') {
+                      return numberWithCommas(
+                        userStats?.totals.totalChars || 0
+                      );
+                    } else {
+                      // For specific type, get the totalChars from that type's stats
+                      const typeStats = userStats?.statsByType.find(
+                        (stat) => stat.type === currentType
+                      );
+                      return numberWithCommas(typeStats?.totalChars || 0);
+                    }
+                  })()}
+                </div>
+                <div className="stat-desc">
+                  {currentType === 'all'
+                    ? 'Characters read across all reading types'
+                    : `Characters read in ${currentType} logs`}
+                </div>
+              </div>
+            </div>
+          )}
+
           {currentType === 'all' && (
             <div className="flex flex-col lg:flex-row justify-between gap-7">
               <div className="card bg-base-100 p-4">

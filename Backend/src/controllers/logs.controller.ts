@@ -409,17 +409,9 @@ export async function getUserLogs(
       });
     }
 
-    console.log(
-      `Fetching logs for user: ${req.params.username}, type: ${type || 'all'}, limit: ${limit}`
-    );
-
     const logs = await Log.aggregate(pipeline, {
       collation: { locale: 'en', strength: 2 },
     });
-
-    console.log(
-      `Found ${logs.length} ${type || 'all'} logs for user: ${req.params.username}`
-    );
 
     if (!logs.length) return res.sendStatus(204);
 
@@ -540,7 +532,7 @@ export async function createLog(
     if (!type) throw new customError('Log type is required', 400);
     if (!description) throw new customError('Description is required', 400);
     let logMedia;
-    console.log(req.body);
+
     if (mediaId) {
       logMedia = await MediaBase.findOne({ contentId: mediaId });
     }
@@ -853,6 +845,7 @@ interface IStatByType {
   type: string;
   count: number;
   totalXp: number;
+  totalChars: number;
   totalTimeMinutes: number;
   totalTimeHours: number;
   untrackedCount: number;
@@ -872,6 +865,7 @@ interface IUserStats {
     readingHours: number;
     listeningHours: number;
     untrackedCount: number;
+    totalChars: number;
   };
   readingSpeedData?: Array<{
     date: Date;
@@ -894,6 +888,7 @@ export async function getUserStats(
     const { username } = req.params;
     const { timeRange = 'total', type = 'all' } =
       req.query as IGetUserStatsQuery;
+
     // Validate timeRange
     const validTimeRanges = ['today', 'month', 'year', 'total'];
     if (!validTimeRanges.includes(timeRange)) {
@@ -931,10 +926,13 @@ export async function getUserStats(
       dateFilter = { date: { $gte: start } };
     }
 
-    // Build type filter
-    let match: any = { user: user._id, ...dateFilter };
+    // Build match filter for aggregation (this affects what gets aggregated)
+    let aggregationMatch: any = { user: user._id, ...dateFilter };
+
+    // Build match filter for totals calculation
+    let totalsMatch: any = { user: user._id, ...dateFilter };
     if (type !== 'all') {
-      match.type = type;
+      totalsMatch.type = type;
     }
 
     const logTypes = [
@@ -947,14 +945,15 @@ export async function getUserStats(
       'other',
     ];
 
-    // Aggregate stats by type
+    // Aggregate stats by type (always get all types for the statsByType array)
     const statsByType: IStatByType[] = await Log.aggregate([
-      { $match: match },
+      { $match: aggregationMatch },
       {
         $group: {
           _id: '$type',
           count: { $sum: 1 },
           totalXp: { $sum: '$xp' },
+          totalChars: { $sum: { $ifNull: ['$chars', 0] } },
           totalTime: {
             $sum: {
               $cond: [
@@ -978,7 +977,6 @@ export async function getUserStats(
               ],
             },
           },
-          // Add additional fields for detailed charts
           untrackedCount: {
             $sum: {
               $cond: [
@@ -1004,7 +1002,6 @@ export async function getUserStats(
               ],
             },
           },
-          // Collect dates for progress charts
           dates: {
             $push: {
               date: '$date',
@@ -1021,6 +1018,7 @@ export async function getUserStats(
           type: '$_id',
           count: 1,
           totalXp: 1,
+          totalChars: 1,
           totalTimeMinutes: '$totalTime',
           totalTimeHours: { $divide: ['$totalTime', 60] },
           untrackedCount: 1,
@@ -1029,29 +1027,19 @@ export async function getUserStats(
       },
     ]);
 
-    // Create a complete dataset with all types (even if empty)
-    const completeStats: IStatByType[] = logTypes.map((type) => {
-      const typeStat = statsByType.find((stat) => stat.type === type);
-      return (
-        typeStat || {
-          type,
-          count: 0,
-          totalXp: 0,
-          totalTimeMinutes: 0,
-          totalTimeHours: 0,
-          untrackedCount: 0,
-          dates: [],
-        }
-      );
-    });
+    // Calculate totals based on the filtered data (respects type filter)
+    const filteredStatsByType =
+      type === 'all'
+        ? statsByType
+        : statsByType.filter((stat) => stat.type === type);
 
-    // Calculate overall totals
-    const totals = statsByType.reduce(
+    const totals = filteredStatsByType.reduce(
       (acc, stat) => {
         acc.totalLogs += stat.count;
         acc.totalXp += stat.totalXp;
         acc.totalTimeHours += stat.totalTimeHours;
         acc.untrackedCount += stat.untrackedCount;
+        acc.totalChars += stat.totalChars || 0;
 
         // Separate reading and listening hours
         if (['reading', 'manga', 'vn'].includes(stat.type)) {
@@ -1069,8 +1057,26 @@ export async function getUserStats(
         readingHours: 0,
         listeningHours: 0,
         untrackedCount: 0,
+        totalChars: 0,
       }
     );
+
+    // Create a complete dataset with all types (for charts)
+    const completeStats: IStatByType[] = logTypes.map((type) => {
+      const typeStat = statsByType.find((stat) => stat.type === type);
+      return (
+        typeStat || {
+          type,
+          count: 0,
+          totalXp: 0,
+          totalChars: 0,
+          totalTimeMinutes: 0,
+          totalTimeHours: 0,
+          untrackedCount: 0,
+          dates: [],
+        }
+      );
+    });
 
     // Calculate reading speed data for reading-type logs
     const readingSpeedData =

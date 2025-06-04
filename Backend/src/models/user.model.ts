@@ -15,7 +15,7 @@ const UserSchema = new Schema<IUser>(
       },
     },
     password: { type: String, required: true },
-    discordId: { type: String, default: '', unique: true },
+    discordId: { type: String, sparse: true, unique: true },
     stats: {
       userLevel: { type: Number, required: true, default: 1 },
       userXp: { type: Number, required: true, default: 0 },
