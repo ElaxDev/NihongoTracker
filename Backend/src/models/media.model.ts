@@ -46,4 +46,10 @@ const Manga = MediaBase.discriminator('manga', MangaSchema);
 
 const Reading = MediaBase.discriminator('reading', MangaSchema);
 
-export { MediaBase, Anime, Manga, Reading };
+const VideoSchema = new Schema({
+  // Empty - storing YouTube channels, not individual videos
+});
+
+const Video = MediaBase.discriminator('video', VideoSchema);
+
+export { MediaBase, Anime, Manga, Reading, Video };

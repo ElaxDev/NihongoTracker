@@ -1,5 +1,11 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { ICreateLog, ILog, ILoginResponse, IMediaDocument } from '../types';
+import {
+  ICreateLog,
+  ILog,
+  ILoginResponse,
+  IMediaDocument,
+  youtubeChannelInfo,
+} from '../types';
 import { createLogFn, getUserFn } from '../api/trackerApi';
 import { toast } from 'react-toastify';
 import { AxiosError } from 'axios';
@@ -36,6 +42,9 @@ interface logDataType {
   img: undefined | string;
   cover: undefined | string;
   date: Date | undefined;
+  // YouTube specific fields
+  youtubeChannelInfo: youtubeChannelInfo | null;
+  createMedia: boolean;
 }
 
 function LogScreen() {
@@ -67,21 +76,23 @@ function LogScreen() {
     img: undefined,
     cover: undefined,
     date: undefined,
+    youtubeChannelInfo: null,
+    createMedia: false,
   });
 
   const [isSuggestionsOpen, setIsSuggestionsOpen] = useState(false);
-  const [shouldAnilistSearch, setShouldAnilistSearch] = useState(true);
   const [isAdvancedOptions, setIsAdvancedOptions] = useState<boolean>(false);
   const suggestionRef = useRef<HTMLDivElement>(null);
   const { user, setUser } = useUserDataStore();
 
+  // Use search hook for all types (it will handle YouTube vs AniList internally)
   const {
     data: searchResult,
     error: searchError,
     isLoading: isSearching,
   } = useSearch(
-    shouldAnilistSearch ? (logData.type ?? '') : '',
-    shouldAnilistSearch ? logData.mediaName : '',
+    logData.type ?? '', // Always pass the type
+    logData.mediaName, // Always pass the search term
     undefined,
     1,
     5
@@ -125,8 +136,9 @@ function LogScreen() {
         img: undefined,
         cover: undefined,
         date: undefined,
+        youtubeChannelInfo: null,
+        createMedia: false,
       });
-      setShouldAnilistSearch(false);
       void queryClient.invalidateQueries({
         predicate: (query) =>
           ['logs', user?.username, 'user'].includes(
@@ -165,7 +177,15 @@ function LogScreen() {
 
   const handleInputChange = (
     field: keyof typeof logData,
-    value: string | number | null | Date | boolean | string[] | undefined
+    value:
+      | string
+      | number
+      | null
+      | Date
+      | boolean
+      | string[]
+      | undefined
+      | youtubeChannelInfo
   ) => {
     setLogData((prev) => ({ ...prev, [field]: value }));
   };
@@ -174,37 +194,75 @@ function LogScreen() {
     if (e.target.valueAsNumber < 0) e.target.value = '0';
   };
 
-  const handleSuggestionClick = (group: IMediaDocument) => {
-    handleInputChange('titleNative', group.title.contentTitleNative);
-    handleInputChange('titleRomaji', group.title.contentTitleRomaji ?? '');
-    handleInputChange('titleEnglish', group.title.contentTitleEnglish ?? '');
-    handleInputChange('mediaId', group.contentId);
-    handleInputChange('cover', group.coverImage ?? '');
-    handleInputChange(
-      'mediaName',
-      group.title.contentTitleRomaji
-        ? group.title.contentTitleRomaji
-        : group.title.contentTitleEnglish
-          ? group.title.contentTitleEnglish
-          : group.title.contentTitleNative
-    );
-    handleInputChange('synonyms', group.synonyms ?? []);
-    handleInputChange('isAdult', group.isAdult);
-    handleInputChange('duration', group.episodeDuration ?? 0);
-    handleInputChange('img', group.contentImage ?? '');
-    handleInputChange('mediaDescription', group.description);
-    handleInputChange('episodes', group.episodes ?? 0);
+  const handleSuggestionClick = (
+    group: IMediaDocument & { __youtubeChannelInfo?: youtubeChannelInfo }
+  ) => {
+    // Handle YouTube video selection
+    if (logData.type === 'video' && group.__youtubeChannelInfo) {
+      // Set video title as media name/description
+      handleInputChange('mediaName', group.title.contentTitleNative);
+      handleInputChange('description', group.title.contentTitleNative);
+      handleInputChange('titleNative', group.title.contentTitleNative);
+      handleInputChange('titleEnglish', group.title.contentTitleEnglish);
+
+      // Use channel ID as the mediaId (for grouping videos by channel)
+      handleInputChange('mediaId', group.__youtubeChannelInfo.channelId);
+      handleInputChange('img', group.contentImage);
+      handleInputChange('cover', group.__youtubeChannelInfo.channelImage);
+
+      // Store channel info for media creation
+      handleInputChange('youtubeChannelInfo', {
+        channelId: group.__youtubeChannelInfo.channelId,
+        channelTitle: group.__youtubeChannelInfo.channelTitle,
+        channelImage: group.__youtubeChannelInfo.channelImage,
+        channelDescription: group.__youtubeChannelInfo.channelDescription,
+      });
+
+      // Auto-fill duration if available
+      if (group.episodeDuration) {
+        const totalMinutes = group.episodeDuration;
+        const hours = Math.floor(totalMinutes / 60);
+        const minutes = totalMinutes % 60;
+        handleInputChange('hours', hours);
+        handleInputChange('minutes', minutes);
+      }
+
+      // Enable media creation
+      handleInputChange('createMedia', true);
+    } else {
+      // Handle regular AniList content
+      handleInputChange('titleNative', group.title.contentTitleNative);
+      handleInputChange('titleRomaji', group.title.contentTitleRomaji ?? '');
+      handleInputChange('titleEnglish', group.title.contentTitleEnglish ?? '');
+      handleInputChange('mediaId', group.contentId);
+      handleInputChange('img', group.contentImage);
+      handleInputChange('cover', group.coverImage);
+      handleInputChange('description', group.title.contentTitleNative);
+    }
+
     setIsSuggestionsOpen(false);
   };
 
   const logSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const totalMinutes = logData.hours * 60 + logData.minutes;
-    createLog({
-      type: logData.type,
-      mediaId: logData.mediaId,
-      description: logData.description || logData.mediaName,
-      mediaData: {
+
+    // Prepare media data based on log type
+    let mediaData = undefined;
+    let createMedia = false;
+
+    if (logData.type === 'video' && logData.youtubeChannelInfo) {
+      // YouTube video logging
+      mediaData = {
+        channelId: logData.youtubeChannelInfo.channelId,
+        channelTitle: logData.youtubeChannelInfo.channelTitle,
+        channelImage: logData.youtubeChannelInfo.channelImage,
+        channelDescription: logData.youtubeChannelInfo.channelDescription,
+      };
+      createMedia = true;
+    } else if (logData.type !== 'video' && logData.type !== 'audio') {
+      // Regular AniList content
+      mediaData = {
         contentId: logData.mediaId,
         contentTitleNative: logData.titleNative,
         contentTitleRomaji: logData.titleRomaji,
@@ -218,27 +276,27 @@ function LogScreen() {
         volumes: logData.volumes,
         isAdult: logData.isAdult,
         synonyms: logData.synonyms,
-      },
+      };
+      createMedia = !!logData.mediaId;
+    }
+
+    createLog({
+      type: logData.type,
+      mediaId: logData.mediaId,
+      description: logData.description || logData.mediaName,
+      mediaData,
       episodes: logData.watchedEpisodes,
       time: totalMinutes || undefined,
       chars: logData.readChars || undefined,
       pages: logData.readPages,
       date: logData.date,
+      createMedia,
     } as ICreateLog);
   };
 
   useEffect(() => {
     if (searchError) toast.error(`Error: ${searchError.message}`);
-    if (
-      logData.mediaName &&
-      ['anime', 'manga', 'reading', 'vn'].includes(logData.type ?? '') &&
-      !['video', 'audio'].includes(logData.type ?? '')
-    ) {
-      setShouldAnilistSearch(true);
-    } else if (['video', 'audio'].includes(logData.type ?? '')) {
-      setShouldAnilistSearch(false);
-    }
-  }, [searchError, logData.mediaName, logData.type]);
+  }, [searchError]);
 
   return (
     <div className="pt-24 pb-16 px-4 flex justify-center items-start bg-base-200 min-h-screen">
@@ -254,9 +312,13 @@ function LogScreen() {
               </label>
               <select
                 className="select select-bordered w-full"
-                onChange={(e) =>
-                  handleInputChange('type', e.target.value as ILog['type'])
-                }
+                onChange={(e) => {
+                  handleInputChange('type', e.target.value as ILog['type']);
+                  // Reset YouTube data when changing log type
+                  if (e.target.value !== 'video') {
+                    handleInputChange('youtubeChannelInfo', null);
+                  }
+                }}
                 value={logData.type || 'Log type'}
               >
                 <option disabled value="Log type">
@@ -274,15 +336,23 @@ function LogScreen() {
             {logData.type && (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-6">
-                  {/* Media Name Input with Suggestions */}
+                  {/* Media Name Input with Unified Suggestions */}
                   <div className="form-control">
                     <label className="label">
-                      <span className="label-text font-medium">Media Name</span>
+                      <span className="label-text font-medium">
+                        {logData.type === 'video'
+                          ? 'YouTube URL or Video Title'
+                          : 'Media Name'}
+                      </span>
                     </label>
                     <div className="relative">
                       <input
                         type="text"
-                        placeholder="Search for media..."
+                        placeholder={
+                          logData.type === 'video'
+                            ? 'https://youtube.com/watch?v=... or video title'
+                            : 'Search for media...'
+                        }
                         className="input input-bordered w-full"
                         onFocus={() => setIsSuggestionsOpen(true)}
                         onBlur={() => {
@@ -300,48 +370,97 @@ function LogScreen() {
                       )}
                     </div>
 
-                    {/* Search Suggestions */}
+                    {/* Unified Search Suggestions */}
                     <div ref={suggestionRef} className="relative">
                       {isSuggestionsOpen &&
                         searchResult &&
                         searchResult.length > 0 && (
-                          <ul className="menu menu-vertical bg-base-200 rounded-box w-full shadow-lg mt-1 absolute z-50 overflow-y-auto">
-                            {searchResult.map((group, i) => (
-                              <li
-                                key={i}
-                                onClick={() => handleSuggestionClick(group)}
-                                className="w-full"
-                              >
-                                <a className="flex items-center gap-2 w-full whitespace-normal">
-                                  {group.contentImage && (
-                                    <div className="avatar w-8 h-8 flex-shrink-0">
-                                      <div className="w-full h-full rounded">
-                                        <img
-                                          src={group.contentImage}
-                                          alt={group.title.contentTitleNative}
-                                          className="object-cover"
-                                        />
+                          <ul className="menu menu-vertical bg-base-200 rounded-box w-full shadow-lg mt-1 absolute z-50 overflow-y-auto max-h-64">
+                            {searchResult.map((group, i) => {
+                              const isYouTubeResult = (
+                                group as IMediaDocument & {
+                                  __youtubeChannelInfo: youtubeChannelInfo;
+                                }
+                              ).__youtubeChannelInfo;
+
+                              return (
+                                <li
+                                  key={i}
+                                  onClick={() =>
+                                    handleSuggestionClick(
+                                      group as IMediaDocument & {
+                                        __youtubeChannelInfo: youtubeChannelInfo;
+                                      }
+                                    )
+                                  }
+                                  className="w-full"
+                                >
+                                  <a className="flex items-center gap-3 w-full whitespace-normal p-3">
+                                    {group.contentImage && (
+                                      <div className="avatar flex-shrink-0">
+                                        <div
+                                          className={`${isYouTubeResult ? 'w-16 h-12' : 'w-8 h-8'} rounded`}
+                                        >
+                                          <img
+                                            src={group.contentImage}
+                                            alt={group.title.contentTitleNative}
+                                            className="object-cover"
+                                          />
+                                        </div>
                                       </div>
+                                    )}
+                                    <div className="flex-1 min-w-0">
+                                      <div className="font-semibold text-sm truncate">
+                                        {group.title.contentTitleNative}
+                                      </div>
+                                      {isYouTubeResult ? (
+                                        <>
+                                          <div className="text-xs opacity-70 truncate">
+                                            Channel:{' '}
+                                            {
+                                              (
+                                                group as IMediaDocument & {
+                                                  __youtubeChannelInfo: youtubeChannelInfo;
+                                                }
+                                              ).__youtubeChannelInfo
+                                                .channelTitle
+                                            }
+                                          </div>
+                                          {group.episodeDuration && (
+                                            <div className="text-xs opacity-70">
+                                              Duration: {group.episodeDuration}{' '}
+                                              minutes
+                                            </div>
+                                          )}
+                                        </>
+                                      ) : (
+                                        <div className="text-xs opacity-70 truncate">
+                                          {group.title.contentTitleRomaji ||
+                                            group.title.contentTitleEnglish}
+                                        </div>
+                                      )}
                                     </div>
-                                  )}
-                                  <div className="flex-1 min-w-0 w-full pr-2">
-                                    <div className="truncate">
-                                      {group.title.contentTitleRomaji ||
-                                        group.title.contentTitleNative}
-                                    </div>
-                                    <div className="text-xs opacity-70 truncate">
-                                      {group.title.contentTitleNative}
-                                    </div>
-                                  </div>
-                                </a>
-                              </li>
-                            ))}
+                                    {isYouTubeResult && (
+                                      <div className="flex items-center">
+                                        <span className="badge badge-primary badge-xs">
+                                          YouTube
+                                        </span>
+                                      </div>
+                                    )}
+                                  </a>
+                                </li>
+                              );
+                            })}
                           </ul>
                         )}
                       {isSuggestionsOpen && isSearching && (
                         <div className="alert mt-1">
                           <span className="loading loading-spinner loading-sm"></span>
-                          <span>Searching...</span>
+                          <span>
+                            {logData.type === 'video'
+                              ? 'Searching YouTube...'
+                              : 'Searching...'}
+                          </span>
                         </div>
                       )}
                       {isSuggestionsOpen &&
@@ -360,11 +479,12 @@ function LogScreen() {
                                 strokeLinejoin="round"
                                 strokeWidth="2"
                                 d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                              ></path>
+                              />
                             </svg>
                             <span>
-                              No results found. You can still create a log with
-                              this name.
+                              {logData.type === 'video'
+                                ? 'No YouTube video found. Make sure you entered a valid YouTube URL.'
+                                : 'No results found. You can still create a log with this name.'}
                             </span>
                           </div>
                         )}
@@ -561,10 +681,34 @@ function LogScreen() {
                   </div>
                 </div>
 
-                {/* Media Preview Card */}
+                {/* Media Preview Card - Updated for YouTube */}
                 <div className="flex flex-col items-center justify-start">
-                  {logData.img &&
-                  !['video', 'audio'].includes(logData.type || '') ? (
+                  {logData.type === 'video' && logData.youtubeChannelInfo ? (
+                    <div className="card bg-base-200 shadow-md w-full">
+                      <figure className="px-4 pt-4">
+                        <img
+                          src={logData.img}
+                          alt="Video thumbnail"
+                          className="rounded-lg max-h-64 object-contain"
+                        />
+                      </figure>
+                      <div className="card-body pt-2">
+                        <h2 className="card-title text-center text-sm">
+                          {logData.mediaName}
+                        </h2>
+                        <div className="badge badge-primary">
+                          Channel: {logData.youtubeChannelInfo.channelTitle}
+                        </div>
+                        {logData.hours > 0 || logData.minutes > 0 ? (
+                          <div className="badge badge-secondary">
+                            {logData.hours > 0 && `${logData.hours}h `}
+                            {logData.minutes > 0 && `${logData.minutes}m`}
+                          </div>
+                        ) : null}
+                      </div>
+                    </div>
+                  ) : logData.img &&
+                    !['video', 'audio'].includes(logData.type || '') ? (
                     <div className="card bg-base-200 shadow-md w-full">
                       <figure className="px-4 pt-4">
                         <img

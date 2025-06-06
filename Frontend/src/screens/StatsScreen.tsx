@@ -251,7 +251,6 @@ function StatsScreen() {
             </div>
           </div>
 
-          {/* Reading and Listening Hours - only show for 'all' type */}
           {currentType === 'all' && (
             <div className="stats shadow bg-base-100">
               <div className="stat">
@@ -305,10 +304,9 @@ function StatsScreen() {
             </div>
           )}
 
-          {/* Total Characters - only show for reading types or all */}
-          {(currentType === 'all' ||
-            ['reading', 'manga', 'vn'].includes(currentType)) && (
-            <div className="stats shadow bg-base-100">
+          <div className="stats shadow bg-base-100">
+            {(currentType === 'all' ||
+              ['reading', 'manga', 'vn'].includes(currentType)) && (
               <div className="stat">
                 <div className="stat-title">Total Characters</div>
                 <div className="stat-value text-info">
@@ -332,8 +330,36 @@ function StatsScreen() {
                     : `Characters read in ${currentType} logs`}
                 </div>
               </div>
+            )}
+            <div className="stat">
+              <div className="stat-title">Daily Average Hours</div>
+              <div className="stat-value text-warning">
+                {userStats?.totals.dailyAverageHours
+                  ? numberWithCommas(
+                      parseFloat(userStats.totals.dailyAverageHours.toFixed(2))
+                    )
+                  : 0}
+                <span className="text-lg">h</span>
+              </div>
+              <div className="stat-desc">
+                {(() => {
+                  const periodText = {
+                    today: "Today's",
+                    month: "This month's",
+                    year: "This year's",
+                    total: 'All-time',
+                  }[timeRange];
+
+                  const typeText =
+                    currentType === 'all'
+                      ? 'immersion'
+                      : `${currentType} immersion`;
+
+                  return `${periodText} daily ${typeText} average`;
+                })()}
+              </div>
             </div>
-          )}
+          </div>
 
           {currentType === 'all' && (
             <div className="flex flex-col lg:flex-row justify-between gap-7">

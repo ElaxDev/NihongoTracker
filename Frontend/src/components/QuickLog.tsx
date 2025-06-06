@@ -1,5 +1,5 @@
 import { useRef, useState, useEffect } from 'react';
-import { ICreateLog, ILog, IMediaDocument } from '../types';
+import { ICreateLog, ILog, IMediaDocument, youtubeChannelInfo } from '../types';
 import { createLogFn } from '../api/trackerApi';
 import useSearch from '../hooks/useSearch';
 import { toast } from 'react-toastify';
@@ -116,10 +116,31 @@ function QuickLog({ open, onClose, media }: QuickLogProps) {
     }, 200);
   }
 
-  function handleSuggestionClick(group: IMediaDocument) {
-    setLogDescription(group.title.contentTitleNative);
-    setContentId(group.contentId);
-    setCoverImage(group.coverImage || group.contentImage);
+  function handleSuggestionClick(
+    group: IMediaDocument & { __youtubeChannelInfo?: youtubeChannelInfo }
+  ) {
+    if (logType === 'video' && group.__youtubeChannelInfo) {
+      // Handle YouTube video selection
+      setLogDescription(group.title.contentTitleNative);
+      setContentId(group.__youtubeChannelInfo.channelId); // Use channel ID as contentId
+      setCoverImage(
+        group.contentImage || group.__youtubeChannelInfo.channelImage
+      );
+
+      // Auto-fill duration if available
+      if (group.episodeDuration) {
+        const totalMinutes = group.episodeDuration;
+        const newHours = Math.floor(totalMinutes / 60);
+        const newMinutes = totalMinutes % 60;
+        setHours(newHours);
+        setMinutes(newMinutes);
+      }
+    } else {
+      // Handle regular media
+      setLogDescription(group.title.contentTitleNative);
+      setContentId(group.contentId);
+      setCoverImage(group.coverImage || group.contentImage);
+    }
     setIsSuggestionsOpen(false);
   }
 

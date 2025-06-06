@@ -221,3 +221,13 @@ export async function getUserStatsFn(
   });
   return data;
 }
+
+export async function searchYouTubeVideoFn(url: string) {
+  const { data } = await api.get<{
+    video: IMediaDocument;
+    channel: IMediaDocument;
+  }>(`media/youtube/video`, {
+    params: { url },
+  });
+  return data;
+}

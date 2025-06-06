@@ -152,6 +152,7 @@ export interface ILog extends Document {
   user: Types.ObjectId;
   type: 'reading' | 'anime' | 'vn' | 'video' | 'manga' | 'audio' | 'other';
   mediaId?: string;
+  mediaTitle?: string;
   xp: number;
   private: boolean;
   isAdult: boolean;
@@ -180,6 +181,11 @@ export interface IContentMedia {
   synonyms?: string[] | null;
   isAdult: boolean;
   date?: Date | null;
+  // YouTube specific fields
+  channelId?: string;
+  channelTitle?: string;
+  channelImage?: string;
+  channelDescription?: string;
 }
 
 export interface ICreateLog extends ILog {

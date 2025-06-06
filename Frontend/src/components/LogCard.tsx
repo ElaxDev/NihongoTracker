@@ -119,7 +119,28 @@ function LogCard({ log, user: logUser }: { log: ILog; user?: string }) {
         {renderQuantity()}
         <div className="flex justify-between w-full text-sm sm:text-base">
           <p>XP: {xp}</p>
-          <p className="text-right">{relativeDate}</p>
+          <div>
+            <p
+              className="text-right tooltip"
+              data-tip={
+                date
+                  ? typeof date === 'string'
+                    ? DateTime.fromISO(date).toLocaleString({
+                        month: 'long',
+                        day: 'numeric',
+                        year: 'numeric',
+                      })
+                    : DateTime.fromJSDate(date as Date).toLocaleString({
+                        month: 'long',
+                        day: 'numeric',
+                        year: 'numeric',
+                      })
+                  : null
+              }
+            >
+              {relativeDate}
+            </p>
+          </div>
         </div>
       </div>
 
