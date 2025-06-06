@@ -534,24 +534,47 @@ export async function createLog(
     date,
     chars,
     mediaData,
+    createMedia,
   } = req.body;
 
   try {
     if (!type) throw new customError('Log type is required', 400);
     if (!description) throw new customError('Description is required', 400);
     let logMedia;
-    console.log(req.body);
+    console.log('Creating log with data:', req.body);
+
     if (mediaId) {
       logMedia = await MediaBase.findOne({ contentId: mediaId });
     }
 
-    if (
+    // Handle YouTube video creation for 'video' type logs
+    if (!logMedia && type === 'video' && createMedia && mediaData) {
+      console.log('Creating YouTube media with data:', mediaData);
+
+      // Create the channel media entry (using channel ID as the main media)
+      const channelMedia = await MediaBase.create({
+        contentId: mediaData.channelId, // Use channel ID as the content ID
+        title: {
+          contentTitleNative: mediaData.channelTitle,
+          contentTitleEnglish: mediaData.channelTitle,
+        },
+        contentImage: mediaData.channelImage,
+        coverImage: mediaData.channelImage,
+        description: mediaData.channelDescription,
+        type: 'video',
+        isAdult: false,
+      });
+
+      logMedia = channelMedia;
+    } else if (
       !logMedia &&
       type !== 'audio' &&
       type !== 'other' &&
+      type !== 'video' &&
       mediaId &&
       mediaData
     ) {
+      // Existing logic for other media types (anime, manga, etc.)
       await MediaBase.create({
         contentId: mediaId,
         title: {
@@ -584,7 +607,7 @@ export async function createLog(
         ? logMedia.contentId
         : newLogMedia
           ? newLogMedia.contentId
-          : undefined,
+          : mediaId, // Use mediaId as fallback for YouTube videos
       pages,
       episodes,
       xp,
@@ -597,12 +620,17 @@ export async function createLog(
     if (!newLog) throw new customError('Log could not be created', 500);
     const savedLog = await newLog.save();
     if (!savedLog) throw new customError('Log could not be saved', 500);
+
     res.locals.log = savedLog;
     await updateStats(res, next);
+
     const userStats = await User.findById(res.locals.user._id);
+
     if (!userStats) throw new customError('User not found', 404);
+
     // Check if lastStreakDate is yesterday
     const yesterday = new Date();
+
     yesterday.setDate(yesterday.getDate() - 1);
     if (
       userStats.stats.lastStreakDate &&

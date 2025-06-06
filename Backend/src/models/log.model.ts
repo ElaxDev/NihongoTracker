@@ -15,6 +15,7 @@ const editedFieldsSchema = new Schema<IEditedFields>(
 const LogSchema = new Schema<ILog>(
   {
     user: { type: Schema.Types.ObjectId, required: true, ref: 'User' },
+    mediaTitle: { type: String, required: false, trim: true },
     type: { type: String, required: true },
     mediaId: { type: String, required: false },
     xp: { type: Number, required: true },

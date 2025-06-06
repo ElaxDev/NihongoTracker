@@ -165,15 +165,23 @@ export interface IContentMedia {
   synonyms?: string[] | null;
   isAdult: boolean;
   date?: Date | null;
+  // YouTube specific fields
+  channelId?: string;
+  channelTitle?: string;
+  channelImage?: string;
+  channelDescription?: string;
 }
 
 export interface ICreateLog
-  extends Omit<
-    ILog,
-    '_id' | 'user' | 'xp' | 'editedFields' | 'createdAt' | 'updatedAt'
-  > {
+  extends Omit<ILog, '_id' | 'user' | 'createdAt' | 'updatedAt' | 'xp'> {
   createMedia?: boolean;
-  mediaData?: IContentMedia;
+  mediaData?: IContentMedia & {
+    // YouTube specific fields
+    channelId?: string;
+    channelTitle?: string;
+    channelImage?: string;
+    channelDescription?: string;
+  };
 }
 
 export interface ILog {
@@ -285,7 +293,7 @@ export interface IImmersionList {
   video: IMediaDocument[];
 }
 
-export interface IMediaDocument extends Document {
+export interface IMediaDocument {
   contentId: string;
   title: IMediaTitle;
   contentImage?: string;
@@ -369,4 +377,11 @@ interface IUserStats {
   }>;
   timeRange: 'today' | 'month' | 'year' | 'total';
   selectedType: string;
+}
+
+export interface youtubeChannelInfo {
+  channelId: string;
+  channelTitle: string;
+  channelImage?: string;
+  channelDescription: string;
 }
