@@ -231,6 +231,7 @@ function LogScreen() {
       handleInputChange('createMedia', true);
     } else {
       // Handle regular AniList content
+      handleInputChange('mediaName', group.title.contentTitleNative);
       handleInputChange('titleNative', group.title.contentTitleNative);
       handleInputChange('titleRomaji', group.title.contentTitleRomaji ?? '');
       handleInputChange('titleEnglish', group.title.contentTitleEnglish ?? '');
@@ -238,6 +239,7 @@ function LogScreen() {
       handleInputChange('img', group.contentImage);
       handleInputChange('cover', group.coverImage);
       handleInputChange('description', group.title.contentTitleNative);
+      handleInputChange('isAdult', group.isAdult);
     }
 
     setIsSuggestionsOpen(false);
@@ -711,16 +713,31 @@ function LogScreen() {
                     !['video', 'audio'].includes(logData.type || '') ? (
                     <div className="card bg-base-200 shadow-md w-full">
                       <figure className="px-4 pt-4">
-                        <img
-                          src={logData.img}
-                          alt="Selected Media"
-                          className="rounded-lg max-h-64 object-contain"
-                        />
+                        <div className="overflow-hidden rounded-lg">
+                          <img
+                            src={logData.img}
+                            alt="Selected Media"
+                            className={`max-h-64 object-cover w-full ${
+                              logData.isAdult &&
+                              user?.settings?.blurAdultContent
+                                ? 'blur-sm'
+                                : ''
+                            }`}
+                          />
+                        </div>
                       </figure>
                       <div className="card-body pt-2">
-                        <h2 className="card-title text-center">
-                          {logData.mediaName}
-                        </h2>
+                        <div className="flex flex-col mb-2">
+                          <h2 className="font-bold text-lg">
+                            {logData.mediaName}
+                          </h2>
+                          {logData.titleRomaji && (
+                            <div className="text-sm opacity-70">
+                              {logData.titleRomaji}
+                            </div>
+                          )}
+                        </div>
+
                         {logData.episodes > 0 && (
                           <div className="badge badge-primary">
                             {logData.episodes} episodes

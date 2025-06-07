@@ -42,6 +42,7 @@ const query = gql`
         volumes
         synonyms
         bannerImage
+        isAdult
         description
       }
     }

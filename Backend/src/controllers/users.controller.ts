@@ -10,8 +10,14 @@ export async function updateUser(
   res: Response,
   next: NextFunction
 ) {
-  const { username, newPassword, newPasswordConfirm, password, discordId } =
-    req.body as IUpdateRequest;
+  const {
+    username,
+    newPassword,
+    newPasswordConfirm,
+    password,
+    discordId,
+    blurAdultContent,
+  } = req.body as IUpdateRequest;
 
   try {
     const user = await User.findById(res.locals.user._id);
@@ -109,6 +115,13 @@ export async function updateUser(
         throw new customError('Discord ID already linked to another user', 400);
       }
       user.discordId = discordId;
+    }
+
+    if (blurAdultContent) {
+      user.settings = {
+        ...user.settings,
+        blurAdultContent: blurAdultContent === 'true',
+      };
     }
 
     const updatedUser = await user.save();

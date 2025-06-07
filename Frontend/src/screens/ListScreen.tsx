@@ -101,7 +101,7 @@ function ListScreen() {
                           <img
                             src={item.contentImage}
                             alt={item.title.contentTitleNative}
-                            className="transition hover:shadow-md rounded-md duration-300 w-full h-full object-cover"
+                            className={`${item.isAdult ? 'blur-sm' : ''} transition hover:shadow-md rounded-md duration-300 w-full h-full object-cover`}
                           />
                         </Link>
                         <div className="mt-2 text-sm text-center truncate">
