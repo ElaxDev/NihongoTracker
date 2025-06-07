@@ -135,6 +135,7 @@ export async function updateUser(
       banner: updatedUser.banner,
       titles: updatedUser.titles,
       roles: updatedUser.roles,
+      settings: updatedUser.settings,
     });
   } catch (error) {
     return next(error as customError);

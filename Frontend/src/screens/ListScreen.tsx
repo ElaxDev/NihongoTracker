@@ -1,129 +1,585 @@
-import { Link, useOutletContext } from 'react-router-dom';
-import { IImmersionList, OutletProfileContextType } from '../types';
-import { getImmersionListFn, getUntrackedLogsFn } from '../api/trackerApi';
 import { useQuery } from '@tanstack/react-query';
-import { useState } from 'react';
-import { toast } from 'react-toastify';
-import Loader from '../components/Loader';
+import { useParams, useNavigate } from 'react-router-dom';
+import { getImmersionListFn } from '../api/trackerApi';
+import { useState, useMemo } from 'react';
+import { IMediaDocument, IImmersionList } from '../types';
+import {
+  MdSearch,
+  MdFilterList,
+  MdSort,
+  MdViewModule,
+  MdViewList,
+  MdAutoAwesome,
+  MdTrendingUp,
+  MdBookmark,
+  MdPlayArrow,
+  MdBook,
+  MdGamepad,
+  MdVideoLibrary,
+} from 'react-icons/md';
 import { useUserDataStore } from '../store/userData';
 
+type ViewMode = 'grid' | 'list';
+type SortOption = 'title' | 'type' | 'recent';
+type FilterOption = 'all' | 'anime' | 'manga' | 'reading' | 'vn' | 'video';
+
 function ListScreen() {
-  const { username } = useOutletContext<OutletProfileContextType>();
-  const { user } = useUserDataStore();
-  const [currentList, setCurrentList] = useState<keyof IImmersionList>('anime');
+  const { username } = useParams<{ username: string }>();
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedFilter, setSelectedFilter] = useState<FilterOption>('all');
+  const [sortBy, setSortBy] = useState<SortOption>('title');
+  const [viewMode, setViewMode] = useState<ViewMode>('grid');
 
   const {
-    data: list,
-    error: listError,
-    isLoading: listLoading,
-  } = useQuery({
-    queryKey: ['ImmersionList', username, currentList],
-    queryFn: () => getImmersionListFn(username as string),
+    data: immersionList,
+    isLoading,
+    error,
+  } = useQuery<IImmersionList>({
+    queryKey: ['immersionList', username],
+    queryFn: () => getImmersionListFn(username!),
+    enabled: !!username,
+    staleTime: 5 * 60 * 1000,
   });
 
-  const { data: untrackedLogs } = useQuery({
-    queryKey: ['untrackedLogs', username],
-    queryFn: () => getUntrackedLogsFn(),
-  });
+  // Combine all media into a single filterable array
+  const allMedia = useMemo(() => {
+    if (!immersionList) return [];
 
-  if (listError) {
-    toast.error(listError.message);
+    return [
+      ...immersionList.anime.map((item) => ({
+        ...item,
+        category: 'anime' as const,
+      })),
+      ...immersionList.manga.map((item) => ({
+        ...item,
+        category: 'manga' as const,
+      })),
+      ...immersionList.reading.map((item) => ({
+        ...item,
+        category: 'reading' as const,
+      })),
+      ...immersionList.vn.map((item) => ({ ...item, category: 'vn' as const })),
+      ...immersionList.video.map((item) => ({
+        ...item,
+        category: 'video' as const,
+      })),
+    ];
+  }, [immersionList]);
+
+  // Filter and sort media
+  const filteredAndSortedMedia = useMemo(() => {
+    let filtered = allMedia;
+
+    // Apply search filter
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter(
+        (item) =>
+          item.title.contentTitleNative?.toLowerCase().includes(query) ||
+          item.title.contentTitleEnglish?.toLowerCase().includes(query) ||
+          item.title.contentTitleRomaji?.toLowerCase().includes(query) ||
+          item.synonyms?.some((synonym) =>
+            synonym.toLowerCase().includes(query)
+          )
+      );
+    }
+
+    // Apply type filter
+    if (selectedFilter !== 'all') {
+      filtered = filtered.filter((item) => item.type === selectedFilter);
+    }
+
+    // Apply sorting
+    filtered.sort((a, b) => {
+      switch (sortBy) {
+        case 'title':
+          return (a.title.contentTitleNative || '').localeCompare(
+            b.title.contentTitleNative || ''
+          );
+        case 'type':
+          return a.type.localeCompare(b.type);
+        case 'recent':
+          // This would need creation date if available
+          return (a.title.contentTitleNative || '').localeCompare(
+            b.title.contentTitleNative || ''
+          );
+        default:
+          return 0;
+      }
+    });
+
+    return filtered;
+  }, [allMedia, searchQuery, selectedFilter, sortBy]);
+
+  // Calculate statistics
+  const stats = useMemo(() => {
+    const totalCount = allMedia.length;
+    const typeCount = {
+      anime: immersionList?.anime.length || 0,
+      manga: immersionList?.manga.length || 0,
+      reading: immersionList?.reading.length || 0,
+      vn: immersionList?.vn.length || 0,
+      video: immersionList?.video.length || 0,
+    };
+    return { totalCount, typeCount };
+  }, [allMedia, immersionList]);
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-base-200 flex items-center justify-center">
+        <div className="text-center space-y-4">
+          <span className="loading loading-spinner loading-lg text-primary"></span>
+          <p className="text-lg">Loading your immersion library...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-base-200 flex items-center justify-center">
+        <div className="alert alert-error max-w-md">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            className="stroke-current shrink-0 h-6 w-6"
+            fill="none"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth="2"
+              d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"
+            />
+          </svg>
+          <span>Failed to load immersion list</span>
+        </div>
+      </div>
+    );
   }
 
   return (
-    <div className="px-4 py-6 sm:p-6 md:p-8">
-      <div className="w-full max-w-7xl mx-auto">
-        <div className="grid grid-cols-1 md:grid-cols-[250px_1fr] gap-4 md:gap-6">
-          {/* Sidebar with lists */}
-          <div className="lg:sticky lg:top-4 lg:self-start h-fit card bg-base-100 p-4">
-            <div className="font-bold text-xl">Lists</div>
-            <ul className="menu card-body w-full">
-              {['anime', 'manga', 'vn', 'video', 'reading'].map((item) => (
-                <li
-                  key={item}
-                  className={`capitalize ${currentList === item ? 'bg-base-200 rounded-btn' : ''}`}
-                >
-                  <a
-                    onClick={() => setCurrentList(item as keyof IImmersionList)}
-                  >
-                    {item === 'vn' ? 'Visual Novel' : item}
-                  </a>
-                </li>
-              ))}
-            </ul>
-          </div>
+    <div className="min-h-screen bg-base-200">
+      {/* Controls Section */}
+      <div className="container mx-auto px-4 mt-4 relative z-10">
+        <div className="card bg-base-100 shadow-xl">
+          <div className="card-body p-6">
+            <div className="flex flex-col lg:flex-row gap-4 items-center justify-between">
+              {/* Search */}
+              <div className="flex-1 max-w-md">
+                <label className="input input-bordered flex items-center gap-2">
+                  <MdSearch className="w-5 h-5 opacity-70" />
+                  <input
+                    type="text"
+                    className="grow"
+                    placeholder="Search by title, romaji, or english..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                  />
+                </label>
+              </div>
 
-          {/* Main content area */}
-          <div className="flex flex-col gap-4">
-            {untrackedLogs &&
-              untrackedLogs.length > 0 &&
-              username === user?.username && (
-                <div className="alert alert-info shadow-sm">
-                  <div className=" flex flex-row items-center gap-2">
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      className="stroke-current shrink-0 w-6 h-6"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth="2"
-                        d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                      ></path>
-                    </svg>
-                    <span>
-                      You have {untrackedLogs.length} unmatched logs.{' '}
-                      <Link className="link" to="/matchmedia">
-                        Click here
-                      </Link>{' '}
-                      to match them!
-                    </span>
+              {/* Filters */}
+              <div className="flex flex-wrap gap-3">
+                {/* Type Filter */}
+                <div className="dropdown dropdown-end">
+                  <div
+                    tabIndex={0}
+                    role="button"
+                    className="btn btn-outline gap-2"
+                  >
+                    <MdFilterList className="w-4 h-4" />
+                    Filter:{' '}
+                    {selectedFilter === 'all'
+                      ? 'All Types'
+                      : selectedFilter.charAt(0).toUpperCase() +
+                        selectedFilter.slice(1)}
                   </div>
+                  <ul
+                    tabIndex={0}
+                    className="dropdown-content z-10 menu p-2 shadow-lg bg-base-100 rounded-box w-52"
+                  >
+                    {[
+                      { value: 'all', label: 'All Types' },
+                      { value: 'anime', label: 'Anime' },
+                      { value: 'manga', label: 'Manga' },
+                      { value: 'reading', label: 'Reading' },
+                      { value: 'vn', label: 'Visual Novels' },
+                      { value: 'video', label: 'Video' },
+                    ].map((option) => (
+                      <li key={option.value}>
+                        <button
+                          className={
+                            selectedFilter === option.value ? 'active' : ''
+                          }
+                          onClick={() =>
+                            setSelectedFilter(option.value as FilterOption)
+                          }
+                        >
+                          {option.label}
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+
+                {/* Sort */}
+                <div className="dropdown dropdown-end">
+                  <div
+                    tabIndex={0}
+                    role="button"
+                    className="btn btn-outline gap-2"
+                  >
+                    <MdSort className="w-4 h-4" />
+                    Sort:{' '}
+                    {sortBy === 'title'
+                      ? 'Title'
+                      : sortBy === 'type'
+                        ? 'Type'
+                        : 'Recent'}
+                  </div>
+                  <ul
+                    tabIndex={0}
+                    className="dropdown-content z-10 menu p-2 shadow-lg bg-base-100 rounded-box w-52"
+                  >
+                    {[
+                      { value: 'title', label: 'By Title (A-Z)' },
+                      { value: 'type', label: 'By Type' },
+                      { value: 'recent', label: 'Recently Added' },
+                    ].map((option) => (
+                      <li key={option.value}>
+                        <button
+                          className={sortBy === option.value ? 'active' : ''}
+                          onClick={() => setSortBy(option.value as SortOption)}
+                        >
+                          {option.label}
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+
+                {/* View Mode Toggle */}
+                <div className="join">
+                  <button
+                    className={`btn join-item ${viewMode === 'grid' ? 'btn-active' : 'btn-outline'}`}
+                    onClick={() => setViewMode('grid')}
+                  >
+                    <MdViewModule className="w-4 h-4" />
+                  </button>
+                  <button
+                    className={`btn join-item ${viewMode === 'list' ? 'btn-active' : 'btn-outline'}`}
+                    onClick={() => setViewMode('list')}
+                  >
+                    <MdViewList className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Results Count */}
+            <div className="flex items-center justify-between mt-4 pt-4 border-t">
+              <p className="text-sm text-base-content/70">
+                Showing {filteredAndSortedMedia.length} of {stats.totalCount}{' '}
+                items
+                {searchQuery && ` for "${searchQuery}"`}
+              </p>
+              {filteredAndSortedMedia.length > 0 && (
+                <div className="flex items-center gap-2 text-sm text-base-content/70">
+                  <MdAutoAwesome className="w-4 h-4" />
+                  <span>Your immersion journey</span>
                 </div>
               )}
-            <div className="card bg-base-100 shadow-sm">
-              <div className="p-4 border-b border-base-200">
-                <h2 className="font-bold text-xl capitalize">{currentList}</h2>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Media Grid/List */}
+      <div className="container mx-auto px-4 py-4">
+        {filteredAndSortedMedia.length === 0 ? (
+          <div className="text-center py-20">
+            <div className="max-w-md mx-auto space-y-4">
+              <div className="w-24 h-24 mx-auto bg-base-300 rounded-full flex items-center justify-center">
+                <MdBookmark className="w-12 h-12 text-base-content/40" />
               </div>
-              <div className="p-4">
-                {list && list[currentList] && list[currentList].length > 0 ? (
-                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-4">
-                    {list[currentList].map((item, index) => (
-                      <div key={index} className="flex flex-col">
-                        <Link
-                          to={`/${currentList}/${item.contentId}/${
-                            username || user?.username
-                          }`}
-                          className="h-auto w-full aspect-[3/4] rounded-md overflow-hidden"
-                        >
-                          <img
-                            src={item.contentImage}
-                            alt={item.title.contentTitleNative}
-                            className={`${item.isAdult ? 'blur-sm' : ''} transition hover:shadow-md rounded-md duration-300 w-full h-full object-cover`}
-                          />
-                        </Link>
-                        <div className="mt-2 text-sm text-center truncate">
-                          {item.title.contentTitleEnglish ||
-                            item.title.contentTitleRomaji ||
-                            item.title.contentTitleNative}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : listLoading ? (
-                  <div className="flex justify-center items-center w-full h-40">
-                    <Loader />
-                  </div>
-                ) : (
-                  <div className="flex justify-center items-center w-full py-10">
-                    <div className="flex flex-col items-center">
-                      <p className="text-center">No elements in this list.</p>
-                      <p className="text-center">Go immerse to fill it up!</p>
-                    </div>
-                  </div>
+              <h3 className="text-2xl font-bold">No media found</h3>
+              <p className="text-base-content/70">
+                {searchQuery
+                  ? `No media matches your search for "${searchQuery}". Try different keywords or filters.`
+                  : selectedFilter !== 'all'
+                    ? `No ${selectedFilter} media in your library yet.`
+                    : 'Your immersion library is empty. Start logging your Japanese learning activities!'}
+              </p>
+              {(searchQuery || selectedFilter !== 'all') && (
+                <button
+                  className="btn btn-outline"
+                  onClick={() => {
+                    setSearchQuery('');
+                    setSelectedFilter('all');
+                  }}
+                >
+                  Clear filters
+                </button>
+              )}
+            </div>
+          </div>
+        ) : viewMode === 'grid' ? (
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 md:gap-6">
+            {filteredAndSortedMedia.map((item) => (
+              <MediaCard key={item.contentId} media={item} />
+            ))}
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {filteredAndSortedMedia.map((item) => (
+              <MediaListItem key={item.contentId} media={item} />
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// Media Card Component for Grid View
+function MediaCard({
+  media,
+}: {
+  media: IMediaDocument & { category: string };
+}) {
+  const { user } = useUserDataStore();
+  const { username } = useParams<{ username: string }>();
+  const navigate = useNavigate();
+
+  const handleCardClick = () => {
+    navigate(`/${media.type}/${media.contentId}/${username}`);
+  };
+
+  const typeConfig = {
+    anime: {
+      icon: MdPlayArrow,
+      color: 'text-secondary',
+      bg: 'bg-secondary/10',
+      border: 'border-secondary/20',
+    },
+    manga: {
+      icon: MdBook,
+      color: 'text-warning',
+      bg: 'bg-warning/10',
+      border: 'border-warning/20',
+    },
+    reading: {
+      icon: MdBook,
+      color: 'text-primary',
+      bg: 'bg-primary/10',
+      border: 'border-primary/20',
+    },
+    vn: {
+      icon: MdGamepad,
+      color: 'text-accent',
+      bg: 'bg-accent/10',
+      border: 'border-accent/20',
+    },
+    video: {
+      icon: MdVideoLibrary,
+      color: 'text-info',
+      bg: 'bg-info/10',
+      border: 'border-info/20',
+    },
+  };
+
+  const config = typeConfig[media.type as keyof typeof typeConfig];
+  const TypeIcon = config.icon;
+
+  return (
+    <div
+      className={`card bg-base-100 shadow-sm hover:shadow-xl transition-all duration-300 group cursor-pointer border ${config.border}`}
+      onClick={handleCardClick}
+    >
+      {/* Image */}
+      <figure className="relative aspect-[3/4] overflow-hidden">
+        {media.contentImage || media.coverImage ? (
+          <img
+            src={media.contentImage || media.coverImage}
+            alt={media.title.contentTitleNative}
+            className={`w-full h-full object-cover group-hover:scale-105 transition-transform duration-300 ${media.isAdult && user?.settings?.blurAdultContent ? 'filter blur-sm' : ''}`}
+            loading="lazy"
+          />
+        ) : (
+          <div
+            className={`w-full h-full ${config.bg} flex items-center justify-center`}
+          >
+            <TypeIcon className={`w-12 h-12 ${config.color} opacity-50`} />
+          </div>
+        )}
+
+        {/* Adult Content Overlay */}
+        {media.isAdult && (
+          <div className="absolute top-2 right-2">
+            <div className="badge badge-error badge-sm">18+</div>
+          </div>
+        )}
+
+        {/* Hover Overlay */}
+        <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
+          <div className="text-white text-center p-4">
+            <MdTrendingUp className="w-6 h-6 mx-auto mb-2" />
+            <p className="text-sm font-medium">View Details</p>
+          </div>
+        </div>
+      </figure>
+
+      {/* Content */}
+      <div className="card-body p-3 flex flex-col">
+        <div className="flex-1 space-y-1">
+          <h3
+            className="font-bold text-sm leading-tight line-clamp-2"
+            title={media.title.contentTitleNative}
+          >
+            {media.title.contentTitleNative}
+          </h3>
+
+          {media.title.contentTitleEnglish && (
+            <p
+              className="text-xs text-base-content/60 line-clamp-1"
+              title={media.title.contentTitleEnglish}
+            >
+              {media.title.contentTitleEnglish}
+            </p>
+          )}
+        </div>
+
+        {/* Type Badge - Pushed to bottom */}
+        <div className="pt-2 mt-auto">
+          <span
+            className={`badge ${config.bg} ${config.color} badge-ghost badge-xs border-0`}
+          >
+            <TypeIcon className="w-3 h-3 mr-1" />
+            {media.type === 'vn'
+              ? 'VN'
+              : media.type.charAt(0).toUpperCase() + media.type.slice(1)}
+          </span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Media List Item Component for List View
+function MediaListItem({
+  media,
+}: {
+  media: IMediaDocument & { category: string };
+}) {
+  const { username } = useParams<{ username: string }>();
+  const navigate = useNavigate();
+
+  const handleCardClick = () => {
+    navigate(`/${media.type}/${media.contentId}/${username}`);
+  };
+
+  const typeConfig = {
+    anime: {
+      icon: MdPlayArrow,
+      color: 'text-secondary',
+      bg: 'bg-secondary/10',
+    },
+    manga: { icon: MdBook, color: 'text-warning', bg: 'bg-warning/10' },
+    reading: { icon: MdBook, color: 'text-primary', bg: 'bg-primary/10' },
+    vn: { icon: MdGamepad, color: 'text-accent', bg: 'bg-accent/10' },
+    video: { icon: MdVideoLibrary, color: 'text-info', bg: 'bg-info/10' },
+  };
+
+  const config = typeConfig[media.type as keyof typeof typeConfig];
+  const TypeIcon = config.icon;
+
+  return (
+    <div
+      className="card bg-base-100 shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer"
+      onClick={handleCardClick}
+    >
+      <div className="card-body p-4">
+        <div className="flex gap-4">
+          {/* Thumbnail */}
+          <div className="w-16 h-20 flex-shrink-0 rounded-lg overflow-hidden">
+            {media.contentImage || media.coverImage ? (
+              <img
+                src={media.contentImage || media.coverImage}
+                alt={media.title.contentTitleNative}
+                className="w-full h-full object-cover"
+                loading="lazy"
+              />
+            ) : (
+              <div
+                className={`w-full h-full ${config.bg} flex items-center justify-center`}
+              >
+                <TypeIcon className={`w-6 h-6 ${config.color} opacity-50`} />
+              </div>
+            )}
+          </div>
+
+          {/* Content */}
+          <div className="flex-1 min-w-0">
+            <div className="flex items-start justify-between gap-4">
+              <div className="min-w-0 flex-1">
+                <h3 className="font-bold text-lg leading-tight mb-1">
+                  {media.title.contentTitleNative}
+                </h3>
+
+                {media.title.contentTitleEnglish && (
+                  <p className="text-sm text-base-content/60 mb-2">
+                    {media.title.contentTitleEnglish}
+                  </p>
                 )}
+
+                {media.title.contentTitleRomaji && (
+                  <p className="text-xs text-base-content/50 mb-2">
+                    {media.title.contentTitleRomaji}
+                  </p>
+                )}
+
+                {media.description && (
+                  <p className="text-sm text-base-content/70 line-clamp-2">
+                    {media.description}
+                  </p>
+                )}
+              </div>
+
+              <div className="flex flex-col items-end gap-2">
+                {/* Type Badge */}
+                <div
+                  className={`badge gap-1 ${config.bg} ${config.color} border-0`}
+                >
+                  <TypeIcon className="w-3 h-3" />
+                  {media.type === 'vn'
+                    ? 'Visual Novel'
+                    : media.type.charAt(0).toUpperCase() + media.type.slice(1)}
+                </div>
+
+                {/* Adult Content Badge */}
+                {media.isAdult && (
+                  <div className="badge badge-error badge-sm">18+</div>
+                )}
+
+                {/* Stats */}
+                <div className="flex flex-wrap gap-1 justify-end">
+                  {media.episodes && (
+                    <span className="badge badge-ghost badge-sm">
+                      {media.episodes} episodes
+                    </span>
+                  )}
+                  {media.chapters && (
+                    <span className="badge badge-ghost badge-sm">
+                      {media.chapters} chapters
+                    </span>
+                  )}
+                  {media.volumes && (
+                    <span className="badge badge-ghost badge-sm">
+                      {media.volumes} volumes
+                    </span>
+                  )}
+                </div>
               </div>
             </div>
           </div>

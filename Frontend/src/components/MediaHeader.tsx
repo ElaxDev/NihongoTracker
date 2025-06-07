@@ -131,7 +131,7 @@ export default function MediaHeader() {
             <div className="flex flex-col items-center md:items-start">
               <div className="w-full max-w-[180px] md:w-full -mt-16 sm:-mt-24 md:-mt-32">
                 <img
-                  className="w-full h-auto rounded shadow-md"
+                  className={`w-full h-auto rounded shadow-md ${media?.isAdult && user?.settings?.blurAdultContent ? 'filter blur-sm' : ''}`}
                   src={media?.contentImage ? media.contentImage : ''}
                   alt={media?.title?.contentTitleNative || 'Media image'}
                 />
