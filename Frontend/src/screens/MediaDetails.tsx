@@ -56,6 +56,14 @@ function MediaDetails() {
                   VNDB
                 </a>
               ) : null}
+              {mediaDocument?.type === 'video' ? (
+                <a
+                  className="link"
+                  href={`https://www.youtube.com/channel/${mediaDocument?.contentId}`}
+                >
+                  YouTube Channel
+                </a>
+              ) : null}
             </div>
             {mediaType === 'anime' && (
               <>
