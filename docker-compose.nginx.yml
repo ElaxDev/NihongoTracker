@@ -11,6 +11,7 @@ services:
       - ./Backend/.env:/app/Backend/.env:ro
     networks:
       - nginx_default
+    restart: always
 
   mongo:
     image: mongo:7

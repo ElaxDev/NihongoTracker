@@ -14,7 +14,7 @@ function Tabs({ tabs }: TabsProps) {
 
   return (
     <div>
-      <div role="tablist" className="tabs tabs-lifted px-4">
+      <div role="tablist" className="tabs tabs-border px-4">
         {tabs.map((tab, i) => (
           <a
             key={i}

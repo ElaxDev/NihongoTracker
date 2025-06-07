@@ -9,6 +9,7 @@ services:
       - mongo
     volumes:
       - ./Backend/.env:/app/Backend/.env:ro
+    restart: always
 
   mongo:
     image: mongo:7
