@@ -14,6 +14,7 @@ import {
   IImmersionList,
   IAverageColor,
   IUserStats,
+  updateLogRequest,
 } from '../types';
 
 const BASE_URL = '/api/';
@@ -80,18 +81,10 @@ export async function getRankingFn(params?: IRankingParams) {
 //   return data;
 // }
 
-// export async function updateLogFn(id: string, updateValues: updateLogRequest) {
-//   const updateParams = Object.entries(updateValues).reduce(
-//     (params, [key, value]) => {
-//       params.append(key, value);
-//       return params;
-//     },
-//     new URLSearchParams()
-//   );
-//
-//   const { data } = await api.put<ILog>(`logs/${id}`, updateParams);
-//   return data;
-// }
+export const updateLogFn = async (id: string, data: updateLogRequest) => {
+  const response = await api.patch(`/logs/${id}`, data);
+  return response.data;
+};
 
 export async function searchMediaFn(params: {
   type: string;

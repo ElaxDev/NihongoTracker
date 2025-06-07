@@ -1,22 +1,78 @@
 import { useMutation } from '@tanstack/react-query';
-import { ILog } from '../types';
+import { ILog, updateLogRequest } from '../types';
 import { DateTime } from 'luxon';
-import { MdDelete } from 'react-icons/md';
-import { deleteLogFn } from '../api/trackerApi';
+import {
+  MdDelete,
+  MdSchedule,
+  MdTrendingUp,
+  MdBook,
+  MdPlayArrow,
+  MdGamepad,
+  MdVideoLibrary,
+  MdVolumeUp,
+  MdMoreHoriz,
+  MdSpeed,
+  MdCalendarToday,
+  MdTimer,
+  MdEdit,
+} from 'react-icons/md';
+import { deleteLogFn, updateLogFn } from '../api/trackerApi';
 import { toast } from 'react-toastify';
 import queryClient from '../queryClient';
 import { AxiosError } from 'axios';
 import { useUserDataStore } from '../store/userData';
-import { useRef } from 'react';
+import { useRef, useState } from 'react';
 
-const logTypeText = {
-  reading: 'Reading',
-  anime: 'Anime',
-  vn: 'Visual Novel',
-  video: 'Video',
-  manga: 'Manga',
-  audio: 'Audio',
-  other: 'Other',
+const logTypeConfig = {
+  reading: {
+    label: 'Reading',
+    icon: MdBook,
+    color: 'text-primary',
+    bgColor: 'bg-primary/10',
+    borderColor: 'border-primary/20',
+  },
+  anime: {
+    label: 'Anime',
+    icon: MdPlayArrow,
+    color: 'text-secondary',
+    bgColor: 'bg-secondary/10',
+    borderColor: 'border-secondary/20',
+  },
+  vn: {
+    label: 'Visual Novel',
+    icon: MdGamepad,
+    color: 'text-accent',
+    bgColor: 'bg-accent/10',
+    borderColor: 'border-accent/20',
+  },
+  video: {
+    label: 'Video',
+    icon: MdVideoLibrary,
+    color: 'text-info',
+    bgColor: 'bg-info/10',
+    borderColor: 'border-info/20',
+  },
+  manga: {
+    label: 'Manga',
+    icon: MdBook,
+    color: 'text-warning',
+    bgColor: 'bg-warning/10',
+    borderColor: 'border-warning/20',
+  },
+  audio: {
+    label: 'Audio',
+    icon: MdVolumeUp,
+    color: 'text-success',
+    bgColor: 'bg-success/10',
+    borderColor: 'border-success/20',
+  },
+  other: {
+    label: 'Other',
+    icon: MdMoreHoriz,
+    color: 'text-neutral',
+    bgColor: 'bg-neutral/10',
+    borderColor: 'border-neutral/20',
+  },
 };
 
 function LogCard({ log, user: logUser }: { log: ILog; user?: string }) {
@@ -24,6 +80,20 @@ function LogCard({ log, user: logUser }: { log: ILog; user?: string }) {
     log;
   const { user } = useUserDataStore();
   const deleteModalRef = useRef<HTMLDialogElement>(null);
+  const editModalRef = useRef<HTMLDialogElement>(null);
+
+  // Edit form state
+  const [editData, setEditData] = useState({
+    description: description || '',
+    episodes: episodes || 0,
+    pages: pages || 0,
+    chars: chars || 0,
+    hours: time ? Math.floor(time / 60) : 0,
+    minutes: time ? time % 60 : 0,
+  });
+
+  const typeConfig = logTypeConfig[type];
+  const TypeIcon = typeConfig.icon;
 
   const relativeDate = date
     ? typeof date === 'string'
@@ -31,16 +101,31 @@ function LogCard({ log, user: logUser }: { log: ILog; user?: string }) {
       : DateTime.fromJSDate(date as Date).toRelative()
     : '';
 
+  const fullDate = date
+    ? typeof date === 'string'
+      ? DateTime.fromISO(date).toLocaleString({
+          month: 'long',
+          day: 'numeric',
+          year: 'numeric',
+          hour: 'numeric',
+          minute: '2-digit',
+        })
+      : DateTime.fromJSDate(date as Date).toLocaleString({
+          month: 'long',
+          day: 'numeric',
+          year: 'numeric',
+          hour: 'numeric',
+          minute: '2-digit',
+        })
+    : '';
+
   const logTitle =
     media && typeof media === 'object' && media.title?.contentTitleNative
-      ? media.title.contentTitleNative.length > 30
-        ? `${media.title.contentTitleNative.slice(0, 30)}...`
-        : media.title.contentTitleNative
-      : description
-        ? description.length > 30
-          ? `${description.slice(0, 30)}...`
-          : description
-        : '';
+      ? media.title.contentTitleNative
+      : description || 'Untitled Log';
+
+  const displayTitle =
+    logTitle.length > 35 ? `${logTitle.slice(0, 35)}...` : logTitle;
 
   const { mutate: deleteLog, isPending: loadingDeleteLog } = useMutation({
     mutationFn: (id: string) => deleteLogFn(id),
@@ -50,6 +135,7 @@ function LogCard({ log, user: logUser }: { log: ILog; user?: string }) {
           ['logs', 'user'].includes(query.queryKey[0] as string),
       });
       toast.success('Log deleted successfully!');
+      deleteModalRef.current?.close();
     },
     onError: (error) => {
       const errorMessage =
@@ -60,108 +146,373 @@ function LogCard({ log, user: logUser }: { log: ILog; user?: string }) {
     },
   });
 
-  function renderQuantity() {
-    if (type === 'anime') {
-      return <p>Episodes: {episodes}</p>;
-    } else if (type === 'manga') {
-      if (chars) {
-        return (
-          <>
-            <p>Pages: {pages}</p>
-            <p>Character count: {chars}</p>
-          </>
-        );
-      } else {
-        return <p>Pages: {pages}</p>;
+  const { mutate: updateLog, isPending: loadingUpdateLog } = useMutation({
+    mutationFn: (data: updateLogRequest) => updateLogFn(log._id, data),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({
+        predicate: (query) =>
+          ['logs', 'user'].includes(query.queryKey[0] as string),
+      });
+      toast.success('Log updated successfully!');
+      editModalRef.current?.close();
+    },
+    onError: (error) => {
+      const errorMessage =
+        error instanceof AxiosError
+          ? error.response?.data.message
+          : 'An error occurred';
+      toast.error(errorMessage);
+    },
+  });
+
+  function openEditModal() {
+    setEditData({
+      description: description || '',
+      episodes: episodes || 0,
+      pages: pages || 0,
+      chars: chars || 0,
+      hours: time ? Math.floor(time / 60) : 0,
+      minutes: time ? time % 60 : 0,
+    });
+    editModalRef.current?.showModal();
+  }
+
+  function handleEditSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    const totalMinutes = editData.hours * 60 + editData.minutes;
+
+    const updateData: updateLogRequest = {
+      description: editData.description,
+      time: totalMinutes || undefined,
+      episodes: editData.episodes || undefined,
+      pages: editData.pages || undefined,
+      chars: editData.chars || undefined,
+    };
+
+    // Remove undefined values
+    Object.keys(updateData).forEach((key) => {
+      if (updateData[key as keyof updateLogRequest] === undefined) {
+        delete updateData[key as keyof updateLogRequest];
       }
-    } else if (type === 'vn' || type === 'reading') {
-      if (chars) {
-        return <p>Character count: {chars}</p>;
-      } else if (time) {
-        return <p>Time: {time > 60 ? `${time / 60}h` : `${time}m`}</p>;
-      }
-    } else if ((type === 'video' || type === 'audio') && time) {
-      return (
-        <p>
-          {time
-            ? time >= 60
-              ? `Time: ${time / 60}h`
-              : `Time: ${time}m`
-            : null}
-        </p>
-      );
-    } else {
-      return null;
+    });
+
+    updateLog(updateData);
+  }
+
+  function preventNegativeValues(e: React.ChangeEvent<HTMLInputElement>) {
+    if ((e.target as HTMLInputElement).valueAsNumber < 0) {
+      (e.target as HTMLInputElement).value = '0';
     }
   }
 
-  return (
-    <div className="card sm:card-side h-full w-full min-h-8 max-w-[450px] bg-base-100 text-base-content">
-      <div className="card-body w-full p-4 sm:p-6">
-        <div className="flex items-center justify-between">
-          <h2
-            className="card-title text-base sm:text-lg tooltip"
-            data-tip={description}
-          >
-            {logTitle}
-          </h2>
-          {logUser === user?.username ? (
-            <button
-              className="btn btn-sm btn-circle btn-ghost group"
-              onClick={() => deleteModalRef.current?.showModal()}
-              aria-label="Delete log"
-            >
-              <MdDelete className="text-xl opacity-75 group-hover:opacity-100" />
-            </button>
-          ) : null}
-        </div>
-        <p className="text-sm sm:text-base">Type: {logTypeText[type]}</p>
-        {renderQuantity()}
-        <div className="flex justify-between w-full text-sm sm:text-base">
-          <p>XP: {xp}</p>
-          <div>
-            <p
-              className="text-right tooltip"
-              data-tip={
-                date
-                  ? typeof date === 'string'
-                    ? DateTime.fromISO(date).toLocaleString({
-                        month: 'long',
-                        day: 'numeric',
-                        year: 'numeric',
-                      })
-                    : DateTime.fromJSDate(date as Date).toLocaleString({
-                        month: 'long',
-                        day: 'numeric',
-                        year: 'numeric',
-                      })
-                  : null
-              }
-            >
-              {relativeDate}
-            </p>
-          </div>
-        </div>
-      </div>
+  function getQuantityInfo() {
+    const info: {
+      label: string;
+      value: string | number;
+      icon?: React.ElementType;
+      tooltip?: string;
+    }[] = [];
 
-      {/* Delete Confirmation Modal */}
-      <dialog
-        id={`delete-modal-${log._id}`}
-        className="modal modal-bottom sm:modal-middle"
-        ref={deleteModalRef}
+    if (type === 'anime' && episodes) {
+      info.push({
+        label: 'Episodes',
+        value: episodes,
+        icon: MdPlayArrow,
+        tooltip: time
+          ? `${episodes} episodes • ${time} minutes total`
+          : `${episodes} episodes watched`,
+      });
+    } else if (type === 'manga') {
+      if (pages)
+        info.push({
+          label: 'Pages',
+          value: pages,
+          icon: MdBook,
+          tooltip: chars
+            ? `${pages} pages • ${chars.toLocaleString()} characters`
+            : `${pages} pages read`,
+        });
+      if (chars && !pages)
+        info.push({
+          label: 'Characters',
+          value: chars.toLocaleString(),
+          icon: MdBook,
+          tooltip: `${chars.toLocaleString()} characters read`,
+        });
+    } else if (type === 'vn' || type === 'reading') {
+      if (chars) {
+        const readingSpeed =
+          time && chars ? Math.round((chars / time) * 60) : null;
+        info.push({
+          label: 'Characters',
+          value: chars.toLocaleString(),
+          icon: MdBook,
+          tooltip: readingSpeed
+            ? `${chars.toLocaleString()} characters • ${time} min • ${readingSpeed} chars/hour`
+            : `${chars.toLocaleString()} characters read`,
+        });
+
+        // Add reading speed as separate badge
+        if (readingSpeed && time) {
+          info.push({
+            label: 'Speed',
+            value: `${readingSpeed}/hr`,
+            icon: MdSpeed,
+            tooltip: `Reading speed: ${readingSpeed} characters per hour`,
+          });
+        }
+
+        // Add time as separate badge
+        if (time) {
+          const timeStr =
+            time >= 60 ? `${Math.floor(time / 60)}h ${time % 60}m` : `${time}m`;
+          info.push({
+            label: 'Time',
+            value: timeStr,
+            icon: MdTimer,
+            tooltip: `${time} minutes spent reading`,
+          });
+        }
+      } else if (time && !chars) {
+        const timeStr =
+          time >= 60 ? `${Math.floor(time / 60)}h ${time % 60}m` : `${time}m`;
+        info.push({
+          label: 'Time',
+          value: timeStr,
+          icon: MdSchedule,
+          tooltip: `${time} minutes spent reading`,
+        });
+      }
+    } else if ((type === 'video' || type === 'audio') && time) {
+      const timeStr =
+        time >= 60 ? `${Math.floor(time / 60)}h ${time % 60}m` : `${time}m`;
+      info.push({
+        label: 'Time',
+        value: timeStr,
+        icon: MdSchedule,
+        tooltip: `${time} minutes of ${type} content`,
+      });
+    }
+
+    return info;
+  }
+
+  function getReadingSpeed() {
+    if ((type === 'reading' || type === 'vn') && chars && time && time > 0) {
+      return Math.round((chars / time) * 60);
+    }
+    return null;
+  }
+
+  const quantityInfo = getQuantityInfo();
+  const isOwner = logUser === user?.username;
+  const readingSpeed = getReadingSpeed();
+
+  return (
+    <>
+      <article
+        className={`card bg-base-100 shadow-sm hover:shadow-md transition-all duration-300 border ${typeConfig.borderColor} group`}
+        role="article"
+        aria-label={`Log entry: ${logTitle}`}
       >
-        <div className="modal-box">
-          <h3 className="font-bold text-lg text-error">Confirm Deletion</h3>
-          <div className="divider"></div>
-          <p className="py-4">
-            Are you sure you want to delete this log? This action cannot be
-            undone.
-          </p>
-          <div className="modal-action flex-col sm:flex-row gap-2">
+        {/* Header with type indicator */}
+        <div
+          className={`h-1 w-full ${typeConfig.bgColor.replace('/10', '')}`}
+        ></div>
+
+        <div className="card-body p-4 space-y-3">
+          {/* Header Section */}
+          <header className="flex justify-between gap-3">
+            <div className="flex items-start gap-3 flex-1 min-w-0">
+              <div
+                className={`badge badge-outline ${typeConfig.color} gap-1 shrink-0`}
+              >
+                <TypeIcon className="w-3 h-3" />
+                <span className="text-xs font-medium">{typeConfig.label}</span>
+              </div>
+
+              <div className="min-w-0 flex-1">
+                <h2
+                  className="font-bold text-base leading-tight text-base-content group-hover:text-primary transition-colors duration-200"
+                  title={logTitle}
+                >
+                  {displayTitle}
+                </h2>
+
+                {media &&
+                  typeof media === 'object' &&
+                  media.title?.contentTitleEnglish && (
+                    <p className="text-sm text-base-content/60 mt-1 leading-tight">
+                      {media.title.contentTitleEnglish.length > 45
+                        ? `${media.title.contentTitleEnglish.slice(0, 45)}...`
+                        : media.title.contentTitleEnglish}
+                    </p>
+                  )}
+
+                {/* Additional context for non-media logs */}
+                {(!media || typeof media !== 'object') &&
+                  description &&
+                  description !== logTitle && (
+                    <p className="text-sm text-base-content/60 mt-1 leading-tight">
+                      {description.length > 45
+                        ? `${description.slice(0, 45)}...`
+                        : description}
+                    </p>
+                  )}
+              </div>
+            </div>
+
+            {isOwner && (
+              <div className="dropdown dropdown-end">
+                <button
+                  tabIndex={0}
+                  className="btn btn-ghost btn-sm btn-circle opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+                  aria-label="Log options"
+                >
+                  <MdMoreHoriz className="w-4 h-4" />
+                </button>
+                <ul className="dropdown-content menu p-2 shadow-lg bg-base-100 rounded-box w-32 border border-base-300 z-50">
+                  <li>
+                    <button
+                      onClick={openEditModal}
+                      className="text-info hover:bg-info/10 gap-2"
+                    >
+                      <MdEdit className="w-4 h-4" />
+                      Edit
+                    </button>
+                  </li>
+                  <li>
+                    <button
+                      onClick={() => deleteModalRef.current?.showModal()}
+                      className="text-error hover:bg-error/10 gap-2"
+                    >
+                      <MdDelete className="w-4 h-4" />
+                      Delete
+                    </button>
+                  </li>
+                </ul>
+              </div>
+            )}
+          </header>
+
+          {/* Quantity Information with enhanced data */}
+          {quantityInfo.length > 0 && (
+            <div className="flex flex-wrap gap-2">
+              {quantityInfo.map((info, index) => (
+                <div
+                  key={index}
+                  className={`tooltip ${info.tooltip ? 'tooltip-bottom' : ''}`}
+                  data-tip={info.tooltip}
+                >
+                  <div
+                    className={`badge badge-soft gap-1 ${typeConfig.bgColor} ${typeConfig.color}`}
+                  >
+                    {info.icon && <info.icon className="w-3 h-3" />}
+                    <span className="text-xs">
+                      {info.label}:{' '}
+                      <span className="font-semibold">{info.value}</span>
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Footer Section with enhanced information */}
+          <footer className="flex justify-between items-center pt-2 border-t border-base-300">
+            <div className="flex items-center gap-2">
+              <div
+                className={`tooltip tooltip-top`}
+                data-tip={`Experience gained: ${xp} points`}
+              >
+                <div
+                  className={`badge badge-outline ${typeConfig.color} gap-1`}
+                >
+                  <MdTrendingUp className="w-3 h-3" />
+                  <span className="text-xs font-bold">{xp} XP</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="tooltip tooltip-left" data-tip={fullDate}>
+              <time
+                className="text-xs text-base-content/60 hover:text-base-content transition-colors duration-200 cursor-help flex items-center gap-1"
+                dateTime={
+                  date
+                    ? typeof date === 'string'
+                      ? date
+                      : date.toISOString()
+                    : undefined
+                }
+              >
+                <MdCalendarToday className="w-3 h-3" />
+                {relativeDate}
+              </time>
+            </div>
+          </footer>
+        </div>
+      </article>
+
+      {/* Enhanced Delete Confirmation Modal */}
+      <dialog
+        ref={deleteModalRef}
+        className="modal modal-bottom sm:modal-middle"
+        aria-labelledby="delete-modal-title"
+        aria-describedby="delete-modal-description"
+      >
+        <div className="modal-box border border-error/20">
+          <div className="flex gap-3 mb-4">
+            <div className="w-12 h-12 rounded-full bg-error/10 flex items-center justify-center">
+              <MdDelete className="text-error" />
+            </div>
+            <div>
+              <h3
+                id="delete-modal-title"
+                className="font-bold text-lg text-error"
+              >
+                Delete Log Entry
+              </h3>
+              <p className="text-sm text-base-content/60">
+                This action cannot be undone
+              </p>
+            </div>
+          </div>
+
+          <div className="divider my-4"></div>
+
+          <div id="delete-modal-description" className="space-y-3">
+            <p className="text-base-content">
+              Are you sure you want to delete this log entry?
+            </p>
+            <div className="alert alert-warning">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="stroke-current shrink-0 w-6"
+                fill="none"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                />
+              </svg>
+              <div>
+                <h4 className="font-semibold">"{displayTitle}"</h4>
+                <div className="text-sm opacity-80">
+                  {xp} XP • {typeConfig.label} • {relativeDate}
+                  {readingSpeed && ` • ${readingSpeed} chars/hour`}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="modal-action flex-col sm:flex-row gap-3 mt-6">
             <button
               onClick={() => deleteLog(log._id)}
-              className="btn btn-error w-full sm:w-auto"
               disabled={loadingDeleteLog}
+              className="btn btn-error w-full sm:w-auto order-2 sm:order-1"
             >
               {loadingDeleteLog ? (
                 <>
@@ -169,19 +520,184 @@ function LogCard({ log, user: logUser }: { log: ILog; user?: string }) {
                   Deleting...
                 </>
               ) : (
-                'Delete Log'
+                <>
+                  <MdDelete className="w-4 h-4" />
+                  Delete Log
+                </>
               )}
             </button>
-            <form method="dialog" className="w-full sm:w-auto">
-              <button className="btn btn-outline w-full">Cancel</button>
+            <form
+              method="dialog"
+              className="w-full sm:w-auto order-1 sm:order-2"
+            >
+              <button className="btn btn-outline w-full" type="submit">
+                Cancel
+              </button>
             </form>
           </div>
         </div>
         <form method="dialog" className="modal-backdrop">
-          <button>close</button>
+          <button aria-label="Close modal">close</button>
         </form>
       </dialog>
-    </div>
+
+      {/* Edit Log Modal */}
+      <dialog
+        ref={editModalRef}
+        className="modal modal-bottom sm:modal-middle"
+        aria-labelledby="edit-modal-title"
+      >
+        <div className="modal-box">
+          <div className="flex justify-between items-center mb-4">
+            <h3 id="edit-modal-title" className="font-bold text-lg">
+              Edit Log Entry
+            </h3>
+            <form method="dialog">
+              <button className="btn btn-sm btn-circle btn-ghost">✕</button>
+            </form>
+          </div>
+
+          <form onSubmit={handleEditSubmit} className="space-y-4">
+            <div>
+              <label className="label">
+                <span className="label-text">Description</span>
+              </label>
+              <input
+                type="text"
+                className="input input-bordered w-full"
+                value={editData.description}
+                onChange={(e) =>
+                  setEditData({ ...editData, description: e.target.value })
+                }
+                required
+              />
+            </div>
+
+            {type === 'anime' && (
+              <div>
+                <label className="label">
+                  <span className="label-text">Episodes</span>
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  className="input input-bordered w-full"
+                  value={editData.episodes}
+                  onChange={(e) =>
+                    setEditData({
+                      ...editData,
+                      episodes: Number(e.target.value),
+                    })
+                  }
+                  onInput={preventNegativeValues}
+                />
+              </div>
+            )}
+
+            {(type === 'reading' || type === 'vn' || type === 'manga') && (
+              <div>
+                <label className="label">
+                  <span className="label-text">Characters</span>
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  className="input input-bordered w-full"
+                  value={editData.chars}
+                  onChange={(e) =>
+                    setEditData({ ...editData, chars: Number(e.target.value) })
+                  }
+                  onInput={preventNegativeValues}
+                />
+              </div>
+            )}
+
+            {type === 'manga' && (
+              <div>
+                <label className="label">
+                  <span className="label-text">Pages</span>
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  className="input input-bordered w-full"
+                  value={editData.pages}
+                  onChange={(e) =>
+                    setEditData({ ...editData, pages: Number(e.target.value) })
+                  }
+                  onInput={preventNegativeValues}
+                />
+              </div>
+            )}
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="label">
+                  <span className="label-text">Hours</span>
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  className="input input-bordered w-full"
+                  value={editData.hours}
+                  onChange={(e) =>
+                    setEditData({ ...editData, hours: Number(e.target.value) })
+                  }
+                  onInput={preventNegativeValues}
+                />
+              </div>
+              <div>
+                <label className="label">
+                  <span className="label-text">Minutes</span>
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  max="59"
+                  className="input input-bordered w-full"
+                  value={editData.minutes}
+                  onChange={(e) =>
+                    setEditData({
+                      ...editData,
+                      minutes: Number(e.target.value),
+                    })
+                  }
+                  onInput={preventNegativeValues}
+                />
+              </div>
+            </div>
+
+            <div className="modal-action">
+              <button
+                type="submit"
+                className="btn btn-primary"
+                disabled={loadingUpdateLog}
+              >
+                {loadingUpdateLog ? (
+                  <>
+                    <span className="loading loading-spinner loading-sm"></span>
+                    Updating...
+                  </>
+                ) : (
+                  <>
+                    <MdEdit className="w-4 h-4" />
+                    Update Log
+                  </>
+                )}
+              </button>
+              <form method="dialog">
+                <button type="button" className="btn btn-outline">
+                  Cancel
+                </button>
+              </form>
+            </div>
+          </form>
+        </div>
+        <form method="dialog" className="modal-backdrop">
+          <button aria-label="Close modal">close</button>
+        </form>
+      </dialog>
+    </>
   );
 }
 

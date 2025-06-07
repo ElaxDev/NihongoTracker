@@ -148,6 +148,7 @@ export interface updateLogRequest {
   episodes?: number;
   pages?: number;
   chars?: number;
+  mediaId?: string;
 }
 
 export interface IContentMedia {
@@ -187,21 +188,27 @@ export interface ICreateLog
 export interface ILog {
   _id: string;
   user: string;
-  type: 'reading' | 'anime' | 'vn' | 'video' | 'manga' | 'audio' | 'other';
-  mediaId?: string;
-  xp: number;
-  private: boolean;
-  isAdult: boolean;
+  type: 'anime' | 'manga' | 'reading' | 'vn' | 'video' | 'audio' | 'other';
   description: string;
-  editedFields?: IEditedFields | null;
   episodes?: number;
   pages?: number;
   chars?: number;
   time?: number;
-  date: Date;
-  createdAt: Date;
-  updatedAt: Date;
-  media?: IMediaDocument;
+  date: Date | string;
+  xp: number;
+  mediaId?: string;
+  media?: {
+    contentId: string;
+    title: {
+      contentTitleNative: string;
+      contentTitleEnglish?: string;
+      contentTitleRomaji?: string;
+    };
+    contentImage?: string;
+    type: string;
+  };
+  private: boolean;
+  isAdult: boolean;
 }
 
 export interface IRankingResponse {
