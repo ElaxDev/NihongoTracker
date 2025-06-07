@@ -146,270 +146,280 @@ function StatsScreen() {
   }
 
   return (
-    <div className="2xl:max-w-(--breakpoint-2xl) 2xl:min-w-[50%] min-w-full 2xl:px-0 px-10 mb-24 mt-4">
-      <div className="grid lg:grid-cols-[20%_80%] gap-5">
-        <div className="lg:sticky lg:top-4 lg:self-start h-fit card bg-base-100 p-4">
-          <div className="font-bold text-xl">Types</div>
-          <ul className="menu card-body w-full">
-            <li
-              className={currentType === 'all' ? 'bg-base-200 rounded-btn' : ''}
-            >
-              <a onClick={() => setCurrentType('all')}>All</a>
-            </li>
-            {logTypes.map((type) => (
+    <div className="flex flex-row justify-center bg-base-200 min-h-screen">
+      <div className="2xl:max-w-(--breakpoint-2xl) 2xl:min-w-[50%] min-w-full 2xl:px-0 px-10 mb-24 mt-4 ">
+        <div className="justify-center grid lg:grid-cols-[20%_80%] gap-5">
+          <div className="lg:sticky lg:top-4 lg:self-start h-fit card bg-base-100 p-4">
+            <div className="font-bold text-xl">Types</div>
+            <ul className="menu card-body w-full">
               <li
-                key={type}
-                className={`capitalize ${
-                  currentType === type ? 'bg-base-200 rounded-btn' : ''
-                }`}
+                className={
+                  currentType === 'all' ? 'bg-base-200 rounded-btn' : ''
+                }
               >
-                <a onClick={() => setCurrentType(type)}>
-                  {type === 'vn' ? 'Visual Novel' : type}
-                </a>
+                <a onClick={() => setCurrentType('all')}>All</a>
               </li>
-            ))}
-          </ul>
+              {logTypes.map((type) => (
+                <li
+                  key={type}
+                  className={`capitalize ${
+                    currentType === type ? 'bg-base-200 rounded-btn' : ''
+                  }`}
+                >
+                  <a onClick={() => setCurrentType(type)}>
+                    {type === 'vn' ? 'Visual Novel' : type}
+                  </a>
+                </li>
+              ))}
+            </ul>
 
-          <div className="mt-4">
-            <div className="font-bold text-xl mb-2">Time Range</div>
-            <select
-              className="select select-bordered w-full"
-              value={timeRange}
-              onChange={(e) =>
-                setTimeRange(
-                  e.target.value as 'today' | 'month' | 'year' | 'total'
-                )
-              }
-            >
-              <option value="today">Today</option>
-              <option value="month">This Month</option>
-              <option value="year">This Year</option>
-              <option value="total">All Time</option>
-            </select>
-          </div>
-        </div>
-        <div className="flex flex-col gap-4">
-          {/* Stats summary cards */}
-          <div className="stats shadow bg-base-100">
-            <div className="stat">
-              <div className="stat-title">Total XP</div>
-              <div className="stat-value text-primary">
-                {currentTypeStats
-                  ? numberWithCommas(currentTypeStats.totalXp)
-                  : 0}
-              </div>
-              <div className="stat-desc">
-                {currentType === 'all'
-                  ? `${timeRange === 'total' ? 'All time' : timeRange === 'today' ? "Today's" : timeRange === 'month' ? "This Month's" : "This Year's"}`
-                  : `${currentType.charAt(0).toUpperCase() + currentType.slice(1)} category`}
-              </div>
-            </div>
-
-            <div className="stat">
-              <div className="stat-title">Time Spent</div>
-              <div className="stat-value text-secondary">
-                {currentTypeStats
-                  ? numberWithCommas(
-                      parseFloat(currentTypeStats.totalTimeHours.toFixed(1))
-                    )
-                  : 0}
-                <span className="text-lg">h</span>
-              </div>
-              <div className="stat-desc">
-                {currentType === 'all'
-                  ? `${timeRange === 'total' ? 'All time' : timeRange === 'today' ? 'Today' : timeRange === 'month' ? 'This Month' : 'This Year'}`
-                  : `${currentType.charAt(0).toUpperCase() + currentType.slice(1)} category`}
-              </div>
-            </div>
-
-            <div className="stat">
-              <div className="stat-title">Logs Count</div>
-              <div className="stat-value text-accent">
-                {currentTypeStats
-                  ? numberWithCommas(
-                      currentType === 'all'
-                        ? userStats?.totals.totalLogs
-                        : 'count' in currentTypeStats
-                          ? currentTypeStats.count
-                          : 0
-                    )
-                  : 0}
-              </div>
-              <div className="stat-desc">
-                {currentType !== 'all' &&
-                  `${currentType.charAt(0).toUpperCase() + currentType.slice(1)} logs`}
-                {currentType === 'all' && (
-                  <span
-                    className={
-                      userStats?.totals.untrackedCount ? 'text-warning' : ''
-                    }
-                  >
-                    {` (${userStats?.totals.untrackedCount || 0} untracked)`}
-                  </span>
-                )}
-              </div>
+            <div className="mt-4">
+              <div className="font-bold text-xl mb-2">Time Range</div>
+              <select
+                className="select select-bordered w-full"
+                value={timeRange}
+                onChange={(e) =>
+                  setTimeRange(
+                    e.target.value as 'today' | 'month' | 'year' | 'total'
+                  )
+                }
+              >
+                <option value="today">Today</option>
+                <option value="month">This Month</option>
+                <option value="year">This Year</option>
+                <option value="total">All Time</option>
+              </select>
             </div>
           </div>
-
-          {currentType === 'all' && (
+          <div className="flex flex-col gap-4">
+            {/* Stats summary cards */}
             <div className="stats shadow bg-base-100">
               <div className="stat">
-                <div className="stat-title">Reading Hours</div>
-                <div className="stat-value text-info">
-                  {userStats?.totals.readingHours
-                    ? numberWithCommas(
-                        parseFloat(userStats.totals.readingHours.toFixed(1))
-                      )
+                <div className="stat-title">Total XP</div>
+                <div className="stat-value text-primary">
+                  {currentTypeStats
+                    ? numberWithCommas(currentTypeStats.totalXp)
                     : 0}
-                  <span className="text-lg">h</span>
-                </div>
-                <div className="stat-desc">Reading, Manga, Visual Novels</div>
-              </div>
-
-              <div className="stat">
-                <div className="stat-title">Listening Hours</div>
-                <div className="stat-value text-success">
-                  {userStats?.totals.listeningHours
-                    ? numberWithCommas(
-                        parseFloat(userStats.totals.listeningHours.toFixed(1))
-                      )
-                    : 0}
-                  <span className="text-lg">h</span>
-                </div>
-                <div className="stat-desc">Anime, Video, Audio</div>
-              </div>
-
-              <div className="stat">
-                <div className="stat-title">Balance</div>
-                <div className="stat-value text-warning">
-                  {userStats?.totals.readingHours &&
-                  userStats?.totals.listeningHours &&
-                  userStats.totals.readingHours +
-                    userStats.totals.listeningHours >
-                    0
-                    ? (() => {
-                        const total =
-                          userStats.totals.readingHours +
-                          userStats.totals.listeningHours;
-                        const readingRatio = Math.round(
-                          (userStats.totals.readingHours / total) * 10
-                        );
-                        const listeningRatio = 10 - readingRatio;
-                        return `${readingRatio}:${listeningRatio}`;
-                      })()
-                    : '0:0'}
-                </div>
-                <div className="stat-desc">Reading/Listening ratio</div>
-              </div>
-            </div>
-          )}
-
-          <div className="stats shadow bg-base-100">
-            {(currentType === 'all' ||
-              ['reading', 'manga', 'vn'].includes(currentType)) && (
-              <div className="stat">
-                <div className="stat-title">Total Characters</div>
-                <div className="stat-value text-info">
-                  {(() => {
-                    if (currentType === 'all') {
-                      return numberWithCommas(
-                        userStats?.totals.totalChars || 0
-                      );
-                    } else {
-                      // For specific type, get the totalChars from that type's stats
-                      const typeStats = userStats?.statsByType.find(
-                        (stat) => stat.type === currentType
-                      );
-                      return numberWithCommas(typeStats?.totalChars || 0);
-                    }
-                  })()}
                 </div>
                 <div className="stat-desc">
                   {currentType === 'all'
-                    ? 'Characters read across all reading types'
-                    : `Characters read in ${currentType} logs`}
+                    ? `${timeRange === 'total' ? 'All time' : timeRange === 'today' ? "Today's" : timeRange === 'month' ? "This Month's" : "This Year's"}`
+                    : `${currentType.charAt(0).toUpperCase() + currentType.slice(1)} category`}
+                </div>
+              </div>
+
+              <div className="stat">
+                <div className="stat-title">Time Spent</div>
+                <div className="stat-value text-secondary">
+                  {currentTypeStats
+                    ? numberWithCommas(
+                        parseFloat(currentTypeStats.totalTimeHours.toFixed(1))
+                      )
+                    : 0}
+                  <span className="text-lg">h</span>
+                </div>
+                <div className="stat-desc">
+                  {currentType === 'all'
+                    ? `${timeRange === 'total' ? 'All time' : timeRange === 'today' ? 'Today' : timeRange === 'month' ? 'This Month' : 'This Year'}`
+                    : `${currentType.charAt(0).toUpperCase() + currentType.slice(1)} category`}
+                </div>
+              </div>
+
+              <div className="stat">
+                <div className="stat-title">Logs Count</div>
+                <div className="stat-value text-accent">
+                  {currentTypeStats
+                    ? numberWithCommas(
+                        currentType === 'all'
+                          ? userStats?.totals.totalLogs
+                          : 'count' in currentTypeStats
+                            ? currentTypeStats.count
+                            : 0
+                      )
+                    : 0}
+                </div>
+                <div className="stat-desc">
+                  {currentType !== 'all' &&
+                    `${currentType.charAt(0).toUpperCase() + currentType.slice(1)} logs`}
+                  {currentType === 'all' && (
+                    <span
+                      className={
+                        userStats?.totals.untrackedCount ? 'text-warning' : ''
+                      }
+                    >
+                      {` (${userStats?.totals.untrackedCount || 0} untracked)`}
+                    </span>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {currentType === 'all' && (
+              <div className="stats shadow bg-base-100">
+                <div className="stat">
+                  <div className="stat-title">Reading Hours</div>
+                  <div className="stat-value text-info">
+                    {userStats?.totals.readingHours
+                      ? numberWithCommas(
+                          parseFloat(userStats.totals.readingHours.toFixed(1))
+                        )
+                      : 0}
+                    <span className="text-lg">h</span>
+                  </div>
+                  <div className="stat-desc">Reading, Manga, Visual Novels</div>
+                </div>
+
+                <div className="stat">
+                  <div className="stat-title">Listening Hours</div>
+                  <div className="stat-value text-success">
+                    {userStats?.totals.listeningHours
+                      ? numberWithCommas(
+                          parseFloat(userStats.totals.listeningHours.toFixed(1))
+                        )
+                      : 0}
+                    <span className="text-lg">h</span>
+                  </div>
+                  <div className="stat-desc">Anime, Video, Audio</div>
+                </div>
+
+                <div className="stat">
+                  <div className="stat-title">Balance</div>
+                  <div className="stat-value text-warning">
+                    {userStats?.totals.readingHours &&
+                    userStats?.totals.listeningHours &&
+                    userStats.totals.readingHours +
+                      userStats.totals.listeningHours >
+                      0
+                      ? (() => {
+                          const total =
+                            userStats.totals.readingHours +
+                            userStats.totals.listeningHours;
+                          const readingRatio = Math.round(
+                            (userStats.totals.readingHours / total) * 10
+                          );
+                          const listeningRatio = 10 - readingRatio;
+                          return `${readingRatio}:${listeningRatio}`;
+                        })()
+                      : '0:0'}
+                  </div>
+                  <div className="stat-desc">Reading/Listening ratio</div>
                 </div>
               </div>
             )}
-            <div className="stat">
-              <div className="stat-title">Daily Average Hours</div>
-              <div className="stat-value text-warning">
-                {userStats?.totals.dailyAverageHours
-                  ? numberWithCommas(
-                      parseFloat(userStats.totals.dailyAverageHours.toFixed(2))
-                    )
-                  : 0}
-                <span className="text-lg">h</span>
-              </div>
-              <div className="stat-desc">
-                {(() => {
-                  const periodText = {
-                    today: "Today's",
-                    month: "This month's",
-                    year: "This year's",
-                    total: 'All-time',
-                  }[timeRange];
 
-                  const typeText =
-                    currentType === 'all'
-                      ? 'immersion'
-                      : `${currentType} immersion`;
+            <div className="stats shadow bg-base-100">
+              {(currentType === 'all' ||
+                ['reading', 'manga', 'vn'].includes(currentType)) && (
+                <div className="stat">
+                  <div className="stat-title">Total Characters</div>
+                  <div className="stat-value text-info">
+                    {(() => {
+                      if (currentType === 'all') {
+                        return numberWithCommas(
+                          userStats?.totals.totalChars || 0
+                        );
+                      } else {
+                        // For specific type, get the totalChars from that type's stats
+                        const typeStats = userStats?.statsByType.find(
+                          (stat) => stat.type === currentType
+                        );
+                        return numberWithCommas(typeStats?.totalChars || 0);
+                      }
+                    })()}
+                  </div>
+                  <div className="stat-desc">
+                    {currentType === 'all'
+                      ? 'Characters read across all reading types'
+                      : `Characters read in ${currentType} logs`}
+                  </div>
+                </div>
+              )}
+              <div className="stat">
+                <div className="stat-title">Daily Average Hours</div>
+                <div className="stat-value text-warning">
+                  {userStats?.totals.dailyAverageHours
+                    ? numberWithCommas(
+                        parseFloat(
+                          userStats.totals.dailyAverageHours.toFixed(2)
+                        )
+                      )
+                    : 0}
+                  <span className="text-lg">h</span>
+                </div>
+                <div className="stat-desc">
+                  {(() => {
+                    const periodText = {
+                      today: "Today's",
+                      month: "This month's",
+                      year: "This year's",
+                      total: 'All-time',
+                    }[timeRange];
 
-                  return `${periodText} daily ${typeText} average`;
-                })()}
+                    const typeText =
+                      currentType === 'all'
+                        ? 'immersion'
+                        : `${currentType} immersion`;
+
+                    return `${periodText} daily ${typeText} average`;
+                  })()}
+                </div>
               </div>
             </div>
-          </div>
 
-          {currentType === 'all' && (
-            <div className="flex flex-col lg:flex-row justify-between gap-7">
-              <div className="card bg-base-100 p-4">
-                <div className="max-h-64 max-w-64">
-                  <h2 className="text-2xl font-bold text-primary">Log Count</h2>
-                  <PieChart data={logCountData} />
+            {currentType === 'all' && (
+              <div className="flex flex-col lg:flex-row justify-between gap-7">
+                <div className="card bg-base-100 p-4">
+                  <div className="max-h-64 max-w-64">
+                    <h2 className="text-2xl font-bold text-primary">
+                      Log Count
+                    </h2>
+                    <PieChart data={logCountData} />
+                  </div>
                 </div>
-              </div>
-              <div className="card bg-base-100 p-4">
-                <div className="max-h-64 max-w-64">
-                  <h2 className="text-2xl font-bold text-primary">Log Hours</h2>
-                  <PieChart data={logTimeData} />
+                <div className="card bg-base-100 p-4">
+                  <div className="max-h-64 max-w-64">
+                    <h2 className="text-2xl font-bold text-primary">
+                      Log Hours
+                    </h2>
+                    <PieChart data={logTimeData} />
+                  </div>
                 </div>
-              </div>
-              <div className="card bg-base-100 p-4">
-                <div className="max-h-64 max-w-64">
-                  <h2 className="text-2xl font-bold text-primary">Log XP</h2>
-                  <PieChart data={logXpData} />
-                </div>
-              </div>
-            </div>
-          )}
-          {(currentType === 'all' ||
-            currentType === 'reading' ||
-            currentType === 'manga' ||
-            currentType === 'vn') &&
-            userStats?.readingSpeedData && (
-              <div className="card bg-base-100 grow p-8 mb-4">
-                <div className="h-full w-full">
-                  <h2 className="text-2xl font-bold text-primary mb-2">
-                    Reading Speed
-                  </h2>
-                  <div className="h-full w-full">
-                    <SpeedChart
-                      timeframe={timeRange}
-                      readingSpeedData={userStats.readingSpeedData}
-                    />
+                <div className="card bg-base-100 p-4">
+                  <div className="max-h-64 max-w-64">
+                    <h2 className="text-2xl font-bold text-primary">Log XP</h2>
+                    <PieChart data={logXpData} />
                   </div>
                 </div>
               </div>
             )}
+            {(currentType === 'all' ||
+              currentType === 'reading' ||
+              currentType === 'manga' ||
+              currentType === 'vn') &&
+              userStats?.readingSpeedData && (
+                <div className="card bg-base-100 grow p-8 mb-4">
+                  <div className="h-full w-full">
+                    <h2 className="text-2xl font-bold text-primary mb-2">
+                      Reading Speed
+                    </h2>
+                    <div className="h-full w-full">
+                      <SpeedChart
+                        timeframe={timeRange}
+                        readingSpeedData={userStats.readingSpeedData}
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
 
-          <div className="card bg-base-100 grow p-8 mb-4">
-            <div className="h-full w-full">
-              <ProgressChart
-                timeframe={timeRange}
-                statsData={userStats?.statsByType}
-                selectedType={currentType}
-              />
+            <div className="card bg-base-100 grow p-8 mb-4">
+              <div className="h-full w-full">
+                <ProgressChart
+                  timeframe={timeRange}
+                  statsData={userStats?.statsByType}
+                  selectedType={currentType}
+                />
+              </div>
             </div>
           </div>
         </div>
