@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   clearUserDataFn,
   importFromCSV,
@@ -10,21 +10,34 @@ import { AxiosError } from 'axios';
 import { ILoginResponse } from '../types';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useUserDataStore } from '../store/userData';
-import Loader from '../components/Loader';
 import ThemeSwitcher from '../components/ThemeSwitcher';
-import { MdInfo } from 'react-icons/md';
+import ReactCrop, { Crop, PixelCrop } from 'react-image-crop';
+import { canvasPreview } from '../utils/canvasPreview';
 
 function SettingsScreen() {
   const { setUser, user } = useUserDataStore();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
-  const [newPasswordConfirm, setPasswordConfirm] = useState('');
+  const [newPasswordConfirm, setNewPasswordConfirm] = useState('');
   const [discordId, setDiscordId] = useState(user?.discordId || '');
-  const [forcedImport] = useState(false);
   const [blurAdult, setBlurAdult] = useState(
     user?.settings?.blurAdultContent || false
   );
+
+  const [avatarSrc, setAvatarSrc] = useState<string>('');
+  const [bannerSrc, setBannerSrc] = useState<string>('');
+  const [avatarCrop, setAvatarCrop] = useState<Crop>();
+  const [bannerCrop, setBannerCrop] = useState<Crop>();
+  const [completedAvatarCrop, setCompletedAvatarCrop] = useState<PixelCrop>();
+  const [completedBannerCrop, setCompletedBannerCrop] = useState<PixelCrop>();
+  const [showAvatarCrop, setShowAvatarCrop] = useState(false);
+  const [showBannerCrop, setShowBannerCrop] = useState(false);
+
+  const avatarImgRef = useRef<HTMLImageElement>(null);
+  const bannerImgRef = useRef<HTMLImageElement>(null);
+  const avatarPreviewCanvasRef = useRef<HTMLCanvasElement>(null);
+  const bannerPreviewCanvasRef = useRef<HTMLCanvasElement>(null);
 
   const queryClient = useQueryClient();
 
@@ -109,24 +122,23 @@ function SettingsScreen() {
 
   async function handleSyncLogs(e: React.FormEvent) {
     e.preventDefault();
-    syncLogs(forcedImport);
+    syncLogs();
   }
 
   async function handleImportCSV(e: React.FormEvent) {
     e.preventDefault();
-    const csvFile = (document.getElementById('csv') as HTMLInputElement)
-      .files![0];
-    if (!csvFile) {
+    const csvFileInput = document.getElementById('csv') as HTMLInputElement;
+    if (!csvFileInput.files || csvFileInput.files.length === 0) {
       toast.error('Please select a CSV file');
       return;
     }
+    const csvFile = csvFileInput.files[0];
     const formData = new FormData();
     formData.append('csv', csvFile);
     importCSVLogs(formData);
   }
 
-  async function handleClearData(e: React.FormEvent) {
-    e.preventDefault();
+  async function handleClearData() {
     (document.getElementById('clear_data_modal') as HTMLDialogElement).close();
     clearData();
   }
@@ -134,30 +146,109 @@ function SettingsScreen() {
   async function handleUpdateUser(e: React.FormEvent) {
     e.preventDefault();
     const formData = new FormData();
-    formData.append('username', username);
-    formData.append('password', password);
-    formData.append('newPassword', newPassword);
+
+    // Only append fields that have values to avoid sending empty strings
+    if (username.trim()) formData.append('username', username);
+    if (password.trim()) formData.append('password', password);
+    if (newPassword.trim()) formData.append('newPassword', newPassword);
+    if (newPasswordConfirm.trim())
+      formData.append('newPasswordConfirm', newPasswordConfirm);
+
+    // Always append discordId (even if empty to allow clearing)
     formData.append('discordId', discordId);
-    formData.append('newPasswordConfirm', newPasswordConfirm);
     formData.append('blurAdultContent', blurAdult.toString());
 
-    const avatar = (document.getElementById('avatar') as HTMLInputElement)
-      .files![0];
-    const banner = (document.getElementById('banner') as HTMLInputElement)
-      .files![0];
+    const avatarInput = document.getElementById('avatar') as HTMLInputElement;
+    const bannerInput = document.getElementById('banner') as HTMLInputElement;
 
-    if (avatar) {
-      formData.append('avatar', avatar);
+    if (avatarInput.files && avatarInput.files.length > 0) {
+      formData.append('avatar', avatarInput.files[0]);
     }
-    if (banner) {
-      formData.append('banner', banner);
+    if (bannerInput.files && bannerInput.files.length > 0) {
+      formData.append('banner', bannerInput.files[0]);
     }
 
     updateUser(formData);
   }
 
+  async function onSelectAvatarFile(e: React.ChangeEvent<HTMLInputElement>) {
+    if (e.target.files && e.target.files.length > 0) {
+      const reader = new FileReader();
+      reader.addEventListener('load', () => {
+        setAvatarSrc(reader.result?.toString() || '');
+        setShowAvatarCrop(true);
+      });
+      reader.readAsDataURL(e.target.files[0]);
+    }
+  }
+
+  async function onSelectBannerFile(e: React.ChangeEvent<HTMLInputElement>) {
+    if (e.target.files && e.target.files.length > 0) {
+      const reader = new FileReader();
+      reader.addEventListener('load', () => {
+        setBannerSrc(reader.result?.toString() || '');
+        setShowBannerCrop(true);
+      });
+      reader.readAsDataURL(e.target.files[0]);
+    }
+  }
+
+  function onAvatarImageLoad() {
+    setAvatarCrop({
+      unit: '%',
+      width: 90,
+      height: 90,
+      x: 5,
+      y: 5,
+    });
+  }
+
+  function onBannerImageLoad() {
+    setBannerCrop({
+      unit: '%',
+      width: 90,
+      height: 60,
+      x: 5,
+      y: 20,
+    });
+  }
+
+  async function handleAvatarCropComplete() {
+    if (
+      completedAvatarCrop?.width &&
+      completedAvatarCrop?.height &&
+      avatarImgRef.current &&
+      avatarPreviewCanvasRef.current
+    ) {
+      await canvasPreview(
+        avatarImgRef.current,
+        avatarPreviewCanvasRef.current,
+        completedAvatarCrop
+      );
+      avatarPreviewCanvasRef.current.classList.remove('hidden');
+      setShowAvatarCrop(false);
+    }
+  }
+
+  async function handleBannerCropComplete() {
+    if (
+      completedBannerCrop?.width &&
+      completedBannerCrop?.height &&
+      bannerImgRef.current &&
+      bannerPreviewCanvasRef.current
+    ) {
+      await canvasPreview(
+        bannerImgRef.current,
+        bannerPreviewCanvasRef.current,
+        completedBannerCrop
+      );
+      bannerPreviewCanvasRef.current.classList.remove('hidden');
+      setShowBannerCrop(false);
+    }
+  }
+
   return (
-    <div className="pt-20 py-16 bg-base-200 min-h-screen">
+    <div className="min-h-screen bg-base-200 mt-16">
       {/* Confirm Clear Data Modal */}
       <dialog
         id="clear_data_modal"
@@ -172,9 +263,21 @@ function SettingsScreen() {
             This will permanently delete all your logs and statistics. This
             action cannot be undone.
           </p>
+
           <div className="modal-action">
-            <button onClick={handleClearData} className="btn btn-error">
-              Delete All Data
+            <button
+              className="btn btn-error"
+              onClick={handleClearData}
+              disabled={isClearDataPending}
+            >
+              {isClearDataPending ? (
+                <>
+                  <span className="loading loading-spinner loading-sm"></span>
+                  Clearing...
+                </>
+              ) : (
+                'Delete All Data'
+              )}
             </button>
             <form method="dialog">
               <button className="btn btn-outline">Cancel</button>
@@ -186,211 +289,682 @@ function SettingsScreen() {
         </form>
       </dialog>
 
-      <div className="max-w-2xl mx-auto">
-        <div className="card bg-base-100 shadow-xl">
-          <div className="card-body">
-            <h1 className="card-title text-2xl font-bold mb-6">Settings</h1>
-
-            <div className="flex justify-between items-center mb-6">
-              <span className="text-lg font-medium">Theme</span>
-              <ThemeSwitcher />
+      {/* Avatar Crop Modal */}
+      {showAvatarCrop && (
+        <dialog className="modal modal-open">
+          <div className="modal-box max-w-2xl">
+            <h3 className="font-bold text-lg mb-4">Crop Avatar</h3>
+            <div className="flex justify-center">
+              <ReactCrop
+                crop={avatarCrop}
+                onChange={(_, percentCrop) => setAvatarCrop(percentCrop)}
+                onComplete={(c) => setCompletedAvatarCrop(c)}
+                aspect={1}
+                circularCrop
+              >
+                <img
+                  ref={avatarImgRef}
+                  alt="Crop avatar"
+                  src={avatarSrc}
+                  onLoad={onAvatarImageLoad}
+                  className="max-h-96"
+                />
+              </ReactCrop>
             </div>
+            <div className="modal-action">
+              <button
+                className="btn btn-primary"
+                onClick={handleAvatarCropComplete}
+                disabled={
+                  !completedAvatarCrop?.width || !completedAvatarCrop?.height
+                }
+              >
+                Apply Crop
+              </button>
+              <button
+                className="btn btn-outline"
+                onClick={() => setShowAvatarCrop(false)}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </dialog>
+      )}
 
-            <form onSubmit={handleUpdateUser}>
-              <fieldset className="fieldset mb-6">
-                <legend className="fieldset-legend">Profile</legend>
+      {/* Banner Crop Modal */}
+      {showBannerCrop && (
+        <dialog className="modal modal-open">
+          <div className="modal-box max-w-4xl">
+            <h3 className="font-bold text-lg mb-4">Crop Banner</h3>
+            <div className="flex justify-center">
+              <ReactCrop
+                crop={bannerCrop}
+                onChange={(_, percentCrop) => setBannerCrop(percentCrop)}
+                onComplete={(c) => setCompletedBannerCrop(c)}
+                aspect={16 / 9}
+              >
+                <img
+                  ref={bannerImgRef}
+                  alt="Crop banner"
+                  src={bannerSrc}
+                  onLoad={onBannerImageLoad}
+                  className="max-h-96"
+                />
+              </ReactCrop>
+            </div>
+            <div className="modal-action">
+              <button
+                className="btn btn-primary"
+                onClick={handleBannerCropComplete}
+                disabled={
+                  !completedBannerCrop?.width || !completedBannerCrop?.height
+                }
+              >
+                Apply Crop
+              </button>
+              <button
+                className="btn btn-outline"
+                onClick={() => setShowBannerCrop(false)}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </dialog>
+      )}
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="label">
-                      <span className="label-text">Avatar</span>
-                    </label>
-                    <input
-                      type="file"
-                      id="avatar"
-                      className="file-input file-input-bordered w-full"
-                    />
+      {/* Hero Section */}
+      <div className="bg-base-100 shadow-sm border-b border-base-300">
+        <div className="container mx-auto px-4 py-8">
+          <div className="text-center">
+            <h1 className="text-4xl font-bold text-base-content mb-2">
+              Settings
+            </h1>
+            <p className="text-base-content/70 text-lg">
+              Manage your account and preferences
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Main Content */}
+      <div className="container mx-auto px-4 py-8 max-w-6xl">
+        <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
+          {/* Profile Settings - Left Column */}
+          <div className="xl:col-span-2 space-y-6">
+            {/* Basic Profile Info */}
+            <div className="card bg-base-100 shadow-xl border border-base-300/50">
+              <div className="card-body">
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="p-3 bg-primary/10 rounded-lg">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="h-6 w-6 text-primary"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                      />
+                    </svg>
                   </div>
-
                   <div>
-                    <label className="label">
-                      <span className="label-text">Banner</span>
-                    </label>
-                    <input
-                      type="file"
-                      id="banner"
-                      className="file-input file-input-bordered w-full"
-                    />
+                    <h2 className="text-2xl font-bold">Profile Information</h2>
+                    <p className="text-base-content/70">
+                      Update your basic profile details
+                    </p>
                   </div>
                 </div>
 
-                <div className="mt-4">
-                  <label className="label">
-                    <span className="label-text">Discord ID</span>
-                    <span className="label-text-alt text-info">
-                      (Only for Manabe Discord Members)
-                    </span>
-                  </label>
-                  <div className="join w-full">
-                    <input
-                      type="text"
-                      placeholder="Discord ID"
-                      value={discordId}
-                      onChange={(e) => setDiscordId(e.target.value)}
-                      className="input input-bordered w-full join-item"
-                    />
+                <form onSubmit={handleUpdateUser} className="space-y-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="form-control">
+                      <label className="label">
+                        <span className="label-text font-medium">Username</span>
+                      </label>
+                      <input
+                        type="text"
+                        className="input input-bordered focus:input-primary transition-colors"
+                        placeholder={user?.username || 'Enter username'}
+                        value={username}
+                        onChange={(e) => setUsername(e.target.value)}
+                      />
+                      <label className="label">
+                        <span className="label-text-alt text-base-content/60">
+                          Current: {user?.username || 'Not set'}
+                        </span>
+                      </label>
+                    </div>
+
+                    <div className="form-control">
+                      <label className="label">
+                        <span className="label-text font-medium">
+                          Discord ID
+                        </span>
+                      </label>
+                      <input
+                        type="text"
+                        className="input input-bordered focus:input-primary transition-colors"
+                        placeholder="Enter Discord ID (e.g., 123456789012345678)"
+                        value={discordId}
+                        onChange={(e) => setDiscordId(e.target.value)}
+                      />
+                      <label className="label">
+                        <span className="label-text-alt text-base-content/60">
+                          {user?.discordId
+                            ? `Current: ${user.discordId}`
+                            : 'Required for syncing external logs (Anilist, etc.)'}
+                        </span>
+                      </label>
+                    </div>
+                  </div>
+
+                  {/* Media Uploads */}
+                  <div className="space-y-6">
+                    <div className="divider">
+                      <span className="text-base-content/70 font-medium">
+                        Media & Appearance
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                      <div className="form-control">
+                        <label className="label">
+                          <span className="label-text font-medium">Avatar</span>
+                        </label>
+                        <input
+                          type="file"
+                          id="avatar"
+                          className="file-input file-input-bordered file-input-primary"
+                          accept="image/*"
+                          onChange={onSelectAvatarFile}
+                        />
+                        <label className="label">
+                          <span className="label-text-alt text-base-content/60">
+                            Recommended: Square image, max 2MB
+                          </span>
+                        </label>
+                        <canvas
+                          ref={avatarPreviewCanvasRef}
+                          className="rounded-lg border-2 border-base-300 mt-4 hidden shadow-sm"
+                          style={{
+                            objectFit: 'contain',
+                            width: 120,
+                            height: 120,
+                          }}
+                        />
+                      </div>
+
+                      <div className="form-control">
+                        <label className="label">
+                          <span className="label-text font-medium">Banner</span>
+                        </label>
+                        <input
+                          type="file"
+                          id="banner"
+                          className="file-input file-input-bordered file-input-primary"
+                          accept="image/*"
+                          onChange={onSelectBannerFile}
+                        />
+                        <label className="label">
+                          <span className="label-text-alt text-base-content/60">
+                            Recommended: 16:9 aspect ratio, max 5MB
+                          </span>
+                        </label>
+                        <canvas
+                          ref={bannerPreviewCanvasRef}
+                          className="rounded-lg border-2 border-base-300 mt-4 hidden shadow-sm"
+                          style={{
+                            objectFit: 'contain',
+                            width: '100%',
+                            maxHeight: 150,
+                          }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="card-actions justify-end pt-4">
                     <button
-                      className="btn btn-primary join-item"
-                      type="button"
-                      onClick={handleSyncLogs}
-                      disabled={!discordId || isSyncPending}
+                      type="submit"
+                      className="btn btn-primary btn-lg"
+                      disabled={isPending}
                     >
-                      {isSyncPending ? (
-                        <span className="loading loading-spinner loading-sm"></span>
+                      {isPending ? (
+                        <>
+                          <span className="loading loading-spinner loading-sm"></span>
+                          Updating...
+                        </>
                       ) : (
-                        'Sync Logs'
+                        <>
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            className="h-5 w-5"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M5 13l4 4L19 7"
+                            />
+                          </svg>
+                          Update Profile
+                        </>
                       )}
                     </button>
                   </div>
-                </div>
+                </form>
+              </div>
+            </div>
 
-                <div className="mt-4">
-                  <label className="label">
-                    <span className="label-text">Import from CSV</span>
-                    <span
-                      className="tooltip"
-                      data-tip='The headers of the CSV File should be "type ("anime", "manga", "reading", "vn", "video", "audio" or "other"), description, date, quantity (this column varies according to the type column, for anime is episodes, manga is pages, reading is characters, vn is characters, video is time, audio is time, other is time), time (in minutes), chars, mediaId (if applicable)" if they are not, the import can and will fail.'
+            {/* Security Settings */}
+            <div className="card bg-base-100 shadow-xl border border-base-300/50">
+              <div className="card-body">
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="p-3 bg-secondary/10 rounded-lg">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="h-6 w-6 text-secondary"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
                     >
-                      <MdInfo />
-                    </span>
-                  </label>
-                  <input
-                    type="file"
-                    id="csv"
-                    className="file-input file-input-bordered w-full"
-                  />
-                  <button
-                    className="btn btn-primary mt-2"
-                    type="button"
-                    onClick={handleImportCSV}
-                    disabled={isImportPending}
-                  >
-                    Import
-                  </button>
-                </div>
-              </fieldset>
-
-              <fieldset className="fieldset mb-6">
-                <legend className="fieldset-legend">Account</legend>
-
-                <div className="mb-4">
-                  <label className="label cursor-pointer">
-                    <span className="label-text">Blur Adult Content</span>
-                    <input
-                      type="checkbox"
-                      checked={blurAdult}
-                      onChange={(e) => setBlurAdult(e.target.checked)}
-                      className="checkbox checkbox-primary"
-                    />
-                  </label>
-                </div>
-
-                <div className="mb-4">
-                  <label className="label">
-                    <span className="label-text">Username</span>
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="Username"
-                    value={username}
-                    onChange={(e) => setUsername(e.target.value)}
-                    autoComplete="new-off"
-                    className="input input-bordered w-full"
-                  />
-                </div>
-
-                <div className="mb-4">
-                  <label className="label">
-                    <span className="label-text">Current Password</span>
-                    <span className="label-text-alt">
-                      (Required to update account)
-                    </span>
-                  </label>
-                  <input
-                    type="password"
-                    placeholder="Current Password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    autoComplete="new-password"
-                    className="input input-bordered w-full"
-                  />
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
+                      />
+                    </svg>
+                  </div>
                   <div>
+                    <h2 className="text-2xl font-bold">Security</h2>
+                    <p className="text-base-content/70">
+                      Update your password and security settings
+                    </p>
+                  </div>
+                </div>
+
+                <form onSubmit={handleUpdateUser} className="space-y-6">
+                  <div className="form-control w-full">
                     <label className="label">
-                      <span className="label-text">New Password</span>
-                      <span className="label-text-alt">(Optional)</span>
+                      <span className="label-text font-medium">
+                        Current Password
+                      </span>
                     </label>
                     <input
                       type="password"
-                      placeholder="New Password"
+                      className="input input-bordered focus:input-secondary transition-colors w-full"
+                      placeholder="Enter current password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                    />
+                    <label className="label">
+                      <span className="label-text-alt text-base-content/60">
+                        Required to verify your identity
+                      </span>
+                    </label>
+                  </div>
+
+                  <div className="form-control w-full">
+                    <label className="label">
+                      <span className="label-text font-medium">
+                        New Password
+                      </span>
+                    </label>
+                    <input
+                      type="password"
+                      className="input input-bordered focus:input-secondary transition-colors w-full"
+                      placeholder="Enter new password"
                       value={newPassword}
                       onChange={(e) => setNewPassword(e.target.value)}
-                      className="input input-bordered w-full"
                     />
+                    <label className="label">
+                      <span className="label-text-alt text-base-content/60">
+                        Choose a strong password
+                      </span>
+                    </label>
                   </div>
 
-                  <div>
+                  <div className="form-control w-full">
                     <label className="label">
-                      <span className="label-text">Confirm New Password</span>
+                      <span className="label-text font-medium">
+                        Confirm New Password
+                      </span>
                     </label>
                     <input
                       type="password"
-                      placeholder="Confirm New Password"
+                      className="input input-bordered focus:input-secondary transition-colors w-full"
+                      placeholder="Confirm new password"
                       value={newPasswordConfirm}
-                      onChange={(e) => setPasswordConfirm(e.target.value)}
-                      className="input input-bordered w-full"
+                      onChange={(e) => setNewPasswordConfirm(e.target.value)}
                     />
+                    <label className="label">
+                      <span className="label-text-alt text-base-content/60">
+                        Must match the new password above
+                      </span>
+                    </label>
+                  </div>
+
+                  <div className="card-actions justify-end pt-4">
+                    <button
+                      type="submit"
+                      className="btn btn-secondary btn-lg"
+                      disabled={
+                        isPending ||
+                        !password ||
+                        !newPassword ||
+                        !newPasswordConfirm
+                      }
+                    >
+                      {isPending ? (
+                        <>
+                          <span className="loading loading-spinner loading-sm"></span>
+                          Updating...
+                        </>
+                      ) : (
+                        <>
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            className="h-5 w-5"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"
+                            />
+                          </svg>
+                          Change Password
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
+
+          {/* Right Sidebar */}
+          <div className="space-y-6">
+            {/* Preferences */}
+            <div className="card bg-base-100 shadow-xl border border-base-300/50">
+              <div className="card-body">
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="p-3 bg-accent/10 rounded-lg">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="h-6 w-6 text-accent"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
+                      />
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                      />
+                    </svg>
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-bold">Preferences</h2>
+                    <p className="text-base-content/70 text-sm">
+                      Customize your experience
+                    </p>
                   </div>
                 </div>
-              </fieldset>
 
-              <div className="flex flex-col sm:flex-row justify-between gap-4 mt-8">
+                <div className="space-y-6">
+                  <div className="form-control">
+                    <label className="label">
+                      <span className="label-text font-medium">Theme</span>
+                    </label>
+                    <ThemeSwitcher />
+                  </div>
+
+                  <div className="form-control">
+                    <label className="label cursor-pointer">
+                      <div>
+                        <span className="label-text font-medium">
+                          Blur Adult Content
+                        </span>
+                        <p className="text-sm text-base-content/60">
+                          Hide explicit content by default
+                        </p>
+                      </div>
+                      <input
+                        type="checkbox"
+                        className="toggle toggle-accent"
+                        checked={blurAdult}
+                        onChange={(e) => setBlurAdult(e.target.checked)}
+                      />
+                    </label>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Data Management */}
+            <div className="card bg-base-100 shadow-xl border border-base-300/50">
+              <div className="card-body">
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="p-3 bg-info/10 rounded-lg">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="h-6 w-6 text-info"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10"
+                      />
+                    </svg>
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-bold">Data Management</h2>
+                    <p className="text-base-content/70 text-sm">
+                      Import, sync, and manage your data
+                    </p>
+                  </div>
+                </div>
+
+                <div className="space-y-6">
+                  {/* Import CSV */}
+                  <div>
+                    <h3 className="font-semibold mb-3 text-base-content">
+                      Import from CSV
+                    </h3>
+                    <form onSubmit={handleImportCSV} className="space-y-3">
+                      <input
+                        type="file"
+                        id="csv"
+                        className="file-input file-input-bordered file-input-info w-full"
+                        accept=".csv"
+                      />
+                      <button
+                        type="submit"
+                        className="btn btn-info w-full"
+                        disabled={isImportPending}
+                      >
+                        {isImportPending ? (
+                          <>
+                            <span className="loading loading-spinner loading-sm"></span>
+                            Importing...
+                          </>
+                        ) : (
+                          <>
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              className="h-5 w-5"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              stroke="currentColor"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
+                              />
+                            </svg>
+                            Import CSV
+                          </>
+                        )}
+                      </button>
+                    </form>
+                  </div>
+
+                  <div className="divider"></div>
+
+                  {/* Sync Logs */}
+                  <div>
+                    <h3 className="font-semibold mb-3 text-base-content">
+                      Sync External Data
+                    </h3>
+                    <form onSubmit={handleSyncLogs} className="space-y-3">
+                      <p className="text-sm text-base-content/70">
+                        Sync logs from IniestaBot in the Manabe Discord server.
+                        Ensure your Discord ID is set for proper linking.
+                      </p>
+                      <button
+                        type="submit"
+                        className="btn btn-warning w-full"
+                        disabled={isSyncPending}
+                      >
+                        {isSyncPending ? (
+                          <>
+                            <span className="loading loading-spinner loading-sm"></span>
+                            Syncing...
+                          </>
+                        ) : (
+                          <>
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              className="h-5 w-5"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              stroke="currentColor"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                              />
+                            </svg>
+                            Sync Logs
+                          </>
+                        )}
+                      </button>
+                    </form>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Danger Zone */}
+            <div className="card bg-error/5 border border-error/20 shadow-xl">
+              <div className="card-body">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="p-3 bg-error/10 rounded-lg">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="h-6 w-6 text-error"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                      />
+                    </svg>
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-bold text-error">
+                      Danger Zone
+                    </h2>
+                    <p className="text-error/70 text-sm">
+                      Irreversible actions
+                    </p>
+                  </div>
+                </div>
+
+                <div className="alert alert-error mb-4">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="stroke-current shrink-0 h-6 w-6"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"
+                    />
+                  </svg>
+                  <div>
+                    <h3 className="font-bold">Warning!</h3>
+                    <div className="text-xs">
+                      This action cannot be undone and will permanently delete
+                      all your data.
+                    </div>
+                  </div>
+                </div>
+
                 <button
-                  className="btn btn-outline btn-error"
+                  className="btn btn-error w-full"
                   onClick={() =>
                     (
                       document.getElementById(
                         'clear_data_modal'
                       ) as HTMLDialogElement
-                    ).showModal()
+                    )?.showModal()
                   }
-                  type="button"
                 >
-                  Clear User Data
-                </button>
-                <button
-                  className="btn btn-primary"
-                  type="submit"
-                  disabled={isPending}
-                >
-                  {isPending ? (
-                    <span className="loading loading-spinner loading-sm"></span>
-                  ) : (
-                    'Update Profile'
-                  )}
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-5 w-5"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                    />
+                  </svg>
+                  Clear All Data
                 </button>
               </div>
-            </form>
-
-            {isClearDataPending && (
-              <div className="fixed inset-0 bg-base-300 bg-opacity-80 flex items-center justify-center z-50">
-                <div className="card bg-base-100 shadow-xl p-6">
-                  <Loader text={'Clearing user data...'} />
-                </div>
-              </div>
-            )}
+            </div>
           </div>
         </div>
       </div>
