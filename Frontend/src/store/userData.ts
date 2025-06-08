@@ -12,7 +12,20 @@ export const useUserDataStore = create(
   persist<userDataState>(
     (set) => ({
       user: null,
-      setUser: (user: ILoginResponse) => set({ user: user }),
+      setUser: (user: ILoginResponse) => {
+        // Preserve current theme when setting user data
+        const currentTheme = localStorage.getItem('theme');
+        set({ user: user });
+
+        // Restore theme if it was changed during user update
+        if (currentTheme && typeof document !== 'undefined') {
+          const documentTheme =
+            document.documentElement.getAttribute('data-theme');
+          if (documentTheme !== currentTheme) {
+            document.documentElement.setAttribute('data-theme', currentTheme);
+          }
+        }
+      },
       logout: () => set({ user: null }),
     }),
     {
