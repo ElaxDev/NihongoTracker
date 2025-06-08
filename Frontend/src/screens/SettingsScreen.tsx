@@ -22,6 +22,9 @@ function SettingsScreen() {
   const [newPasswordConfirm, setPasswordConfirm] = useState('');
   const [discordId, setDiscordId] = useState(user?.discordId || '');
   const [forcedImport] = useState(false);
+  const [blurAdult, setBlurAdult] = useState(
+    user?.settings?.blurAdultContent || false
+  );
 
   const queryClient = useQueryClient();
 
@@ -136,6 +139,7 @@ function SettingsScreen() {
     formData.append('newPassword', newPassword);
     formData.append('discordId', discordId);
     formData.append('newPasswordConfirm', newPasswordConfirm);
+    formData.append('blurAdultContent', blurAdult.toString());
 
     const avatar = (document.getElementById('avatar') as HTMLInputElement)
       .files![0];
@@ -278,6 +282,18 @@ function SettingsScreen() {
 
               <fieldset className="fieldset mb-6">
                 <legend className="fieldset-legend">Account</legend>
+
+                <div className="mb-4">
+                  <label className="label cursor-pointer">
+                    <span className="label-text">Blur Adult Content</span>
+                    <input
+                      type="checkbox"
+                      checked={blurAdult}
+                      onChange={(e) => setBlurAdult(e.target.checked)}
+                      className="checkbox checkbox-primary"
+                    />
+                  </label>
+                </div>
 
                 <div className="mb-4">
                   <label className="label">

@@ -1,8 +1,15 @@
 import { Schema, model } from 'mongoose';
-import { IUser, userRoles } from '../types.js';
+import { IUser, userRoles, IUserSettings } from '../types.js';
 import bcrypt from 'bcryptjs';
 import Log from './log.model.js';
 import { calculateXp } from '../services/calculateLevel.js';
+
+const SettingsSchema = new Schema<IUserSettings>(
+  {
+    blurAdultContent: { type: Boolean, default: true },
+  },
+  { _id: false }
+);
 
 const UserSchema = new Schema<IUser>(
   {
@@ -70,6 +77,7 @@ const UserSchema = new Schema<IUser>(
       },
     ],
     lastImport: { type: Date, default: null },
+    settings: { type: SettingsSchema, default: { blurAdultContent: true } },
   },
   { timestamps: true }
 );

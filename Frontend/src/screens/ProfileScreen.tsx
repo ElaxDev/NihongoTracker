@@ -120,7 +120,7 @@ function ProfileScreen() {
               </div>
             )}
             <button
-              className="btn btn-primary w-full sm:btn-wide mt-2"
+              className="btn btn-primary w-full sm:btn-wide mt-2 self-center"
               onClick={() => fetchNextPage()}
               disabled={!hasNextPage || isFetchingNextPage}
             >

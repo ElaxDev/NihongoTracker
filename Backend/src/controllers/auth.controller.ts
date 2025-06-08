@@ -65,6 +65,7 @@ export async function login(req: Request, res: Response, next: NextFunction) {
         banner: user.banner,
         titles: user.titles,
         roles: user.roles,
+        settings: user.settings,
       });
     } else {
       throw new customError('Incorrect username or password', 401);

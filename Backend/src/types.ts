@@ -24,6 +24,10 @@ export enum userRoles {
   mod = 'mod',
 }
 
+export interface IUserSettings {
+  blurAdultContent: boolean;
+}
+
 export interface IUser extends Document {
   _id: Types.ObjectId;
   avatar?: string;
@@ -38,6 +42,7 @@ export interface IUser extends Document {
   lastImport?: Date;
   createdAt?: Date;
   updatedAt?: Date;
+  settings?: IUserSettings;
   matchPassword: (enteredPassword: string) => Promise<boolean>;
 }
 
@@ -199,6 +204,7 @@ export interface IUpdateRequest {
   newPassword?: string;
   newPasswordConfirm?: string;
   discordId?: string;
+  blurAdultContent?: string;
 }
 
 export interface IRegister {

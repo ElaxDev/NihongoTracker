@@ -541,7 +541,6 @@ export async function createLog(
     if (!type) throw new customError('Log type is required', 400);
     if (!description) throw new customError('Description is required', 400);
     let logMedia;
-    console.log('Creating log with data:', req.body);
 
     if (mediaId) {
       logMedia = await MediaBase.findOne({ contentId: mediaId });
@@ -549,8 +548,6 @@ export async function createLog(
 
     // Handle YouTube video creation for 'video' type logs
     if (!logMedia && type === 'video' && createMedia && mediaData) {
-      console.log('Creating YouTube media with data:', mediaData);
-
       // Create the channel media entry (using channel ID as the main media)
       const channelMedia = await MediaBase.create({
         contentId: mediaData.channelId, // Use channel ID as the content ID

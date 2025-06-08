@@ -10,6 +10,9 @@ export interface IUser {
   roles: userRoles;
   createdAt?: Date;
   updatedAt?: Date;
+  settings?: {
+    blurAdultContent: boolean;
+  };
   matchPassword: (enteredPassword: string) => Promise<boolean>;
 }
 
@@ -50,7 +53,14 @@ export interface IStats {
 
 export type ILoginResponse = Pick<
   IUser,
-  '_id' | 'username' | 'stats' | 'avatar' | 'titles' | 'roles' | 'discordId'
+  | '_id'
+  | 'username'
+  | 'stats'
+  | 'avatar'
+  | 'titles'
+  | 'roles'
+  | 'discordId'
+  | 'settings'
 >;
 
 export interface IRegisterInput {
