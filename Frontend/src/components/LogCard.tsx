@@ -685,11 +685,13 @@ function LogCard({ log, user: logUser }: { log: ILog; user?: string }) {
                   </>
                 )}
               </button>
-              <form method="dialog">
-                <button type="button" className="btn btn-outline">
-                  Cancel
-                </button>
-              </form>
+              <button
+                type="button"
+                className="btn btn-outline"
+                onClick={() => editModalRef.current?.close()}
+              >
+                Cancel
+              </button>
             </div>
           </form>
         </div>
