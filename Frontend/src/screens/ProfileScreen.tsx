@@ -93,7 +93,6 @@ function ProfileScreen() {
             <div className="card w-full bg-base-100 shadow-sm">
               <div className="card-body w-full p-4 sm:p-6">
                 <h2 className="card-title mb-4">Progress Stats</h2>
-
                 <div className="stats stats-vertical w-full shadow-none bg-transparent">
                   <div className="stat px-0 py-4">
                     <div className="stat-title">Overall Progress</div>
