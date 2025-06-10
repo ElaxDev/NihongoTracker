@@ -34,6 +34,10 @@ function SettingsScreen() {
   const [showAvatarCrop, setShowAvatarCrop] = useState(false);
   const [showBannerCrop, setShowBannerCrop] = useState(false);
 
+  // Add these new state variables for cropped files
+  const [croppedAvatarFile, setCroppedAvatarFile] = useState<File | null>(null);
+  const [croppedBannerFile, setCroppedBannerFile] = useState<File | null>(null);
+
   const avatarImgRef = useRef<HTMLImageElement>(null);
   const bannerImgRef = useRef<HTMLImageElement>(null);
   const avatarPreviewCanvasRef = useRef<HTMLCanvasElement>(null);
@@ -158,21 +162,106 @@ function SettingsScreen() {
     formData.append('discordId', discordId);
     formData.append('blurAdultContent', blurAdult.toString());
 
-    const avatarInput = document.getElementById('avatar') as HTMLInputElement;
-    const bannerInput = document.getElementById('banner') as HTMLInputElement;
-
-    if (avatarInput.files && avatarInput.files.length > 0) {
-      formData.append('avatar', avatarInput.files[0]);
+    // Use cropped files if available, otherwise fall back to original files
+    if (croppedAvatarFile) {
+      formData.append('avatar', croppedAvatarFile);
+    } else {
+      const avatarInput = document.getElementById('avatar') as HTMLInputElement;
+      if (avatarInput.files && avatarInput.files.length > 0) {
+        formData.append('avatar', avatarInput.files[0]);
+      }
     }
-    if (bannerInput.files && bannerInput.files.length > 0) {
-      formData.append('banner', bannerInput.files[0]);
+
+    if (croppedBannerFile) {
+      formData.append('banner', croppedBannerFile);
+    } else {
+      const bannerInput = document.getElementById('banner') as HTMLInputElement;
+      if (bannerInput.files && bannerInput.files.length > 0) {
+        formData.append('banner', bannerInput.files[0]);
+      }
     }
 
     updateUser(formData);
   }
 
+  async function handleAvatarCropComplete() {
+    if (
+      completedAvatarCrop?.width &&
+      completedAvatarCrop?.height &&
+      avatarImgRef.current &&
+      avatarPreviewCanvasRef.current
+    ) {
+      await canvasPreview(
+        avatarImgRef.current,
+        avatarPreviewCanvasRef.current,
+        completedAvatarCrop
+      );
+      avatarPreviewCanvasRef.current.classList.remove('hidden');
+
+      // Convert canvas to blob and create a File
+      avatarPreviewCanvasRef.current.toBlob(
+        (blob) => {
+          if (blob) {
+            const croppedFile = new File([blob], 'avatar.jpg', {
+              type: 'image/jpeg',
+            });
+            setCroppedAvatarFile(croppedFile);
+          }
+        },
+        'image/jpeg',
+        0.9
+      );
+
+      setShowAvatarCrop(false);
+    }
+  }
+
+  async function handleBannerCropComplete() {
+    if (
+      completedBannerCrop?.width &&
+      completedBannerCrop?.height &&
+      bannerImgRef.current &&
+      bannerPreviewCanvasRef.current
+    ) {
+      // Verify aspect ratio before processing
+      const aspectRatio =
+        completedBannerCrop.width / completedBannerCrop.height;
+      console.log(
+        'Banner crop aspect ratio:',
+        aspectRatio,
+        'Expected: 2.33...'
+      ); // 21/9 ≈ 2.33
+
+      await canvasPreview(
+        bannerImgRef.current,
+        bannerPreviewCanvasRef.current,
+        completedBannerCrop
+      );
+      bannerPreviewCanvasRef.current.classList.remove('hidden');
+
+      // Convert canvas to blob and create a File
+      bannerPreviewCanvasRef.current.toBlob(
+        (blob) => {
+          if (blob) {
+            const croppedFile = new File([blob], 'banner.jpg', {
+              type: 'image/jpeg',
+            });
+            setCroppedBannerFile(croppedFile);
+          }
+        },
+        'image/jpeg',
+        0.9
+      );
+
+      setShowBannerCrop(false);
+    }
+  }
+
   async function onSelectAvatarFile(e: React.ChangeEvent<HTMLInputElement>) {
     if (e.target.files && e.target.files.length > 0) {
+      // Clear any previous cropped file
+      setCroppedAvatarFile(null);
+
       const reader = new FileReader();
       reader.addEventListener('load', () => {
         setAvatarSrc(reader.result?.toString() || '');
@@ -184,6 +273,9 @@ function SettingsScreen() {
 
   async function onSelectBannerFile(e: React.ChangeEvent<HTMLInputElement>) {
     if (e.target.files && e.target.files.length > 0) {
+      // Clear any previous cropped file
+      setCroppedBannerFile(null);
+
       const reader = new FileReader();
       reader.addEventListener('load', () => {
         setBannerSrc(reader.result?.toString() || '');
@@ -256,49 +348,6 @@ function SettingsScreen() {
         x: cropX,
         y: cropY,
       });
-    }
-  }
-
-  async function handleAvatarCropComplete() {
-    if (
-      completedAvatarCrop?.width &&
-      completedAvatarCrop?.height &&
-      avatarImgRef.current &&
-      avatarPreviewCanvasRef.current
-    ) {
-      await canvasPreview(
-        avatarImgRef.current,
-        avatarPreviewCanvasRef.current,
-        completedAvatarCrop
-      );
-      avatarPreviewCanvasRef.current.classList.remove('hidden');
-      setShowAvatarCrop(false);
-    }
-  }
-
-  async function handleBannerCropComplete() {
-    if (
-      completedBannerCrop?.width &&
-      completedBannerCrop?.height &&
-      bannerImgRef.current &&
-      bannerPreviewCanvasRef.current
-    ) {
-      // Verify aspect ratio before processing
-      const aspectRatio =
-        completedBannerCrop.width / completedBannerCrop.height;
-      console.log(
-        'Banner crop aspect ratio:',
-        aspectRatio,
-        'Expected: 2.33...'
-      ); // 21/9 ≈ 2.33
-
-      await canvasPreview(
-        bannerImgRef.current,
-        bannerPreviewCanvasRef.current,
-        completedBannerCrop
-      );
-      bannerPreviewCanvasRef.current.classList.remove('hidden');
-      setShowBannerCrop(false);
     }
   }
 
