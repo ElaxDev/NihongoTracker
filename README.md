@@ -163,28 +163,6 @@ We welcome contributions! Please see our contributing guidelines for more detail
 - Follow existing naming conventions
 - Write meaningful commit messages
 
-## Project Structure
-
-NihongoTracker/
-├── Frontend/                 # React frontend application
-│   ├── src/
-│   │   ├── components/       # Reusable UI components
-│   │   ├── screens/          # Page components
-│   │   ├── hooks/           # Custom React hooks
-│   │   ├── store/           # Zustand state management
-│   │   ├── api/             # API client functions
-│   │   └── types/           # TypeScript type definitions
-│   └── public/              # Static assets
-├── Backend/                 # Node.js backend API
-│   ├── src/
-│   │   ├── controllers/     # Route handlers
-│   │   ├── models/          # MongoDB schemas
-│   │   ├── middleware/      # Express middleware
-│   │   ├── services/        # Business logic
-│   │   └── routes/          # API route definitions
-│   └── build/               # Compiled TypeScript
-└── README.md
-
 ## License
 
 This project is licensed under the ISC License. See the LICENSE file for details.

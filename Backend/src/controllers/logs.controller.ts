@@ -311,6 +311,9 @@ export async function getUserLogs(
   // Add type filter
   const type = req.query.type as string;
 
+  // Add search functionality
+  const search = req.query.search as string;
+
   try {
     // Check if username exists
     if (!req.params.username) {
@@ -342,6 +345,16 @@ export async function getUserLogs(
       },
       // Add type filter if provided
       ...(type ? [{ $match: { type } }] : []),
+      // Add search filter if provided
+      ...(search
+        ? [
+            {
+              $match: {
+                description: { $regex: search, $options: 'i' },
+              },
+            },
+          ]
+        : []),
       {
         $sort: {
           date: -1,
@@ -410,7 +423,7 @@ export async function getUserLogs(
     }
 
     console.log(
-      `Fetching logs for user: ${req.params.username}, type: ${type || 'all'}, limit: ${limit}`
+      `Fetching logs for user: ${req.params.username}, type: ${type || 'all'}, search: ${search || 'none'}, limit: ${limit}`
     );
 
     const logs = await Log.aggregate(pipeline, {
@@ -418,7 +431,7 @@ export async function getUserLogs(
     });
 
     console.log(
-      `Found ${logs.length} ${type || 'all'} logs for user: ${req.params.username}`
+      `Found ${logs.length} logs for user: ${req.params.username} with filters`
     );
 
     if (!logs.length) return res.sendStatus(204);
