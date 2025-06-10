@@ -64,7 +64,7 @@ const LogSchema = new Schema<ILog>(
         );
       },
     },
-    date: { type: Date, default: new Date(), required: true },
+    date: { type: Date, default: () => new Date(), required: true },
   },
   { timestamps: true }
 );

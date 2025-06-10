@@ -113,15 +113,18 @@ export async function getDashboardHours(
 ) {
   const { user } = res.locals;
   try {
-    // Get date ranges for current month and previous month
+    // Get date ranges for current month and previous month in UTC
     const now = new Date();
-    const currentMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-    const previousMonthStart = new Date(
-      now.getFullYear(),
-      now.getMonth() - 1,
-      1
+    // Use UTC methods to ensure consistent date handling regardless of server timezone
+    const currentMonthStart = new Date(
+      Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1)
     );
-    const previousMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0);
+    const previousMonthStart = new Date(
+      Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - 1, 1)
+    );
+    const previousMonthEnd = new Date(
+      Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 0)
+    );
 
     // Define reading and listening types
     const readingTypes = ['reading', 'manga', 'vn'];
@@ -287,6 +290,17 @@ export async function getDashboardHours(
   }
 }
 
+interface IInitialMatch {
+  user: Types.ObjectId;
+  type?: string;
+  date?: {
+    $gte?: Date;
+    $lte?: Date;
+  };
+  description?: { $regex: string; $options: string };
+  mediaId?: string;
+}
+
 export async function getUserLogs(
   req: Request,
   res: Response,
@@ -311,42 +325,77 @@ export async function getUserLogs(
   // Add type filter
   const type = req.query.type as string;
 
+  // Add search functionality
+  const search = req.query.search as string;
+
   try {
     // Check if username exists
     if (!req.params.username) {
       throw new customError('Username is required', 400);
     }
 
-    // First verify the user exists
-    const userExists = await User.findOne({ username: req.params.username });
+    // First verify the user exists and get their ObjectId
+    const userExists = await User.findOne({
+      username: req.params.username,
+    }).select('_id');
     if (!userExists) {
       throw new customError('User not found', 404);
     }
 
+    // Build the initial match criteria to filter logs efficiently
+    let initialMatch: IInitialMatch = {
+      user: userExists._id,
+    };
+
+    // Add type filter early
+    if (type) {
+      initialMatch.type = type;
+    }
+
+    // Add date filter early
+    if (startDate || endDate) {
+      initialMatch.date = {
+        ...(startDate && { $gte: startDate }),
+        ...(endDate && { $lte: endDate }),
+      };
+    }
+
+    // Add search filter early (if provided)
+    if (search) {
+      initialMatch.description = { $regex: search, $options: 'i' };
+    }
+
+    // Add media filters early
+    if (req.query.mediaId && typeof req.query.mediaId === 'string') {
+      initialMatch.mediaId = req.query.mediaId;
+    }
+
     let pipeline: PipelineStage[] = [
+      // Start with the most restrictive match to reduce dataset size immediately
       {
-        $lookup: {
-          from: 'users',
-          localField: 'user',
-          foreignField: '_id',
-          as: 'user',
-        },
+        $match: initialMatch,
       },
-      {
-        $unwind: '$user',
-      },
-      {
-        $match: {
-          'user.username': req.params.username,
-        },
-      },
-      // Add type filter if provided
-      ...(type ? [{ $match: { type } }] : []),
+      // Sort early to ensure consistent pagination
       {
         $sort: {
           date: -1,
         },
       },
+      // Apply pagination early to limit the number of documents we process
+      {
+        $skip: skip,
+      },
+    ];
+
+    // Only add limit if it's greater than 0
+    if (limit > 0) {
+      pipeline.push({
+        $limit: limit,
+      });
+    }
+
+    // Now do the expensive operations (lookups) only on the paginated subset
+    pipeline.push(
       {
         $lookup: {
           from: 'media',
@@ -361,25 +410,7 @@ export async function getUserLogs(
           preserveNullAndEmptyArrays: true,
         },
       },
-      ...(req.query.mediaId
-        ? [{ $match: { mediaId: req.query.mediaId } }]
-        : []),
-      ...(req.query.mediaType
-        ? [{ $match: { type: req.query.mediaType } }]
-        : []),
-      // Add date filter if start or end date is provided
-      ...(startDate || endDate
-        ? [
-            {
-              $match: {
-                date: {
-                  ...(startDate && { $gte: startDate }),
-                  ...(endDate && { $lte: endDate }),
-                },
-              },
-            },
-          ]
-        : []),
+      // Final projection to shape the output
       {
         $project: {
           _id: 1,
@@ -397,29 +428,12 @@ export async function getUserLogs(
           'media.contentImage': 1,
           'media.type': 1,
         },
-      },
-      {
-        $skip: skip,
-      },
-    ];
-
-    if (limit > 0) {
-      pipeline.push({
-        $limit: limit,
-      });
-    }
-
-    console.log(
-      `Fetching logs for user: ${req.params.username}, type: ${type || 'all'}, limit: ${limit}`
+      }
     );
 
     const logs = await Log.aggregate(pipeline, {
       collation: { locale: 'en', strength: 2 },
     });
-
-    console.log(
-      `Found ${logs.length} ${type || 'all'} logs for user: ${req.params.username}`
-    );
 
     if (!logs.length) return res.sendStatus(204);
 
@@ -540,6 +554,19 @@ export async function createLog(
   try {
     if (!type) throw new customError('Log type is required', 400);
     if (!description) throw new customError('Description is required', 400);
+
+    // Parse date properly, ensuring it's stored in UTC
+    let logDate: Date;
+    if (date) {
+      if (typeof date === 'string') {
+        logDate = new Date(date); // This will parse ISO string with timezone info correctly
+      } else {
+        logDate = new Date(date);
+      }
+    } else {
+      logDate = new Date(); // Current time in UTC
+    }
+
     let logMedia;
 
     if (mediaId) {
@@ -604,14 +631,14 @@ export async function createLog(
         ? logMedia.contentId
         : newLogMedia
           ? newLogMedia.contentId
-          : mediaId, // Use mediaId as fallback for YouTube videos
+          : mediaId,
       pages,
       episodes,
       xp,
       description,
       private: false,
       time,
-      date,
+      date: logDate, // Use properly parsed date
       chars,
     });
     if (!newLog) throw new customError('Log could not be created', 500);

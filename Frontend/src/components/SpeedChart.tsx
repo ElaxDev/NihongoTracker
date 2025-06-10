@@ -125,7 +125,9 @@ function SpeedChart({
 
           filtered[type]?.push({
             date:
-              timeframe === 'year' || timeframe === 'total' ? monthStr : dateStr,
+              timeframe === 'year' || timeframe === 'total'
+                ? monthStr
+                : dateStr,
             speed: Math.round(speed),
           });
         }
@@ -175,7 +177,9 @@ function SpeedChart({
           const type = log.type as ReadingType;
           filtered[type]?.push({
             date:
-              timeframe === 'year' || timeframe === 'total' ? monthStr : dateStr,
+              timeframe === 'year' || timeframe === 'total'
+                ? monthStr
+                : dateStr,
             speed: Math.round(speed),
           });
         }
@@ -328,6 +332,7 @@ function SpeedChart({
 
   const options = {
     responsive: true,
+    maintainAspectRatio: false,
     plugins: {
       legend: {
         position: 'top' as const,
@@ -355,7 +360,7 @@ function SpeedChart({
   };
 
   return (
-    <div className="p-4 w-full h-full">
+    <div className="w-full h-full">
       {!externalTimeframe && (
         <div className="join mb-4">
           <button
@@ -393,7 +398,9 @@ function SpeedChart({
         </div>
       )}
       {Object.values(filteredData).some((data) => data && data.length > 0) ? (
-        <Line data={chartData} options={options} />
+        <div className="w-full h-full">
+          <Line data={chartData} options={options} />
+        </div>
       ) : (
         <div className="alert alert-info">
           <svg

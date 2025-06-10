@@ -58,7 +58,6 @@ export default function ProfileHeader() {
           </div>
         </div>
       </div>
-
       <ProfileNavbar username={user?.username} />
       <Outlet context={{ user, username } satisfies OutletProfileContextType} />
     </div>

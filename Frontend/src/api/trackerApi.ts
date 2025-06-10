@@ -125,8 +125,17 @@ export async function getUserLogsFn(username: string, params?: ILogsParams) {
 }
 
 export async function createLogFn(logValues: ICreateLog) {
-  console.log('Creating log with values:', logValues);
-  const { data } = await api.post<ILog>(`logs`, logValues);
+  // Ensure date is properly serialized with timezone information
+  const logData = {
+    ...logValues,
+    date: logValues.date
+      ? logValues.date instanceof Date
+        ? logValues.date.toISOString()
+        : logValues.date
+      : new Date().toISOString(),
+  };
+  console.log('Creating log with values:', logData);
+  const { data } = await api.post<ILog>(`logs`, logData);
   return data;
 }
 

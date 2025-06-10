@@ -174,18 +174,23 @@ export async function getRanking(
     const sort = (req.query.sort as string) || 'desc';
     const timeFilter = (req.query.timeFilter as string) || 'all-time';
 
-    // Create date filter based on timeFilter
+    // Create date filter based on timeFilter using UTC
     let dateFilter: { date?: { $gte: Date } } = {};
     const now = new Date();
 
     if (timeFilter === 'today') {
-      const startOfDay = new Date(now.setHours(0, 0, 0, 0));
+      // Use UTC methods to ensure consistent date handling
+      const startOfDay = new Date(
+        Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate())
+      );
       dateFilter = { date: { $gte: startOfDay } };
     } else if (timeFilter === 'month') {
-      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+      const startOfMonth = new Date(
+        Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1)
+      );
       dateFilter = { date: { $gte: startOfMonth } };
     } else if (timeFilter === 'year') {
-      const startOfYear = new Date(now.getFullYear(), 0, 1);
+      const startOfYear = new Date(Date.UTC(now.getUTCFullYear(), 0, 1));
       dateFilter = { date: { $gte: startOfYear } };
     }
 

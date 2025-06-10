@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { useParams, useNavigate } from 'react-router-dom';
-import { getImmersionListFn } from '../api/trackerApi';
+import { getImmersionListFn, getUntrackedLogsFn } from '../api/trackerApi';
 import { useState, useMemo } from 'react';
 import { IMediaDocument, IImmersionList } from '../types';
 import {
@@ -16,6 +16,8 @@ import {
   MdBook,
   MdGamepad,
   MdVideoLibrary,
+  MdWarning,
+  MdLink,
 } from 'react-icons/md';
 import { useUserDataStore } from '../store/userData';
 
@@ -25,6 +27,8 @@ type FilterOption = 'all' | 'anime' | 'manga' | 'reading' | 'vn' | 'video';
 
 function ListScreen() {
   const { username } = useParams<{ username: string }>();
+  const { user } = useUserDataStore();
+  const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedFilter, setSelectedFilter] = useState<FilterOption>('all');
   const [sortBy, setSortBy] = useState<SortOption>('title');
@@ -38,6 +42,14 @@ function ListScreen() {
     queryKey: ['immersionList', username],
     queryFn: () => getImmersionListFn(username!),
     enabled: !!username,
+    staleTime: 5 * 60 * 1000,
+  });
+
+  // Fetch untracked logs for current user only
+  const { data: untrackedLogs } = useQuery({
+    queryKey: ['untrackedLogs'],
+    queryFn: getUntrackedLogsFn,
+    enabled: !!user && username === user.username,
     staleTime: 5 * 60 * 1000,
   });
 
@@ -160,6 +172,32 @@ function ListScreen() {
 
   return (
     <div className="min-h-screen bg-base-200">
+      {/* Unmatched Logs Alert */}
+      {untrackedLogs && untrackedLogs.length > 0 && (
+        <div className="container mx-auto px-4 pt-4">
+          <div role="alert" className="alert alert-warning shadow-lg">
+            <MdWarning className="h-6 w-6" />
+            <div className="flex-1">
+              <h3 className="font-bold">Unmatched Logs Found</h3>
+              <div className="text-sm">
+                You have {untrackedLogs.length} log
+                {untrackedLogs.length !== 1 ? 's' : ''} without media. Match
+                them with the correct media.
+              </div>
+            </div>
+            <div className="flex-none">
+              <button
+                className="btn btn-sm btn-outline gap-2"
+                onClick={() => navigate('/matchmedia')}
+              >
+                <MdLink className="h-4 w-4" />
+                Match Logs
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Controls Section */}
       <div className="container mx-auto px-4 mt-4 relative z-10">
         <div className="card bg-base-100 shadow-xl">
