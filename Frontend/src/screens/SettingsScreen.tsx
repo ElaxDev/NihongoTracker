@@ -204,13 +204,59 @@ function SettingsScreen() {
   }
 
   function onBannerImageLoad() {
-    setBannerCrop({
-      unit: '%',
-      width: 90,
-      height: 60,
-      x: 5,
-      y: 20,
-    });
+    if (bannerImgRef.current) {
+      const { naturalWidth, naturalHeight } = bannerImgRef.current;
+
+      // Calculate the maximum crop size that fits in the image with 21:9 aspect ratio
+      const targetAspectRatio = 21 / 9; // ~2.33
+      const imageAspectRatio = naturalWidth / naturalHeight;
+
+      let cropWidthPercent, cropHeightPercent;
+
+      if (imageAspectRatio > targetAspectRatio) {
+        // Image is wider than 21:9, constrain by height
+        // Use 80% of height, then calculate width to maintain aspect ratio
+        cropHeightPercent = 80;
+        cropWidthPercent =
+          (cropHeightPercent * targetAspectRatio * naturalHeight) /
+          naturalWidth;
+
+        // If the calculated width exceeds 100%, constrain by width instead
+        if (cropWidthPercent > 95) {
+          cropWidthPercent = 80;
+          cropHeightPercent =
+            (cropWidthPercent * naturalWidth) /
+            (targetAspectRatio * naturalHeight);
+        }
+      } else {
+        // Image is narrower than 21:9, constrain by width
+        // Use 80% of width, then calculate height to maintain aspect ratio
+        cropWidthPercent = 80;
+        cropHeightPercent =
+          (cropWidthPercent * naturalWidth) /
+          (targetAspectRatio * naturalHeight);
+
+        // If the calculated height exceeds 100%, constrain by height instead
+        if (cropHeightPercent > 95) {
+          cropHeightPercent = 80;
+          cropWidthPercent =
+            (cropHeightPercent * targetAspectRatio * naturalHeight) /
+            naturalWidth;
+        }
+      }
+
+      // Center the crop
+      const cropX = (100 - cropWidthPercent) / 2;
+      const cropY = (100 - cropHeightPercent) / 2;
+
+      setBannerCrop({
+        unit: '%',
+        width: cropWidthPercent,
+        height: cropHeightPercent,
+        x: cropX,
+        y: cropY,
+      });
+    }
   }
 
   async function handleAvatarCropComplete() {
@@ -237,6 +283,15 @@ function SettingsScreen() {
       bannerImgRef.current &&
       bannerPreviewCanvasRef.current
     ) {
+      // Verify aspect ratio before processing
+      const aspectRatio =
+        completedBannerCrop.width / completedBannerCrop.height;
+      console.log(
+        'Banner crop aspect ratio:',
+        aspectRatio,
+        'Expected: 2.33...'
+      ); // 21/9 ≈ 2.33
+
       await canvasPreview(
         bannerImgRef.current,
         bannerPreviewCanvasRef.current,
@@ -342,7 +397,11 @@ function SettingsScreen() {
                 crop={bannerCrop}
                 onChange={(_, percentCrop) => setBannerCrop(percentCrop)}
                 onComplete={(c) => setCompletedBannerCrop(c)}
-                aspect={16 / 9}
+                aspect={21 / 9}
+                minWidth={105}
+                minHeight={45} // 105 * (9/21) = 45
+                keepSelection
+                ruleOfThirds
               >
                 <img
                   ref={bannerImgRef}
@@ -513,7 +572,7 @@ function SettingsScreen() {
                         />
                         <label className="label">
                           <span className="label-text-alt text-base-content/60">
-                            Recommended: 16:9 aspect ratio, max 5MB
+                            Recommended: 21:9 aspect ratio, max 5MB
                           </span>
                         </label>
                         <canvas
