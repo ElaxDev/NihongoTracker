@@ -5,10 +5,13 @@ import { useQuery } from '@tanstack/react-query';
 import { getUserLogsFn } from '../api/trackerApi';
 import { numberWithCommas } from '../utils/utils';
 import LogCard from '../components/LogCard';
+import { useState } from 'react';
 
 function MediaDetails() {
   const { mediaDocument, mediaType, username } =
     useOutletContext<OutletMediaContextType>();
+
+  const [visibleLogsCount, setVisibleLogsCount] = useState(10);
 
   const { data: logs } = useQuery({
     queryKey: [username, 'logs', 'total', mediaDocument?.contentId],
@@ -24,6 +27,20 @@ function MediaDetails() {
 
   const totalXp = logs?.reduce((acc, log) => acc + log.xp, 0);
   const totalTime = logs?.reduce((acc, log) => acc + (log.time ?? 0), 0);
+
+  // Sort logs by date (most recent first)
+  const sortedLogs = logs
+    ? [...logs].sort(
+        (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+      )
+    : [];
+
+  const visibleLogs = sortedLogs.slice(0, visibleLogsCount);
+  const hasMoreLogs = sortedLogs.length > visibleLogsCount;
+
+  const handleShowMore = () => {
+    setVisibleLogsCount((prev) => Math.min(prev + 10, sortedLogs.length));
+  };
 
   return (
     <div>
@@ -188,19 +205,17 @@ function MediaDetails() {
 
               {logs && logs.length > 0 ? (
                 <div className="space-y-3">
-                  {logs
-                    .sort(
-                      (a, b) =>
-                        new Date(b.date).getTime() - new Date(a.date).getTime()
-                    )
-                    .slice(0, 10)
-                    .map((log) => (
-                      <LogCard key={log._id} log={log} />
-                    ))}
-                  {logs.length > 10 && (
+                  {visibleLogs.map((log) => (
+                    <LogCard key={log._id} log={log} />
+                  ))}
+                  {hasMoreLogs && (
                     <div className="text-center pt-4">
-                      <button className="btn btn-outline btn-sm">
-                        View All {logs.length} Logs
+                      <button
+                        className="btn btn-outline btn-sm"
+                        onClick={handleShowMore}
+                      >
+                        Show More ({sortedLogs.length - visibleLogsCount}{' '}
+                        remaining)
                       </button>
                     </div>
                   )}
