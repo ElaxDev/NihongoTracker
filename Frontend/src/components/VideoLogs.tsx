@@ -1,6 +1,5 @@
 import { ILog, IMediaDocument } from '../types';
 import { useState, useMemo, useCallback } from 'react';
-import { fuzzy } from 'fast-fuzzy';
 import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import {
   assignMediaFn,
@@ -11,6 +10,7 @@ import { toast } from 'react-toastify';
 import { AxiosError } from 'axios';
 import { useUserDataStore } from '../store/userData';
 import { useFilteredGroupedLogs } from '../hooks/useFilteredGroupedLogs.tsx';
+import { useGroupLogs } from '../hooks/useGroupLogs.tsx';
 
 interface VideoLogsProps {
   username?: string;
@@ -72,25 +72,7 @@ function VideoLogs({ username, isActive = true }: VideoLogsProps) {
     []
   );
 
-  const groupedLogs = useMemo(() => {
-    if (!logs) return [];
-    const groupedLogs = new Map<string, ILog[]>();
-    logs.forEach((log) => {
-      if (!log.description || log.type !== 'video' || log.mediaId) return;
-      let foundGroup = false;
-      for (const [key, group] of groupedLogs) {
-        if (fuzzy(key, log.description) > 0.8) {
-          group.push(log);
-          foundGroup = true;
-          break;
-        }
-      }
-      if (!foundGroup) {
-        groupedLogs.set(log.description, [log]);
-      }
-    });
-    return Array.from(groupedLogs.values());
-  }, [logs]);
+  const groupedLogs = useGroupLogs(logs, 'video');
 
   const filteredGroupedLogs = useFilteredGroupedLogs(
     logs,
@@ -292,7 +274,9 @@ function VideoLogs({ username, isActive = true }: VideoLogsProps) {
         </div>
         <div className="stat">
           <div className="stat-title">Available Groups</div>
-          <div className="stat-value">{filteredGroupedLogs.length}</div>
+          <div className="stat-value">
+            {Object.keys(filteredGroupedLogs).length}
+          </div>
         </div>
         <div className="stat">
           <div className="stat-title">Auto-Matchable</div>
@@ -375,10 +359,10 @@ function VideoLogs({ username, isActive = true }: VideoLogsProps) {
           <h2 className="card-title">Manual Video Log Groups</h2>
           <div className="divider my-1"></div>
 
-          {filteredGroupedLogs.length > 0 ? (
+          {Object.keys(filteredGroupedLogs).length > 0 ? (
             <div className="overflow-y-auto max-h-[60vh]">
               <div className="join join-vertical w-full">
-                {filteredGroupedLogs.map((group, i) => (
+                {Object.entries(filteredGroupedLogs).map(([key, group], i) => (
                   <div
                     className="collapse collapse-arrow join-item border border-base-300 bg-base-100"
                     key={i}
@@ -396,11 +380,7 @@ function VideoLogs({ username, isActive = true }: VideoLogsProps) {
                         <div className="badge badge-primary">
                           {group?.length || 0}
                         </div>
-                        <span className="text-sm md:text-base">
-                          {group && group[0]?.description
-                            ? group[0].description
-                            : ''}
-                        </span>
+                        <span className="text-sm md:text-base">{key}</span>
                         {group &&
                           group[0] &&
                           extractYouTubeUrl(group[0].description || '') && (

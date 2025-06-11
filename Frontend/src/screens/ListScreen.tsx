@@ -39,7 +39,7 @@ function ListScreen() {
     isLoading,
     error,
   } = useQuery<IImmersionList>({
-    queryKey: ['immersionList', username],
+    queryKey: ['ImmersionList', username],
     queryFn: () => getImmersionListFn(username!),
     enabled: !!username,
     staleTime: 5 * 60 * 1000,
