@@ -6,7 +6,6 @@ import {
   getRankingFn,
   getRecentLogsFn,
 } from '../api/trackerApi';
-// import { ILog } from '../types';
 import { useMemo } from 'react';
 import { numberWithCommas } from '../utils/utils';
 
@@ -337,7 +336,9 @@ function Hero() {
                                   ? log.media.title.contentTitleNative
                                   : log.description}
                               </td>
-                              <td className="capitalize">{log.type}</td>
+                              <td className="capitalize">
+                                {log.type === 'vn' ? 'VN' : log.type}
+                              </td>
                               <td>{log.formattedTime}</td>
                             </tr>
                           ))
