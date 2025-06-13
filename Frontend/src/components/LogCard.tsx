@@ -83,9 +83,15 @@ function LogCard({ log, user: logUser }: { log: ILog; user?: string }) {
   const editModalRef = useRef<HTMLDialogElement>(null);
   const detailsModalRef = useRef<HTMLDialogElement>(null);
 
-  // Edit form state
+  // Edit form state with all editable fields
   const [editData, setEditData] = useState({
     description: description || '',
+    type: type,
+    date: date
+      ? typeof date === 'string'
+        ? date.split('T')[0]
+        : new Date(date).toISOString().split('T')[0]
+      : '',
     episodes: episodes || 0,
     pages: pages || 0,
     chars: chars || 0,
@@ -169,6 +175,12 @@ function LogCard({ log, user: logUser }: { log: ILog; user?: string }) {
   function openEditModal() {
     setEditData({
       description: description || '',
+      type: type,
+      date: date
+        ? typeof date === 'string'
+          ? date.split('T')[0]
+          : new Date(date).toISOString().split('T')[0]
+        : '',
       episodes: episodes || 0,
       pages: pages || 0,
       chars: chars || 0,
@@ -188,6 +200,8 @@ function LogCard({ log, user: logUser }: { log: ILog; user?: string }) {
 
     const updateData: updateLogRequest = {
       description: editData.description,
+      type: editData.type,
+      date: editData.date ? new Date(editData.date) : undefined,
       time: totalMinutes || undefined,
       episodes: editData.episodes || undefined,
       pages: editData.pages || undefined,
@@ -863,136 +877,241 @@ function LogCard({ log, user: logUser }: { log: ILog; user?: string }) {
         </form>
       </dialog>
 
-      {/* Edit Log Modal */}
+      {/* Enhanced Edit Log Modal */}
       <dialog
         ref={editModalRef}
         className="modal modal-bottom sm:modal-middle"
         aria-labelledby="edit-modal-title"
       >
-        <div className="modal-box">
-          <div className="flex justify-between items-center mb-4">
-            <h3 id="edit-modal-title" className="font-bold text-lg">
-              Edit Log Entry
-            </h3>
+        <div className="modal-box max-w-2xl">
+          <div className="flex justify-between items-center mb-6">
+            <div className="flex items-center gap-3">
+              <div className={`p-3 ${typeConfig.bgColor} rounded-lg`}>
+                <MdEdit className={`w-6 h-6 ${typeConfig.color}`} />
+              </div>
+              <div>
+                <h3 id="edit-modal-title" className="font-bold text-xl">
+                  Edit Log Entry
+                </h3>
+                <p className="text-sm text-base-content/60 mt-1">
+                  Modify your log details below
+                </p>
+              </div>
+            </div>
             <form method="dialog">
               <button className="btn btn-sm btn-circle btn-ghost">✕</button>
             </form>
           </div>
 
-          <form onSubmit={handleEditSubmit} className="space-y-4">
-            <div>
-              <label className="label">
-                <span className="label-text">Description</span>
-              </label>
-              <input
-                type="text"
-                className="input input-bordered w-full"
-                value={editData.description}
-                onChange={(e) =>
-                  setEditData({ ...editData, description: e.target.value })
-                }
-                required
-              />
-            </div>
+          <form onSubmit={handleEditSubmit} className="space-y-6">
+            {/* Basic Information Section */}
+            <div className="card bg-base-200 shadow-sm">
+              <div className="card-body p-4">
+                <h4 className="font-semibold text-lg mb-4">
+                  Basic Information
+                </h4>
 
-            {type === 'anime' && (
-              <div>
-                <label className="label">
-                  <span className="label-text">Episodes</span>
-                </label>
-                <input
-                  type="number"
-                  min="0"
-                  className="input input-bordered w-full"
-                  value={editData.episodes}
-                  onChange={(e) =>
-                    setEditData({
-                      ...editData,
-                      episodes: Number(e.target.value),
-                    })
-                  }
-                  onInput={preventNegativeValues}
-                />
-              </div>
-            )}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="md:col-span-2">
+                    <label className="label">
+                      <span className="label-text font-medium">
+                        Description
+                      </span>
+                      <span className="label-text-alt text-error">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      className="input input-bordered w-full"
+                      value={editData.description}
+                      onChange={(e) =>
+                        setEditData({
+                          ...editData,
+                          description: e.target.value,
+                        })
+                      }
+                      placeholder="Enter description"
+                      required
+                    />
+                  </div>
 
-            {(type === 'reading' || type === 'vn' || type === 'manga') && (
-              <div>
-                <label className="label">
-                  <span className="label-text">Characters</span>
-                </label>
-                <input
-                  type="number"
-                  min="0"
-                  className="input input-bordered w-full"
-                  value={editData.chars}
-                  onChange={(e) =>
-                    setEditData({ ...editData, chars: Number(e.target.value) })
-                  }
-                  onInput={preventNegativeValues}
-                />
-              </div>
-            )}
+                  <div>
+                    <label className="label">
+                      <span className="label-text font-medium">Type</span>
+                    </label>
+                    <select
+                      className="select select-bordered w-full"
+                      value={editData.type}
+                      onChange={(e) =>
+                        setEditData({
+                          ...editData,
+                          type: e.target.value as ILog['type'],
+                        })
+                      }
+                    >
+                      <option value="reading">Reading</option>
+                      <option value="anime">Anime</option>
+                      <option value="vn">Visual Novel</option>
+                      <option value="video">Video</option>
+                      <option value="manga">Manga</option>
+                      <option value="audio">Audio</option>
+                      <option value="other">Other</option>
+                    </select>
+                  </div>
 
-            {type === 'manga' && (
-              <div>
-                <label className="label">
-                  <span className="label-text">Pages</span>
-                </label>
-                <input
-                  type="number"
-                  min="0"
-                  className="input input-bordered w-full"
-                  value={editData.pages}
-                  onChange={(e) =>
-                    setEditData({ ...editData, pages: Number(e.target.value) })
-                  }
-                  onInput={preventNegativeValues}
-                />
-              </div>
-            )}
-
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="label">
-                  <span className="label-text">Hours</span>
-                </label>
-                <input
-                  type="number"
-                  min="0"
-                  className="input input-bordered w-full"
-                  value={editData.hours}
-                  onChange={(e) =>
-                    setEditData({ ...editData, hours: Number(e.target.value) })
-                  }
-                  onInput={preventNegativeValues}
-                />
-              </div>
-              <div>
-                <label className="label">
-                  <span className="label-text">Minutes</span>
-                </label>
-                <input
-                  type="number"
-                  min="0"
-                  max="59"
-                  className="input input-bordered w-full"
-                  value={editData.minutes}
-                  onChange={(e) =>
-                    setEditData({
-                      ...editData,
-                      minutes: Number(e.target.value),
-                    })
-                  }
-                  onInput={preventNegativeValues}
-                />
+                  <div>
+                    <label className="label">
+                      <span className="label-text font-medium">Date</span>
+                    </label>
+                    <input
+                      type="date"
+                      className="input input-bordered w-full"
+                      value={editData.date}
+                      onChange={(e) =>
+                        setEditData({ ...editData, date: e.target.value })
+                      }
+                    />
+                  </div>
+                </div>
               </div>
             </div>
 
-            <div className="modal-action">
+            {/* Activity Details Section */}
+            <div className="card bg-base-200 shadow-sm">
+              <div className="card-body p-4">
+                <h4 className="font-semibold text-lg mb-4">Activity Details</h4>
+
+                <div className="space-y-4">
+                  {/* Time Section */}
+                  <div>
+                    <label className="label">
+                      <span className="label-text font-medium">Time Spent</span>
+                    </label>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <input
+                          type="number"
+                          min="0"
+                          className="input input-bordered w-full"
+                          value={editData.hours}
+                          onChange={(e) =>
+                            setEditData({
+                              ...editData,
+                              hours: Number(e.target.value),
+                            })
+                          }
+                          onInput={preventNegativeValues}
+                          placeholder="Hours"
+                        />
+                        <div className="label">
+                          <span className="label-text-alt">Hours</span>
+                        </div>
+                      </div>
+                      <div>
+                        <input
+                          type="number"
+                          min="0"
+                          max="59"
+                          className="input input-bordered w-full"
+                          value={editData.minutes}
+                          onChange={(e) =>
+                            setEditData({
+                              ...editData,
+                              minutes: Number(e.target.value),
+                            })
+                          }
+                          onInput={preventNegativeValues}
+                          placeholder="Minutes"
+                        />
+                        <div className="label">
+                          <span className="label-text-alt">Minutes</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Type-specific fields */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {editData.type === 'anime' && (
+                      <div>
+                        <label className="label">
+                          <span className="label-text font-medium">
+                            Episodes
+                          </span>
+                        </label>
+                        <input
+                          type="number"
+                          min="0"
+                          className="input input-bordered w-full"
+                          value={editData.episodes}
+                          onChange={(e) =>
+                            setEditData({
+                              ...editData,
+                              episodes: Number(e.target.value),
+                            })
+                          }
+                          onInput={preventNegativeValues}
+                          placeholder="Number of episodes"
+                        />
+                      </div>
+                    )}
+
+                    {(editData.type === 'reading' ||
+                      editData.type === 'vn' ||
+                      editData.type === 'manga') && (
+                      <div>
+                        <label className="label">
+                          <span className="label-text font-medium">
+                            Characters
+                          </span>
+                        </label>
+                        <input
+                          type="number"
+                          min="0"
+                          className="input input-bordered w-full"
+                          value={editData.chars}
+                          onChange={(e) =>
+                            setEditData({
+                              ...editData,
+                              chars: Number(e.target.value),
+                            })
+                          }
+                          onInput={preventNegativeValues}
+                          placeholder="Number of characters"
+                        />
+                      </div>
+                    )}
+
+                    {editData.type === 'manga' && (
+                      <div>
+                        <label className="label">
+                          <span className="label-text font-medium">Pages</span>
+                        </label>
+                        <input
+                          type="number"
+                          min="0"
+                          className="input input-bordered w-full"
+                          value={editData.pages}
+                          onChange={(e) =>
+                            setEditData({
+                              ...editData,
+                              pages: Number(e.target.value),
+                            })
+                          }
+                          onInput={preventNegativeValues}
+                          placeholder="Number of pages"
+                        />
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Form Actions */}
+            <div className="modal-action flex-col sm:flex-row gap-3 pt-4">
               <button
                 type="submit"
-                className="btn btn-primary"
+                className="btn btn-primary w-full sm:w-auto order-2 sm:order-1"
                 disabled={loadingUpdateLog}
               >
                 {loadingUpdateLog ? (
@@ -1009,8 +1128,9 @@ function LogCard({ log, user: logUser }: { log: ILog; user?: string }) {
               </button>
               <button
                 type="button"
-                className="btn btn-outline"
+                className="btn btn-outline w-full sm:w-auto order-1 sm:order-2"
                 onClick={() => editModalRef.current?.close()}
+                disabled={loadingUpdateLog}
               >
                 Cancel
               </button>

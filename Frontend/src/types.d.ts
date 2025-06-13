@@ -157,6 +157,7 @@ export interface updateLogRequest {
   description?: string;
   time?: number;
   date?: Date;
+  type?: ILog['type'];
   contentId?: number;
   episodes?: number;
   pages?: number;
