@@ -1,16 +1,20 @@
 import { useMemo } from 'react';
 import { ILog } from '../types';
 
-export function useFilteredGroupedLogs(logs: ILog[] | undefined, groupedLogs: ILog[][], assignedLogs: ILog[]) {
-    return useMemo(() => {
-        if (!logs) return [];
-        return groupedLogs
-            ?.map((group) => {
-                const filteredGroup = group.filter(
-                    (log) => !assignedLogs.includes(log)
-                );
-                return filteredGroup.length > 0 ? filteredGroup : null;
-            })
-            .filter((group) => !!group);
-    }, [groupedLogs, assignedLogs, logs]);
+export function useFilteredGroupedLogs(
+  logs: ILog[] | undefined,
+  groupedLogs: Record<string, ILog[]>,
+  assignedLogs: ILog[]
+) {
+  return useMemo(() => {
+    if (!logs) return {};
+    const filteredGroupedLogs: Record<string, ILog[]> = {};
+    Object.entries(groupedLogs).forEach(([key, group]) => {
+      const filteredGroup = group.filter((log) => !assignedLogs.includes(log));
+      if (filteredGroup.length > 0) {
+        filteredGroupedLogs[key] = filteredGroup;
+      }
+    });
+    return filteredGroupedLogs;
+  }, [groupedLogs, assignedLogs, logs]);
 }

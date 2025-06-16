@@ -81,10 +81,17 @@ function LogCard({ log, user: logUser }: { log: ILog; user?: string }) {
   const { user } = useUserDataStore();
   const deleteModalRef = useRef<HTMLDialogElement>(null);
   const editModalRef = useRef<HTMLDialogElement>(null);
+  const detailsModalRef = useRef<HTMLDialogElement>(null);
 
-  // Edit form state
+  // Edit form state with all editable fields
   const [editData, setEditData] = useState({
     description: description || '',
+    type: type,
+    date: date
+      ? typeof date === 'string'
+        ? date.split('T')[0]
+        : new Date(date).toISOString().split('T')[0]
+      : '',
     episodes: episodes || 0,
     pages: pages || 0,
     chars: chars || 0,
@@ -168,6 +175,12 @@ function LogCard({ log, user: logUser }: { log: ILog; user?: string }) {
   function openEditModal() {
     setEditData({
       description: description || '',
+      type: type,
+      date: date
+        ? typeof date === 'string'
+          ? date.split('T')[0]
+          : new Date(date).toISOString().split('T')[0]
+        : '',
       episodes: episodes || 0,
       pages: pages || 0,
       chars: chars || 0,
@@ -177,12 +190,18 @@ function LogCard({ log, user: logUser }: { log: ILog; user?: string }) {
     editModalRef.current?.showModal();
   }
 
+  function openDetailsModal() {
+    detailsModalRef.current?.showModal();
+  }
+
   function handleEditSubmit(e: React.FormEvent) {
     e.preventDefault();
     const totalMinutes = editData.hours * 60 + editData.minutes;
 
     const updateData: updateLogRequest = {
       description: editData.description,
+      type: editData.type,
+      date: editData.date ? new Date(editData.date) : undefined,
       time: totalMinutes || undefined,
       episodes: editData.episodes || undefined,
       pages: editData.pages || undefined,
@@ -374,8 +393,17 @@ function LogCard({ log, user: logUser }: { log: ILog; user?: string }) {
                 <ul className="dropdown-content menu p-2 shadow-lg bg-base-100 rounded-box w-32 border border-base-300 z-50">
                   <li>
                     <button
-                      onClick={openEditModal}
+                      onClick={openDetailsModal}
                       className="text-info hover:bg-info/10 gap-2"
+                    >
+                      <MdBook className="w-4 h-4" />
+                      Details
+                    </button>
+                  </li>
+                  <li>
+                    <button
+                      onClick={openEditModal}
+                      className="text-warning hover:bg-warning/10 gap-2"
                     >
                       <MdEdit className="w-4 h-4" />
                       Edit
@@ -452,6 +480,314 @@ function LogCard({ log, user: logUser }: { log: ILog; user?: string }) {
           </footer>
         </div>
       </article>
+
+      {/* Log Details Modal */}
+      <dialog
+        ref={detailsModalRef}
+        className="modal modal-bottom sm:modal-middle"
+        aria-labelledby="details-modal-title"
+      >
+        <div className="modal-box max-w-2xl">
+          <div className="flex justify-between items-start mb-6">
+            <div className="flex items-center gap-3">
+              <div className={`p-3 ${typeConfig.bgColor} rounded-lg`}>
+                <TypeIcon className={`w-6 h-6 ${typeConfig.color}`} />
+              </div>
+              <div>
+                <h3 id="details-modal-title" className="font-bold text-xl">
+                  Log Details
+                </h3>
+                <div className={`badge ${typeConfig.color} gap-1 mt-1`}>
+                  <TypeIcon className="w-3 h-3" />
+                  {typeConfig.label}
+                </div>
+              </div>
+            </div>
+            <form method="dialog">
+              <button className="btn btn-sm btn-circle btn-ghost">✕</button>
+            </form>
+          </div>
+
+          <div className="space-y-6">
+            {/* Media Information */}
+            <div className="card bg-base-200 shadow-sm">
+              <div className="card-body p-4">
+                <h4 className="font-semibold text-lg mb-3 flex items-center gap-2">
+                  <MdBook className="w-5 h-5" />
+                  Content Information
+                </h4>
+
+                <div className="space-y-3">
+                  <div>
+                    <span className="label-text font-medium">Title:</span>
+                    <p className="text-base-content mt-1">{logTitle}</p>
+                  </div>
+
+                  {media &&
+                    typeof media === 'object' &&
+                    media.title?.contentTitleEnglish && (
+                      <div>
+                        <span className="label-text font-medium">
+                          English Title:
+                        </span>
+                        <p className="text-base-content mt-1">
+                          {media.title.contentTitleEnglish}
+                        </p>
+                      </div>
+                    )}
+
+                  {media &&
+                    typeof media === 'object' &&
+                    media.title?.contentTitleRomaji && (
+                      <div>
+                        <span className="label-text font-medium">
+                          Romaji Title:
+                        </span>
+                        <p className="text-base-content mt-1">
+                          {media.title.contentTitleRomaji}
+                        </p>
+                      </div>
+                    )}
+
+                  {description && description !== logTitle && (
+                    <div>
+                      <span className="label-text font-medium">
+                        Description:
+                      </span>
+                      <p className="text-base-content mt-1">{description}</p>
+                    </div>
+                  )}
+
+                  {media && typeof media === 'object' && media.type && (
+                    <div>
+                      <span className="label-text font-medium">
+                        Media Type:
+                      </span>
+                      <span className="badge badge-outline ml-2 capitalize">
+                        {media.type}
+                      </span>
+                    </div>
+                  )}
+
+                  {media && typeof media === 'object' && media.contentId && (
+                    <div>
+                      <span className="label-text font-medium">
+                        Content ID:
+                      </span>
+                      <span className="font-mono text-xs bg-base-300 px-2 py-1 rounded ml-2">
+                        {media.contentId}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Activity Statistics */}
+            <div className="card bg-base-200 shadow-sm">
+              <div className="card-body p-4">
+                <h4 className="font-semibold text-lg mb-3 flex items-center gap-2">
+                  <MdTrendingUp className="w-5 h-5" />
+                  Activity Statistics
+                </h4>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="stat bg-base-100 rounded-lg p-3">
+                    <div className="stat-title text-xs">Experience Gained</div>
+                    <div className={`stat-value text-2xl ${typeConfig.color}`}>
+                      {xp}
+                    </div>
+                    <div className="stat-desc">XP Points</div>
+                  </div>
+
+                  {time && time > 0 ? (
+                    <div className="stat bg-base-100 rounded-lg p-3">
+                      <div className="stat-title text-xs">Time Spent</div>
+                      <div className="stat-value text-2xl text-info">
+                        {time >= 60
+                          ? `${Math.floor(time / 60)}h ${time % 60}m`
+                          : `${time}m`}
+                      </div>
+                      <div className="stat-desc">{time} minutes</div>
+                    </div>
+                  ) : null}
+
+                  {episodes && (
+                    <div className="stat bg-base-100 rounded-lg p-3">
+                      <div className="stat-title text-xs">Episodes</div>
+                      <div className="stat-value text-2xl text-secondary">
+                        {episodes}
+                      </div>
+                      <div className="stat-desc">Watched</div>
+                    </div>
+                  )}
+
+                  {pages && pages > 0 ? (
+                    <div className="stat bg-base-100 rounded-lg p-3">
+                      <div className="stat-title text-xs">Pages</div>
+                      <div className="stat-value text-2xl text-warning">
+                        {pages}
+                      </div>
+                      <div className="stat-desc">Read</div>
+                    </div>
+                  ) : null}
+
+                  {chars && (
+                    <div className="stat bg-base-100 rounded-lg p-3">
+                      <div className="stat-title text-xs">Characters</div>
+                      <div className="stat-value text-lg text-accent">
+                        {chars.toLocaleString()}
+                      </div>
+                      <div className="stat-desc">Read</div>
+                    </div>
+                  )}
+
+                  {readingSpeed && (
+                    <div className="stat bg-base-100 rounded-lg p-3">
+                      <div className="stat-title text-xs">Reading Speed</div>
+                      <div className="stat-value text-xl text-success">
+                        {readingSpeed}
+                      </div>
+                      <div className="stat-desc">chars/hour</div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Date and Time Information */}
+            <div className="card bg-base-200 shadow-sm">
+              <div className="card-body p-4">
+                <h4 className="font-semibold text-lg mb-3 flex items-center gap-2">
+                  <MdCalendarToday className="w-5 h-5" />
+                  Date & Time
+                </h4>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <span className="label-text font-medium">Created:</span>
+                    <p className="text-base-content mt-1">{fullDate}</p>
+                    <p className="text-sm text-base-content/60">
+                      {relativeDate}
+                    </p>
+                  </div>
+
+                  {time && (
+                    <div>
+                      <span className="label-text font-medium">Duration:</span>
+                      <p className="text-base-content mt-1">
+                        {time >= 60
+                          ? `${Math.floor(time / 60)} hour${Math.floor(time / 60) !== 1 ? 's' : ''} and ${time % 60} minute${time % 60 !== 1 ? 's' : ''}`
+                          : `${time} minute${time !== 1 ? 's' : ''}`}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Media Details (if available) */}
+            {media && typeof media === 'object' && (
+              <div className="card bg-base-200 shadow-sm">
+                <div className="card-body p-4">
+                  <h4 className="font-semibold text-lg mb-3 flex items-center gap-2">
+                    <MdVideoLibrary className="w-5 h-5" />
+                    Media Details
+                  </h4>
+
+                  <div className="space-y-3">
+                    <div>
+                      <span className="label-text font-medium">
+                        Content ID:
+                      </span>
+                      <span className="font-mono text-xs bg-base-300 px-2 py-1 rounded ml-2">
+                        {media.contentId}
+                      </span>
+                    </div>
+
+                    <div>
+                      <span className="label-text font-medium">
+                        Media Type:
+                      </span>
+                      <span className="badge badge-outline ml-2 capitalize">
+                        {media.type}
+                      </span>
+                    </div>
+
+                    <div>
+                      <span className="label-text font-medium">
+                        Available Titles:
+                      </span>
+                      <div className="mt-1 space-y-1">
+                        {media.title?.contentTitleNative && (
+                          <div className="text-sm">
+                            <span className="font-medium">Native:</span>{' '}
+                            {media.title.contentTitleNative}
+                          </div>
+                        )}
+                        {media.title?.contentTitleEnglish && (
+                          <div className="text-sm">
+                            <span className="font-medium">English:</span>{' '}
+                            {media.title.contentTitleEnglish}
+                          </div>
+                        )}
+                        {media.title?.contentTitleRomaji && (
+                          <div className="text-sm">
+                            <span className="font-medium">Romaji:</span>{' '}
+                            {media.title.contentTitleRomaji}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Technical Details */}
+            <div className="card bg-base-200 shadow-sm">
+              <div className="card-body p-4">
+                <h4 className="font-semibold text-lg mb-3 flex items-center gap-2">
+                  <MdSpeed className="w-5 h-5" />
+                  Technical Details
+                </h4>
+
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span className="label-text font-medium">Log ID:</span>
+                    <span className="font-mono text-xs bg-base-300 px-2 py-1 rounded">
+                      {log._id}
+                    </span>
+                  </div>
+
+                  {logUser && (
+                    <div className="flex justify-between">
+                      <span className="label-text font-medium">User:</span>
+                      <span>{logUser}</span>
+                    </div>
+                  )}
+
+                  <div className="flex justify-between">
+                    <span className="label-text font-medium">
+                      Content Type:
+                    </span>
+                    <span className="capitalize">{type}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="modal-action mt-6">
+            <form method="dialog" className="w-full">
+              <button className="btn btn-outline w-full">Close</button>
+            </form>
+          </div>
+        </div>
+        <form method="dialog" className="modal-backdrop">
+          <button aria-label="Close modal">close</button>
+        </form>
+      </dialog>
 
       {/* Enhanced Delete Confirmation Modal */}
       <dialog
@@ -541,136 +877,241 @@ function LogCard({ log, user: logUser }: { log: ILog; user?: string }) {
         </form>
       </dialog>
 
-      {/* Edit Log Modal */}
+      {/* Enhanced Edit Log Modal */}
       <dialog
         ref={editModalRef}
         className="modal modal-bottom sm:modal-middle"
         aria-labelledby="edit-modal-title"
       >
-        <div className="modal-box">
-          <div className="flex justify-between items-center mb-4">
-            <h3 id="edit-modal-title" className="font-bold text-lg">
-              Edit Log Entry
-            </h3>
+        <div className="modal-box max-w-2xl">
+          <div className="flex justify-between items-center mb-6">
+            <div className="flex items-center gap-3">
+              <div className={`p-3 ${typeConfig.bgColor} rounded-lg`}>
+                <MdEdit className={`w-6 h-6 ${typeConfig.color}`} />
+              </div>
+              <div>
+                <h3 id="edit-modal-title" className="font-bold text-xl">
+                  Edit Log Entry
+                </h3>
+                <p className="text-sm text-base-content/60 mt-1">
+                  Modify your log details below
+                </p>
+              </div>
+            </div>
             <form method="dialog">
               <button className="btn btn-sm btn-circle btn-ghost">✕</button>
             </form>
           </div>
 
-          <form onSubmit={handleEditSubmit} className="space-y-4">
-            <div>
-              <label className="label">
-                <span className="label-text">Description</span>
-              </label>
-              <input
-                type="text"
-                className="input input-bordered w-full"
-                value={editData.description}
-                onChange={(e) =>
-                  setEditData({ ...editData, description: e.target.value })
-                }
-                required
-              />
-            </div>
+          <form onSubmit={handleEditSubmit} className="space-y-6">
+            {/* Basic Information Section */}
+            <div className="card bg-base-200 shadow-sm">
+              <div className="card-body p-4">
+                <h4 className="font-semibold text-lg mb-4">
+                  Basic Information
+                </h4>
 
-            {type === 'anime' && (
-              <div>
-                <label className="label">
-                  <span className="label-text">Episodes</span>
-                </label>
-                <input
-                  type="number"
-                  min="0"
-                  className="input input-bordered w-full"
-                  value={editData.episodes}
-                  onChange={(e) =>
-                    setEditData({
-                      ...editData,
-                      episodes: Number(e.target.value),
-                    })
-                  }
-                  onInput={preventNegativeValues}
-                />
-              </div>
-            )}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="md:col-span-2">
+                    <label className="label">
+                      <span className="label-text font-medium">
+                        Description
+                      </span>
+                      <span className="label-text-alt text-error">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      className="input input-bordered w-full"
+                      value={editData.description}
+                      onChange={(e) =>
+                        setEditData({
+                          ...editData,
+                          description: e.target.value,
+                        })
+                      }
+                      placeholder="Enter description"
+                      required
+                    />
+                  </div>
 
-            {(type === 'reading' || type === 'vn' || type === 'manga') && (
-              <div>
-                <label className="label">
-                  <span className="label-text">Characters</span>
-                </label>
-                <input
-                  type="number"
-                  min="0"
-                  className="input input-bordered w-full"
-                  value={editData.chars}
-                  onChange={(e) =>
-                    setEditData({ ...editData, chars: Number(e.target.value) })
-                  }
-                  onInput={preventNegativeValues}
-                />
-              </div>
-            )}
+                  <div>
+                    <label className="label">
+                      <span className="label-text font-medium">Type</span>
+                    </label>
+                    <select
+                      className="select select-bordered w-full"
+                      value={editData.type}
+                      onChange={(e) =>
+                        setEditData({
+                          ...editData,
+                          type: e.target.value as ILog['type'],
+                        })
+                      }
+                    >
+                      <option value="reading">Reading</option>
+                      <option value="anime">Anime</option>
+                      <option value="vn">Visual Novel</option>
+                      <option value="video">Video</option>
+                      <option value="manga">Manga</option>
+                      <option value="audio">Audio</option>
+                      <option value="other">Other</option>
+                    </select>
+                  </div>
 
-            {type === 'manga' && (
-              <div>
-                <label className="label">
-                  <span className="label-text">Pages</span>
-                </label>
-                <input
-                  type="number"
-                  min="0"
-                  className="input input-bordered w-full"
-                  value={editData.pages}
-                  onChange={(e) =>
-                    setEditData({ ...editData, pages: Number(e.target.value) })
-                  }
-                  onInput={preventNegativeValues}
-                />
-              </div>
-            )}
-
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="label">
-                  <span className="label-text">Hours</span>
-                </label>
-                <input
-                  type="number"
-                  min="0"
-                  className="input input-bordered w-full"
-                  value={editData.hours}
-                  onChange={(e) =>
-                    setEditData({ ...editData, hours: Number(e.target.value) })
-                  }
-                  onInput={preventNegativeValues}
-                />
-              </div>
-              <div>
-                <label className="label">
-                  <span className="label-text">Minutes</span>
-                </label>
-                <input
-                  type="number"
-                  min="0"
-                  max="59"
-                  className="input input-bordered w-full"
-                  value={editData.minutes}
-                  onChange={(e) =>
-                    setEditData({
-                      ...editData,
-                      minutes: Number(e.target.value),
-                    })
-                  }
-                  onInput={preventNegativeValues}
-                />
+                  <div>
+                    <label className="label">
+                      <span className="label-text font-medium">Date</span>
+                    </label>
+                    <input
+                      type="date"
+                      className="input input-bordered w-full"
+                      value={editData.date}
+                      onChange={(e) =>
+                        setEditData({ ...editData, date: e.target.value })
+                      }
+                    />
+                  </div>
+                </div>
               </div>
             </div>
 
-            <div className="modal-action">
+            {/* Activity Details Section */}
+            <div className="card bg-base-200 shadow-sm">
+              <div className="card-body p-4">
+                <h4 className="font-semibold text-lg mb-4">Activity Details</h4>
+
+                <div className="space-y-4">
+                  {/* Time Section */}
+                  <div>
+                    <label className="label">
+                      <span className="label-text font-medium">Time Spent</span>
+                    </label>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <input
+                          type="number"
+                          min="0"
+                          className="input input-bordered w-full"
+                          value={editData.hours}
+                          onChange={(e) =>
+                            setEditData({
+                              ...editData,
+                              hours: Number(e.target.value),
+                            })
+                          }
+                          onInput={preventNegativeValues}
+                          placeholder="Hours"
+                        />
+                        <div className="label">
+                          <span className="label-text-alt">Hours</span>
+                        </div>
+                      </div>
+                      <div>
+                        <input
+                          type="number"
+                          min="0"
+                          max="59"
+                          className="input input-bordered w-full"
+                          value={editData.minutes}
+                          onChange={(e) =>
+                            setEditData({
+                              ...editData,
+                              minutes: Number(e.target.value),
+                            })
+                          }
+                          onInput={preventNegativeValues}
+                          placeholder="Minutes"
+                        />
+                        <div className="label">
+                          <span className="label-text-alt">Minutes</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Type-specific fields */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {editData.type === 'anime' && (
+                      <div>
+                        <label className="label">
+                          <span className="label-text font-medium">
+                            Episodes
+                          </span>
+                        </label>
+                        <input
+                          type="number"
+                          min="0"
+                          className="input input-bordered w-full"
+                          value={editData.episodes}
+                          onChange={(e) =>
+                            setEditData({
+                              ...editData,
+                              episodes: Number(e.target.value),
+                            })
+                          }
+                          onInput={preventNegativeValues}
+                          placeholder="Number of episodes"
+                        />
+                      </div>
+                    )}
+
+                    {(editData.type === 'reading' ||
+                      editData.type === 'vn' ||
+                      editData.type === 'manga') && (
+                      <div>
+                        <label className="label">
+                          <span className="label-text font-medium">
+                            Characters
+                          </span>
+                        </label>
+                        <input
+                          type="number"
+                          min="0"
+                          className="input input-bordered w-full"
+                          value={editData.chars}
+                          onChange={(e) =>
+                            setEditData({
+                              ...editData,
+                              chars: Number(e.target.value),
+                            })
+                          }
+                          onInput={preventNegativeValues}
+                          placeholder="Number of characters"
+                        />
+                      </div>
+                    )}
+
+                    {editData.type === 'manga' && (
+                      <div>
+                        <label className="label">
+                          <span className="label-text font-medium">Pages</span>
+                        </label>
+                        <input
+                          type="number"
+                          min="0"
+                          className="input input-bordered w-full"
+                          value={editData.pages}
+                          onChange={(e) =>
+                            setEditData({
+                              ...editData,
+                              pages: Number(e.target.value),
+                            })
+                          }
+                          onInput={preventNegativeValues}
+                          placeholder="Number of pages"
+                        />
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Form Actions */}
+            <div className="modal-action flex-col sm:flex-row gap-3 pt-4">
               <button
                 type="submit"
-                className="btn btn-primary"
+                className="btn btn-primary w-full sm:w-auto order-2 sm:order-1"
                 disabled={loadingUpdateLog}
               >
                 {loadingUpdateLog ? (
@@ -687,8 +1128,9 @@ function LogCard({ log, user: logUser }: { log: ILog; user?: string }) {
               </button>
               <button
                 type="button"
-                className="btn btn-outline"
+                className="btn btn-outline w-full sm:w-auto order-1 sm:order-2"
                 onClick={() => editModalRef.current?.close()}
+                disabled={loadingUpdateLog}
               >
                 Cancel
               </button>

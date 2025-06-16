@@ -1,6 +1,5 @@
 import { ILog, IMediaDocument } from '../types';
-import { useState, useMemo, useCallback } from 'react';
-import { fuzzy } from 'fast-fuzzy';
+import { useState, useCallback } from 'react';
 import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import { assignMediaFn, getUserLogsFn } from '../api/trackerApi';
 import { toast } from 'react-toastify';
@@ -8,6 +7,7 @@ import { AxiosError } from 'axios';
 import useSearch from '../hooks/useSearch';
 import { useUserDataStore } from '../store/userData';
 import { useFilteredGroupedLogs } from '../hooks/useFilteredGroupedLogs.tsx';
+import { useGroupLogs } from '../hooks/useGroupLogs.tsx';
 
 interface AnimeLogsProps {
   username?: string;
@@ -74,32 +74,7 @@ function AnimeLogs({ username, isActive = true }: AnimeLogsProps) {
     []
   );
 
-  const stripSymbols = useCallback((description: string) => {
-    return description
-      .replace(/\s*[-–—:]\s*\d+.*$/g, '') // Remove trailing episode numbers and everything after
-      .replace(/\s+\d+\s*$/, '') // Remove standalone trailing numbers
-      .trim();
-  }, []);
-
-  const groupedLogs = useMemo(() => {
-    if (!logs) return [];
-    const groupedLogs = new Map<string, ILog[]>();
-    logs.forEach((log) => {
-      if (!log.description || log.type !== 'anime' || log.mediaId) return;
-      let foundGroup = false;
-      for (const [key, group] of groupedLogs) {
-        if (fuzzy(key, log.description) > 0.8) {
-          group.push(log);
-          foundGroup = true;
-          break;
-        }
-      }
-      if (!foundGroup) {
-        groupedLogs.set(log.description, [log]);
-      }
-    });
-    return Array.from(groupedLogs.values());
-  }, [logs]);
+  const groupedLogs = useGroupLogs(logs, 'anime');
 
   const filteredGroupedLogs = useFilteredGroupedLogs(
     logs,
@@ -268,7 +243,9 @@ function AnimeLogs({ username, isActive = true }: AnimeLogsProps) {
         </div>
         <div className="stat">
           <div className="stat-title">Available Groups</div>
-          <div className="stat-value">{filteredGroupedLogs.length}</div>
+          <div className="stat-value">
+            {Object.keys(filteredGroupedLogs).length}
+          </div>
         </div>
       </div>
 
@@ -279,72 +256,60 @@ function AnimeLogs({ username, isActive = true }: AnimeLogsProps) {
             <h2 className="card-title">Unassigned Logs</h2>
             <div className="divider my-1"></div>
 
-            {filteredGroupedLogs.length > 0 ? (
+            {Object.keys(filteredGroupedLogs).length > 0 ? (
               <div className="overflow-y-auto max-h-[60vh]">
                 <div className="join join-vertical w-full">
-                  {filteredGroupedLogs.map((group, i) => (
-                    <div
-                      className="collapse collapse-arrow join-item border border-base-300 bg-base-100"
-                      key={i}
-                    >
-                      <input
-                        type="radio"
-                        name="log-accordion"
-                        checked={i === selectedGroup}
-                        onChange={() => {
-                          handleOpenGroup(
-                            group,
-                            stripSymbols(
-                              group && group[0]?.description
-                                ? group[0].description
-                                : ''
-                            ),
-                            i
-                          );
-                        }}
-                      />
-                      <div className="collapse-title font-medium">
-                        <div className="flex items-center gap-2">
-                          <div className="badge badge-primary">
-                            {group?.length || 0}
+                  {Object.entries(filteredGroupedLogs).map(
+                    ([key, group], i) => (
+                      <div
+                        className="collapse collapse-arrow join-item border border-base-300 bg-base-100"
+                        key={i}
+                      >
+                        <input
+                          type="radio"
+                          name="log-accordion"
+                          checked={i === selectedGroup}
+                          onChange={() => {
+                            handleOpenGroup(group, key, i);
+                          }}
+                        />
+                        <div className="collapse-title font-medium">
+                          <div className="flex items-center gap-2">
+                            <div className="badge badge-primary">
+                              {group?.length || 0}
+                            </div>
+                            <span className="text-sm md:text-base">{key}</span>
                           </div>
-                          <span className="text-sm md:text-base">
-                            {stripSymbols(
-                              group && group[0]?.description
-                                ? group[0].description
-                                : ''
-                            )}
-                          </span>
+                        </div>
+                        <div className="collapse-content">
+                          {group?.map((log, i) => (
+                            <div
+                              className="flex items-center gap-4 py-2 hover:bg-base-200 rounded-md px-2"
+                              key={i}
+                            >
+                              <label onClick={(e) => e.stopPropagation()}>
+                                <input
+                                  type="checkbox"
+                                  className="checkbox checkbox-primary checkbox-sm"
+                                  checked={selectedLogs.includes(log)}
+                                  onChange={(e) => {
+                                    e.stopPropagation();
+                                    handleCheckboxChange(log);
+                                  }}
+                                />
+                              </label>
+                              <div className="grow">
+                                <h3 className="text-sm">{log.description}</h3>
+                                <p className="text-xs text-base-content/70">
+                                  {new Date(log.date).toLocaleDateString()}
+                                </p>
+                              </div>
+                            </div>
+                          ))}
                         </div>
                       </div>
-                      <div className="collapse-content">
-                        {group?.map((log, i) => (
-                          <div
-                            className="flex items-center gap-4 py-2 hover:bg-base-200 rounded-md px-2"
-                            key={i}
-                          >
-                            <label onClick={(e) => e.stopPropagation()}>
-                              <input
-                                type="checkbox"
-                                className="checkbox checkbox-primary checkbox-sm"
-                                checked={selectedLogs.includes(log)}
-                                onChange={(e) => {
-                                  e.stopPropagation();
-                                  handleCheckboxChange(log);
-                                }}
-                              />
-                            </label>
-                            <div className="grow">
-                              <h3 className="text-sm">{log.description}</h3>
-                              <p className="text-xs text-base-content/70">
-                                {new Date(log.date).toLocaleDateString()}
-                              </p>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  ))}
+                    )
+                  )}
                 </div>
               </div>
             ) : (

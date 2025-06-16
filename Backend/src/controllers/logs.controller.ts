@@ -483,7 +483,8 @@ export async function updateLog(
   res: Response,
   next: NextFunction
 ) {
-  const { description, time, date, mediaId, episodes, pages, chars } = req.body;
+  const { description, time, date, mediaId, episodes, pages, chars, type } =
+    req.body;
 
   try {
     const log: ILog | null = await Log.findOne({
@@ -505,8 +506,11 @@ export async function updateLog(
 
     for (const key in req.body) {
       if (validKeys.includes(key as keyof IEditedFields)) {
-        editedFields[key as keyof IEditedFields] =
-          log[key as keyof IEditedFields];
+        const value = log[key as keyof IEditedFields];
+        // Only assign if value is not null or undefined
+        if (value !== null && value !== undefined) {
+          editedFields[key as keyof IEditedFields] = value;
+        }
       }
     }
 
@@ -517,6 +521,7 @@ export async function updateLog(
     log.episodes = episodes !== undefined ? episodes : log.episodes;
     log.pages = pages !== undefined ? pages : log.pages;
     log.chars = chars !== undefined ? chars : log.chars;
+    log.type = type !== undefined ? type : log.type;
     log.editedFields = editedFields;
 
     const updatedLog = await log.save();
