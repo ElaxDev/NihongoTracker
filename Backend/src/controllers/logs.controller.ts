@@ -446,9 +446,81 @@ export async function getUserLogs(
 
 export async function getLog(req: Request, res: Response, next: NextFunction) {
   try {
-    const foundLog = await Log.findById(req.params.id).populate('user');
+    const logAggregation = await Log.aggregate([
+      {
+        $match: {
+          _id: new Types.ObjectId(req.params.id),
+        },
+      },
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'user',
+          foreignField: '_id',
+          as: 'user',
+        },
+      },
+      {
+        $unwind: {
+          path: '$user',
+          preserveNullAndEmptyArrays: true,
+        },
+      },
+      {
+        $lookup: {
+          from: 'media',
+          localField: 'mediaId',
+          foreignField: 'contentId',
+          as: 'mediaData',
+        },
+      },
+      {
+        $unwind: {
+          path: '$mediaData',
+          preserveNullAndEmptyArrays: true,
+        },
+      },
+      {
+        $project: {
+          _id: 1,
+          type: 1,
+          description: 1,
+          episodes: 1,
+          pages: 1,
+          chars: 1,
+          time: 1,
+          date: 1,
+          mediaId: 1, // Keep original mediaId field
+          xp: 1,
+          'mediaData.title': 1,
+          'mediaData.contentImage': 1,
+          'mediaData.type': 1,
+          'mediaData.contentId': 1,
+          'mediaData.isAdult': 1,
+        },
+      },
+    ]);
+
+    const foundLog = logAggregation[0];
     if (!foundLog) throw new customError('Log not found', 404);
-    return res.status(200).json(foundLog);
+
+    // For shared logs, we want to include media information but not expose sensitive user data
+    const sharedLogData = {
+      _id: foundLog._id,
+      type: foundLog.type,
+      description: foundLog.description,
+      episodes: foundLog.episodes,
+      pages: foundLog.pages,
+      chars: foundLog.chars,
+      time: foundLog.time,
+      date: foundLog.date,
+      mediaId: foundLog.mediaId, // Original mediaId preserved
+      media: foundLog.mediaData, // Populated media data in separate field
+      xp: foundLog.xp,
+      isAdult: foundLog.mediaData?.isAdult || false,
+    };
+
+    return res.status(200).json(sharedLogData);
   } catch (error) {
     return next(error as customError);
   }

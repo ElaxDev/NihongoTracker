@@ -76,10 +76,10 @@ export async function getRankingFn(params?: IRankingParams) {
   return data;
 }
 
-// export async function getLogFn(id: string) {
-//   const { data } = await api.get<ILog>(`logs/${id}`);
-//   return data;
-// }
+export async function getLogFn(id: string): Promise<ILog> {
+  const { data } = await api.get<ILog>(`logs/${id}`);
+  return data;
+}
 
 export const updateLogFn = async (id: string, data: updateLogRequest) => {
   const response = await api.patch(`/logs/${id}`, data);

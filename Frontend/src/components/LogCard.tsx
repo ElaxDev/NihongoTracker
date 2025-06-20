@@ -15,6 +15,7 @@ import {
   MdCalendarToday,
   MdTimer,
   MdEdit,
+  MdShare,
 } from 'react-icons/md';
 import { deleteLogFn, updateLogFn } from '../api/trackerApi';
 import { toast } from 'react-toastify';
@@ -327,6 +328,46 @@ function LogCard({ log, user: logUser }: { log: ILog; user?: string }) {
   const isOwner = logUser === user?.username;
   const readingSpeed = getReadingSpeed();
 
+  function handleShare() {
+    const shareUrl = `${window.location.origin}/shared-log/${log._id}`;
+
+    if (navigator.share) {
+      // Use native sharing if available
+      navigator
+        .share({
+          title: `Check out this ${typeConfig.label} log: ${logTitle}`,
+          text: `I logged "${logTitle}" and thought you might want to create a similar log!`,
+          url: shareUrl,
+        })
+        .catch((error) => {
+          console.log('Error sharing:', error);
+          // Fallback to clipboard
+          copyToClipboard(shareUrl);
+        });
+    } else {
+      // Fallback to clipboard
+      copyToClipboard(shareUrl);
+    }
+  }
+
+  function copyToClipboard(text: string) {
+    navigator.clipboard
+      .writeText(text)
+      .then(() => {
+        toast.success('Share link copied to clipboard!');
+      })
+      .catch(() => {
+        // Fallback for older browsers
+        const textArea = document.createElement('textarea');
+        textArea.value = text;
+        document.body.appendChild(textArea);
+        textArea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textArea);
+        toast.success('Share link copied to clipboard!');
+      });
+  }
+
   return (
     <>
       <article
@@ -391,6 +432,15 @@ function LogCard({ log, user: logUser }: { log: ILog; user?: string }) {
                   <MdMoreHoriz className="w-4 h-4" />
                 </button>
                 <ul className="dropdown-content menu p-2 shadow-lg bg-base-100 rounded-box w-32 border border-base-300 z-50">
+                  <li>
+                    <button
+                      onClick={handleShare}
+                      className="text-success hover:bg-success/10 gap-2"
+                    >
+                      <MdShare className="w-4 h-4" />
+                      Share
+                    </button>
+                  </li>
                   <li>
                     <button
                       onClick={openDetailsModal}

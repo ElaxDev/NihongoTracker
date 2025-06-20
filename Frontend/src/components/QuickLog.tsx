@@ -96,7 +96,7 @@ function QuickLog({ open, onClose, media }: QuickLogProps) {
       description: logDescription,
       episodes,
       time: totalMinutes || undefined,
-      contentId,
+      mediaId: contentId,
       chars,
       pages,
       date: new Date(),

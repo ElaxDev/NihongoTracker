@@ -78,10 +78,7 @@ export type logoutResponseType = {
   message: string;
 };
 
-enum sortTypes {
-  asc = 'asc',
-  desc = 'desc',
-}
+export type sortTypes = 'asc' | 'desc';
 
 export type filterTypes =
   | 'userLevel'
