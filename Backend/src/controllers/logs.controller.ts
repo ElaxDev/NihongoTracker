@@ -555,7 +555,7 @@ export async function updateLog(
   res: Response,
   next: NextFunction
 ) {
-  const { description, time, date, mediaId, episodes, pages, chars, type } =
+  const { description, time, date, mediaId, episodes, pages, chars, type, xp } =
     req.body;
 
   try {
@@ -594,6 +594,7 @@ export async function updateLog(
     log.pages = pages !== undefined ? pages : log.pages;
     log.chars = chars !== undefined ? chars : log.chars;
     log.type = type !== undefined ? type : log.type;
+    log.xp = xp !== undefined ? xp : log.xp; // Update XP from middleware calculation
     log.editedFields = editedFields;
 
     const updatedLog = await log.save();
@@ -603,7 +604,7 @@ export async function updateLog(
     log.editedFields = null;
     await log.save();
 
-    return res.sendStatus(204);
+    return res.status(200).json(updatedLog);
   } catch (error) {
     return next(error as customError);
   }

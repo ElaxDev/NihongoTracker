@@ -137,9 +137,8 @@ function Hero() {
   return (
     <div className="hero min-h-screen bg-gradient-to-br from-base-100 to-base-200 pt-20">
       {!user ? (
-        // Content for logged out users (marketing view)
         <div className="hero-content text-center">
-          <div className="max-w-6xl">            {/* Hero Header */}
+          <div className="max-w-6xl">
             <div className="mb-16">
               <h1 className="text-6xl md:text-7xl font-bold mb-8 bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent leading-normal py-2">
                 NihongoTracker
