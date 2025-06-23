@@ -206,7 +206,7 @@ function MediaDetails() {
               {logs && logs.length > 0 ? (
                 <div className="space-y-3">
                   {visibleLogs.map((log) => (
-                    <LogCard key={log._id} log={log} />
+                    <LogCard key={log._id} log={log} user={username} />
                   ))}
                   {hasMoreLogs && (
                     <div className="text-center pt-4">
