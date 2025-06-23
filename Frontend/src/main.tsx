@@ -31,6 +31,7 @@ import MatchMedia from './screens/MatchMedia.tsx';
 import MediaDetails from './screens/MediaDetails.tsx';
 import MediaHeader from './components/MediaHeader.tsx';
 import FeaturesScreen from './screens/FeaturesScreen.tsx';
+import SharedLogScreen from './screens/SharedLogScreen.tsx';
 
 const router = createBrowserRouter(
   createRoutesFromElements(
@@ -41,6 +42,7 @@ const router = createBrowserRouter(
       <Route path="settings" element={<SettingsScreen />} />
       <Route path="ranking" element={<RankingScreen />} />
       <Route path="features" element={<FeaturesScreen />} />
+      <Route path="/shared-log/:logId" element={<SharedLogScreen />} />
       <Route path="user/:username" element={<ProfileHeader />}>
         <Route index element={<ProfileScreen />} />
         <Route path="stats" element={<StatsScreen />} />

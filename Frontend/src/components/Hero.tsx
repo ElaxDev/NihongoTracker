@@ -134,137 +134,274 @@ function Hero() {
     }
     return 'N/A';
   }
-
   return (
-    <div className="hero min-h-screen bg-base-200">
+    <div className="hero min-h-screen bg-gradient-to-br from-base-100 to-base-200 pt-20">
       {!user ? (
-        // Content for logged out users (marketing view)
-        <div className="hero-content flex-col lg:flex-row-reverse gap-12">
-          <div className="max-w-sm lg:max-w-md">
-            <div className="card card-bordered shadow-xl">
-              <div className="card-body">
-                <h2 className="card-title text-center justify-center border-b pb-2">
-                  学習の進捗 (Learning Progress)
+        <div className="hero-content text-center">
+          <div className="max-w-6xl">
+            <div className="mb-16">
+              <h1 className="text-6xl md:text-7xl font-bold mb-8 bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent leading-normal py-2">
+                NihongoTracker
+              </h1>
+              <p className="text-xl md:text-2xl mb-8 text-base-content/80 max-w-3xl mx-auto">
+                Transform your Japanese learning journey with{' '}
+                <span className="font-bold text-primary">
+                  gamified immersion tracking
+                </span>
+                .
+                <br />
+                Compete with friends, visualize progress, and stay motivated.
+              </p>
+
+              <div className="flex flex-col sm:flex-row gap-4 justify-center mb-8">
+                <Link className="btn btn-primary btn-lg" to="/register">
+                  <svg
+                    className="w-5 h-5 mr-2"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      d="M13 10V3L4 14h7v7l9-11h-7z"
+                    />
+                  </svg>
+                  Start Your Journey
+                </Link>
+                <Link className="btn btn-outline btn-lg" to="/login">
+                  Sign In
+                </Link>
+              </div>
+
+              <div className="flex flex-wrap justify-center gap-3 mb-12">
+                <div className="badge badge-primary badge-lg">
+                  📚 Reading Tracker
+                </div>
+                <div className="badge badge-secondary badge-lg">
+                  🎧 Listening Timer
+                </div>
+                <div className="badge badge-accent badge-lg">
+                  📊 Progress Analytics
+                </div>
+                <div className="badge badge-info badge-lg">🏆 Leaderboards</div>
+              </div>
+            </div>
+
+            {/* Feature Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16">
+              <div className="card bg-base-100 shadow-xl">
+                <div className="card-body text-center">
+                  <div className="mx-auto mb-4 p-4 bg-primary/10 rounded-full w-fit">
+                    <svg
+                      className="w-8 h-8 text-primary"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"
+                      />
+                    </svg>
+                  </div>
+                  <h3 className="card-title justify-center text-xl mb-2">
+                    Track Everything
+                  </h3>
+                  <p className="text-sm text-base-content/70">
+                    Log reading, anime, games, and study time. Support for
+                    books, manga, visual novels, and more.
+                  </p>
+                </div>
+              </div>
+
+              <div className="card bg-base-100 shadow-xl">
+                <div className="card-body text-center">
+                  <div className="mx-auto mb-4 p-4 bg-secondary/10 rounded-full w-fit">
+                    <svg
+                      className="w-8 h-8 text-secondary"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+                      />
+                    </svg>
+                  </div>
+                  <h3 className="card-title justify-center text-xl mb-2">
+                    Visualize Progress
+                  </h3>
+                  <p className="text-sm text-base-content/70">
+                    Beautiful charts and statistics show your improvement over
+                    time. See patterns in your learning.
+                  </p>
+                </div>
+              </div>
+
+              <div className="card bg-base-100 shadow-xl">
+                <div className="card-body text-center">
+                  <div className="mx-auto mb-4 p-4 bg-accent/10 rounded-full w-fit">
+                    <svg
+                      className="w-8 h-8 text-accent"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
+                      />
+                    </svg>
+                  </div>
+                  <h3 className="card-title justify-center text-xl mb-2">
+                    Compete & Share
+                  </h3>
+                  <p className="text-sm text-base-content/70">
+                    Join leaderboards, share achievements, and stay motivated
+                    with the community.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Demo Dashboard */}
+            <div className="card bg-base-100 shadow-2xl mb-16">
+              <div className="card-body p-8">
+                <h2 className="card-title text-center justify-center text-2xl mb-6">
+                  See Your Progress Come to Life
                 </h2>
 
-                <div className="grid grid-cols-1 gap-6 mt-4">
-                  <div className="flex items-center gap-4">
-                    <div className="bg-primary text-primary-content p-4 rounded-lg">
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        className="w-8 h-8 stroke-current"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth="2"
-                          d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"
-                        ></path>
-                      </svg>
-                    </div>
-                    <div>
-                      <div className="text-lg font-bold">Reading - 読む</div>
-                      <div className="text-3xl font-extrabold">42</div>
-                      <div className="text-sm opacity-70">books completed</div>
-                    </div>
-                  </div>
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                  <div className="lg:col-span-2">
+                    <div className="stats stats-vertical lg:stats-horizontal shadow w-full">
+                      <div className="stat">
+                        <div className="stat-figure text-primary">
+                          <svg
+                            className="w-8 h-8"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth="2"
+                              d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"
+                            />
+                          </svg>
+                        </div>
+                        <div className="stat-title">Reading This Month</div>
+                        <div className="stat-value text-primary">42.5h</div>
+                        <div className="stat-desc">
+                          ↗︎ 15% more than last month
+                        </div>
+                      </div>
 
-                  <div className="flex items-center gap-4">
-                    <div className="bg-secondary text-secondary-content p-4 rounded-lg">
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        className="w-8 h-8 stroke-current"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth="2"
-                          d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"
-                        ></path>
-                      </svg>
-                    </div>
-                    <div>
-                      <div className="text-lg font-bold">Listening - 聞く</div>
-                      <div className="text-3xl font-extrabold">156</div>
-                      <div className="text-sm opacity-70">hours immersed</div>
-                    </div>
-                  </div>
+                      <div className="stat">
+                        <div className="stat-figure text-secondary">
+                          <svg
+                            className="w-8 h-8"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth="2"
+                              d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z"
+                            />
+                          </svg>
+                        </div>
+                        <div className="stat-title">Listening This Month</div>
+                        <div className="stat-value text-secondary">67.2h</div>
+                        <div className="stat-desc">
+                          ↗︎ 8% more than last month
+                        </div>
+                      </div>
 
-                  <div className="flex items-center gap-4">
-                    <div className="bg-success text-success-content p-4 rounded-lg">
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        className="w-8 h-8 stroke-current"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth="2"
-                          d="M3 19.5h18M5 17l3.5-3.5m0 0l3 3L18 10"
-                        ></path>
-                      </svg>
-                    </div>
-                    <div>
-                      <div className="text-lg font-bold">Immersion - 浸す</div>
-                      <div className="text-3xl font-extrabold">215</div>
-                      <div className="text-sm opacity-70">
-                        total hours this month
+                      <div className="stat">
+                        <div className="stat-figure text-success">
+                          <svg
+                            className="w-8 h-8"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth="2"
+                              d="M13 10V3L4 14h7v7l9-11h-7z"
+                            />
+                          </svg>
+                        </div>
+                        <div className="stat-title">Current Streak</div>
+                        <div className="stat-value text-success">23</div>
+                        <div className="stat-desc">consecutive days</div>
                       </div>
                     </div>
                   </div>
-                </div>
 
-                <div className="card-actions justify-center mt-4 pt-2 border-t">
-                  <div className="stats shadow stats-horizontal bg-base-100">
-                    <div className="stat place-items-center">
-                      <div className="stat-title">Rank</div>
-                      <div className="stat-value text-2xl">3rd</div>
-                      <div className="stat-desc">among friends</div>
-                    </div>
-                    <div className="stat place-items-center">
-                      <div className="stat-title">Streak</div>
-                      <div className="stat-value text-2xl text-success">12</div>
-                      <div className="stat-desc">consecutive days</div>
+                  <div className="card bg-base-200">
+                    <div className="card-body">
+                      <h3 className="card-title text-lg">Recent Activity</h3>
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-3 text-sm">
+                          <div className="badge badge-primary badge-sm">
+                            Anime
+                          </div>
+                          <span>Attack on Titan • 24m</span>
+                        </div>
+                        <div className="flex items-center gap-3 text-sm">
+                          <div className="badge badge-secondary badge-sm">
+                            Reading
+                          </div>
+                          <span>よつばと！• 1.2h</span>
+                        </div>
+                        <div className="flex items-center gap-3 text-sm">
+                          <div className="badge badge-accent badge-sm">
+                            Game
+                          </div>
+                          <span>ペルソナ5 • 45m</span>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
               </div>
             </div>
-          </div>
 
-          <div className="max-w-md">
-            <h1 className="text-5xl font-bold">NihongoTracker</h1>
-            <p className="py-6">
-              <b className="text-primary">Gamify</b> your Japanese immersion
-              journey with NihongoTracker.
-              <br />
-              Track, compete, and learn with friends.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4">
-              <Link className="btn btn-primary" to="/login">
-                Get Started
+            {/* Call to Action */}
+            <div className="text-center">
+              <h2 className="text-3xl font-bold mb-4">
+                Ready to Level Up Your Japanese?
+              </h2>
+              <p className="text-lg text-base-content/70 mb-8 max-w-2xl mx-auto">
+                Join the community of learners who are already tracking their
+                immersion journey and achieving their goals.
+              </p>
+              <Link className="btn btn-primary btn-lg" to="/register">
+                Create Your Free Account
               </Link>
-              <Link className="btn btn-outline" to="/features">
-                Tour Features
-              </Link>
-            </div>
-            <div className="mt-6 flex flex-wrap gap-2">
-              <div className="badge badge-outline">読む Reading</div>
-              <div className="badge badge-outline">聞く Listening</div>
-              <div className="badge badge-outline">浸す Immersion</div>
-              <div className="badge badge-outline">統計 Statistics</div>
+              <p className="text-sm text-base-content/50 mt-4">
+                No payment required • Start tracking immediately
+              </p>
             </div>
           </div>
         </div>
       ) : (
         // Content for logged in users (dashboard view)
-        <div className="hero-content flex-col lg:flex-row w-full max-w-6xl mx-auto pt-20">
+        <div className="hero-content flex-col lg:flex-row w-full max-w-6xl mx-auto">
           <div className="lg:w-2/3">
             <div className="flex flex-col gap-6">
               <div className="flex justify-between items-center">

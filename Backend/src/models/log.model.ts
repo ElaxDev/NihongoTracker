@@ -17,7 +17,10 @@ const LogSchema = new Schema<ILog>(
     user: { type: Schema.Types.ObjectId, required: true, ref: 'User' },
     mediaTitle: { type: String, required: false, trim: true },
     type: { type: String, required: true },
-    mediaId: { type: String, required: false },
+    mediaId: {
+      type: String,
+      default: null,
+    },
     xp: { type: Number, required: true },
     private: { type: Boolean, default: false },
     isAdult: { type: Boolean, default: false },
