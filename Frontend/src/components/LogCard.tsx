@@ -142,6 +142,7 @@ function LogCard({ log, user: logUser }: { log: ILog; user?: string }) {
         predicate: (query) =>
           ['logs', 'user'].includes(query.queryKey[0] as string),
       });
+      queryClient.invalidateQueries({ queryKey: ['dailyGoals'] });
       toast.success('Log deleted successfully!');
       deleteModalRef.current?.close();
     },
@@ -161,6 +162,7 @@ function LogCard({ log, user: logUser }: { log: ILog; user?: string }) {
         predicate: (query) =>
           ['logs', 'user'].includes(query.queryKey[0] as string),
       });
+      void queryClient.invalidateQueries({ queryKey: ['dailyGoals'] });
       toast.success('Log updated successfully!');
       editModalRef.current?.close();
     },

@@ -6,6 +6,7 @@ import PieChart from '../components/PieChart';
 import { useState } from 'react';
 import SpeedChart from '../components/SpeedChart';
 import ProgressChart from '../components/ProgressChart';
+import DailyGoals from '../components/DailyGoals';
 import { numberWithCommas } from '../utils/utils';
 
 function StatsScreen() {
@@ -255,6 +256,11 @@ function StatsScreen() {
               </div>
             </div>
           </div>
+        </div>
+
+        {/* Daily Goals Section - Add this before Main Stats Cards */}
+        <div className="mb-8">
+          <DailyGoals />
         </div>
 
         {/* Main Stats Cards */}

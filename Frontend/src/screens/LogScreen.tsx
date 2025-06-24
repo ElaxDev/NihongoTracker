@@ -145,6 +145,7 @@ function LogScreen() {
             query.queryKey[0] as string
           ),
       });
+      void queryClient.invalidateQueries({ queryKey: ['dailyGoals'] });
 
       if (user?.username) {
         try {

@@ -15,6 +15,8 @@ import {
   IAverageColor,
   IUserStats,
   updateLogRequest,
+  IDailyGoal,
+  IDailyGoalsResponse,
 } from '../types';
 
 const BASE_URL = '/api/';
@@ -232,5 +234,30 @@ export async function searchYouTubeVideoFn(url: string) {
   }>(`media/youtube/video`, {
     params: { url },
   });
+  return data;
+}
+
+export async function getDailyGoalsFn() {
+  const { data } = await api.get<IDailyGoalsResponse>('goals/daily');
+  return data;
+}
+
+export async function createDailyGoalFn(
+  goal: Omit<IDailyGoal, '_id' | 'createdAt' | 'updatedAt'>
+) {
+  const { data } = await api.post<IDailyGoal>('goals/daily', goal);
+  return data;
+}
+
+export async function updateDailyGoalFn(
+  goalId: string,
+  goal: Partial<IDailyGoal>
+) {
+  const { data } = await api.patch<IDailyGoal>(`goals/daily/${goalId}`, goal);
+  return data;
+}
+
+export async function deleteDailyGoalFn(goalId: string) {
+  const { data } = await api.delete(`goals/daily/${goalId}`);
   return data;
 }

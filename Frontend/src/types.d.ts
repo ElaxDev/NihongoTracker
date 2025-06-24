@@ -403,3 +403,31 @@ export interface youtubeChannelInfo {
   channelImage?: string;
   channelDescription: string;
 }
+
+export interface IDailyGoal {
+  _id?: string;
+  type: 'time' | 'chars' | 'episodes' | 'pages';
+  target: number;
+  isActive: boolean;
+  createdAt?: Date;
+  updatedAt?: Date;
+}
+
+export interface IDailyGoalProgress {
+  date: string;
+  time: number;
+  chars: number;
+  episodes: number;
+  pages: number;
+  completed: {
+    time: boolean;
+    chars: boolean;
+    episodes: boolean;
+    pages: boolean;
+  };
+}
+
+export interface IDailyGoalsResponse {
+  goals: IDailyGoal[];
+  todayProgress: IDailyGoalProgress;
+}

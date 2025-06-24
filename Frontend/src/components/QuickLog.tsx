@@ -52,6 +52,7 @@ function QuickLog({ open, onClose, media }: QuickLogProps) {
         predicate: (query) =>
           ['logs', 'user'].includes(query.queryKey[0] as string),
       });
+      void queryClient.invalidateQueries({ queryKey: ['dailyGoals'] });
       toast.success('Log created successfully!');
     },
     onError: (error) => {
