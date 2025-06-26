@@ -13,6 +13,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import useSearch from '../hooks/useSearch';
 import { DayPicker } from 'react-day-picker';
 import { useUserDataStore } from '../store/userData';
+import { validateLogData } from '../utils/validation';
 
 interface logDataType {
   type: ILog['type'] | null;
@@ -82,6 +83,9 @@ function LogScreen() {
 
   const [isSuggestionsOpen, setIsSuggestionsOpen] = useState(false);
   const [isAdvancedOptions, setIsAdvancedOptions] = useState<boolean>(false);
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [touched, setTouched] = useState<Record<string, boolean>>({});
+  const [isFormValid, setIsFormValid] = useState(false);
   const suggestionRef = useRef<HTMLDivElement>(null);
   const { user, setUser } = useUserDataStore();
 
@@ -176,6 +180,27 @@ function LogScreen() {
     },
   });
 
+  // Real-time validation with touched state
+  useEffect(() => {
+    const validation = validateLogData(
+      {
+        type: logData.type,
+        mediaName: logData.mediaName,
+        watchedEpisodes: logData.watchedEpisodes,
+        hours: logData.hours,
+        minutes: logData.minutes,
+        readChars: logData.readChars,
+        readPages: logData.readPages,
+      },
+      touched
+    );
+
+    setErrors(validation.errors);
+    setIsFormValid(
+      validation.isValid && !!logData.type && !!logData.mediaName.trim()
+    );
+  }, [logData, touched]);
+
   const handleInputChange = (
     field: keyof typeof logData,
     value:
@@ -193,6 +218,15 @@ function LogScreen() {
 
   const preventNegativeValues = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.valueAsNumber < 0) e.target.value = '0';
+  };
+
+  // Enhanced field change handler with proper types
+  const handleFieldChange = (
+    field: keyof logDataType,
+    value: string | number | boolean | Date | null
+  ) => {
+    setTouched((prev) => ({ ...prev, [field]: true }));
+    handleInputChange(field, value);
   };
 
   const handleSuggestionClick = (
@@ -248,6 +282,39 @@ function LogScreen() {
 
   const logSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+
+    // Mark all relevant fields as touched for final validation
+    const allTouched = {
+      type: true,
+      mediaName: true,
+      episodes: logData.type === 'anime',
+      hours: true,
+      minutes: true,
+      chars: true,
+      pages: true,
+    };
+    setTouched(allTouched);
+
+    const validation = validateLogData(
+      {
+        type: logData.type,
+        mediaName: logData.mediaName,
+        watchedEpisodes: logData.watchedEpisodes,
+        hours: logData.hours,
+        minutes: logData.minutes,
+        readChars: logData.readChars,
+        readPages: logData.readPages,
+      },
+      allTouched
+    );
+
+    setErrors(validation.errors);
+
+    if (!validation.isValid) {
+      toast.error('Please fix all validation errors before submitting');
+      return;
+    }
+
     const totalMinutes = logData.hours * 60 + logData.minutes;
 
     // Prepare media data based on log type
@@ -308,15 +375,21 @@ function LogScreen() {
           <h1 className="card-title text-2xl mb-6">Create New Log</h1>
 
           <form onSubmit={logSubmit} className="space-y-6">
-            {/* Log Type Selection */}
+            {/* Log Type Selection with Validation */}
             <div className="form-control">
               <label className="label">
                 <span className="label-text font-medium">Log Type</span>
               </label>
               <select
-                className="select select-bordered w-full"
+                className={`select select-bordered w-full ${
+                  errors.type
+                    ? 'select-error'
+                    : touched.type && logData.type
+                      ? 'select-success'
+                      : ''
+                }`}
                 onChange={(e) => {
-                  handleInputChange('type', e.target.value as ILog['type']);
+                  handleFieldChange('type', e.target.value as ILog['type']);
                   // Reset YouTube data when changing log type
                   if (e.target.value !== 'video') {
                     handleInputChange('youtubeChannelInfo', null);
@@ -334,12 +407,30 @@ function LogScreen() {
                 <option value="reading">Reading</option>
                 <option value="audio">Audio</option>
               </select>
+              {errors.type && (
+                <label className="label">
+                  <span className="label-text-alt text-error flex items-center gap-1">
+                    <svg
+                      className="w-4 h-4"
+                      fill="currentColor"
+                      viewBox="0 0 20 20"
+                    >
+                      <path
+                        fillRule="evenodd"
+                        d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
+                    {errors.type}
+                  </span>
+                </label>
+              )}
             </div>
 
             {logData.type && (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-6">
-                  {/* Media Name Input with Unified Suggestions */}
+                  {/* Media Name Input with Enhanced Validation */}
                   <div className="form-control">
                     <label className="label">
                       <span className="label-text font-medium">
@@ -356,13 +447,21 @@ function LogScreen() {
                             ? 'https://youtube.com/watch?v=... or video title'
                             : 'Search for media...'
                         }
-                        className="input input-bordered w-full"
+                        className={`input input-bordered w-full ${
+                          errors.mediaName
+                            ? 'input-error'
+                            : touched.mediaName &&
+                                logData.mediaName &&
+                                !errors.mediaName
+                              ? 'input-success'
+                              : ''
+                        }`}
                         onFocus={() => setIsSuggestionsOpen(true)}
                         onBlur={() => {
                           setTimeout(() => setIsSuggestionsOpen(false), 200);
                         }}
                         onChange={(e) =>
-                          handleInputChange('mediaName', e.target.value)
+                          handleFieldChange('mediaName', e.target.value)
                         }
                         value={logData.mediaName}
                       />
@@ -372,6 +471,24 @@ function LogScreen() {
                         </div>
                       )}
                     </div>
+                    {errors.mediaName && (
+                      <label className="label">
+                        <span className="label-text-alt text-error flex items-center gap-1">
+                          <svg
+                            className="w-4 h-4"
+                            fill="currentColor"
+                            viewBox="0 0 20 20"
+                          >
+                            <path
+                              fillRule="evenodd"
+                              d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
+                              clipRule="evenodd"
+                            />
+                          </svg>
+                          {errors.mediaName}
+                        </span>
+                      </label>
+                    )}
 
                     {/* Unified Search Suggestions */}
                     <div ref={suggestionRef} className="relative">
@@ -504,25 +621,237 @@ function LogScreen() {
                       </label>
                       <input
                         type="number"
-                        min="0"
+                        min="1"
+                        max="1000"
                         onInput={preventNegativeValues}
                         placeholder="Number of episodes"
-                        className="input input-bordered w-full"
+                        className={`input input-bordered w-full ${
+                          errors.episodes
+                            ? 'input-error'
+                            : touched.episodes &&
+                                logData.watchedEpisodes > 0 &&
+                                !errors.episodes
+                              ? 'input-success'
+                              : ''
+                        }`}
                         onChange={(e) =>
-                          handleInputChange(
+                          handleFieldChange(
                             'watchedEpisodes',
                             Number(e.target.value)
                           )
                         }
                         value={logData.watchedEpisodes || ''}
                       />
+                      {errors.episodes && (
+                        <label className="label">
+                          <span className="label-text-alt text-error flex items-center gap-1">
+                            <svg
+                              className="w-4 h-4"
+                              fill="currentColor"
+                              viewBox="0 0 20 20"
+                            >
+                              <path
+                                fillRule="evenodd"
+                                d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
+                                clipRule="evenodd"
+                              />
+                            </svg>
+                            {errors.episodes}
+                          </span>
+                        </label>
+                      )}
                       {logData.episodes > 0 && (
                         <label className="label">
-                          <span className="label-text-alt">
+                          <span className="label-text-alt text-info">
                             Total episodes: {logData.episodes}
                           </span>
                         </label>
                       )}
+                    </div>
+                  )}
+
+                  {/* Time Spent Input - Outside advanced options for certain types */}
+                  {['vn', 'video', 'reading', 'audio', 'manga'].includes(
+                    logData.type || ''
+                  ) && (
+                    <div className="form-control">
+                      <label className="label">
+                        <span className="label-text font-medium">
+                          Time Spent
+                        </span>
+                        {['video', 'audio'].includes(logData.type || '') && (
+                          <span className="label-text-alt text-warning">
+                            Required
+                          </span>
+                        )}
+                      </label>
+                      <div className="join">
+                        <div className="form-control join-item w-1/2">
+                          <input
+                            type="number"
+                            min="0"
+                            max="24"
+                            placeholder="Hours"
+                            className={`input input-bordered ${
+                              errors.hours || errors.time ? 'input-error' : ''
+                            }`}
+                            onChange={(e) =>
+                              handleFieldChange('hours', Number(e.target.value))
+                            }
+                            value={logData.hours || ''}
+                            onInput={preventNegativeValues}
+                          />
+                          <label className="label">
+                            <span className="label-text-alt">Hours (0-24)</span>
+                          </label>
+                        </div>
+                        <div className="form-control join-item w-1/2">
+                          <input
+                            type="number"
+                            min="0"
+                            max="59"
+                            placeholder="Minutes"
+                            className={`input input-bordered ${
+                              errors.minutes || errors.time ? 'input-error' : ''
+                            }`}
+                            onChange={(e) =>
+                              handleFieldChange(
+                                'minutes',
+                                Number(e.target.value)
+                              )
+                            }
+                            value={logData.minutes || ''}
+                            onInput={preventNegativeValues}
+                          />
+                          <label className="label">
+                            <span className="label-text-alt">
+                              Minutes (0-59)
+                            </span>
+                          </label>
+                        </div>
+                      </div>
+                      {(errors.time || errors.hours || errors.minutes) && (
+                        <label className="label">
+                          <span className="label-text-alt text-error flex items-center gap-1">
+                            <svg
+                              className="w-4 h-4"
+                              fill="currentColor"
+                              viewBox="0 0 20 20"
+                            >
+                              <path
+                                fillRule="evenodd"
+                                d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
+                                clipRule="evenodd"
+                              />
+                            </svg>
+                            {errors.time || errors.hours || errors.minutes}
+                          </span>
+                        </label>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Characters Read Input - Outside advanced options for certain types */}
+                  {['vn', 'reading', 'manga'].includes(logData.type || '') && (
+                    <div className="form-control">
+                      <label className="label">
+                        <span className="label-text font-medium">
+                          Characters Read
+                        </span>
+                      </label>
+                      <input
+                        type="number"
+                        min="0"
+                        max="1000000"
+                        onInput={preventNegativeValues}
+                        placeholder="Number of characters"
+                        className={`input input-bordered w-full ${
+                          errors.chars
+                            ? 'input-error'
+                            : touched.chars && logData.readChars > 0
+                              ? 'input-success'
+                              : ''
+                        }`}
+                        onChange={(e) =>
+                          handleFieldChange('readChars', Number(e.target.value))
+                        }
+                        value={logData.readChars || ''}
+                      />
+                      {errors.chars && (
+                        <label className="label">
+                          <span className="label-text-alt text-error flex items-center gap-1">
+                            <svg
+                              className="w-4 h-4"
+                              fill="currentColor"
+                              viewBox="0 0 20 20"
+                            >
+                              <path
+                                fillRule="evenodd"
+                                d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
+                                clipRule="evenodd"
+                              />
+                            </svg>
+                            {errors.chars}
+                          </span>
+                        </label>
+                      )}
+                      <label className="label">
+                        <span className="label-text-alt">
+                          Max: 1,000,000 characters
+                        </span>
+                      </label>
+                    </div>
+                  )}
+
+                  {/* Pages Read Input - Outside advanced options for manga */}
+                  {logData.type === 'manga' && (
+                    <div className="form-control">
+                      <label className="label">
+                        <span className="label-text font-medium">
+                          Pages Read
+                        </span>
+                      </label>
+                      <input
+                        type="number"
+                        min="0"
+                        max="10000"
+                        onInput={preventNegativeValues}
+                        placeholder="Number of pages"
+                        className={`input input-bordered w-full ${
+                          errors.pages
+                            ? 'input-error'
+                            : touched.pages && logData.readPages > 0
+                              ? 'input-success'
+                              : ''
+                        }`}
+                        onChange={(e) =>
+                          handleFieldChange('readPages', Number(e.target.value))
+                        }
+                        value={logData.readPages || ''}
+                      />
+                      {errors.pages && (
+                        <label className="label">
+                          <span className="label-text-alt text-error flex items-center gap-1">
+                            <svg
+                              className="w-4 h-4"
+                              fill="currentColor"
+                              viewBox="0 0 20 20"
+                            >
+                              <path
+                                fillRule="evenodd"
+                                d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
+                                clipRule="evenodd"
+                              />
+                            </svg>
+                            {errors.pages}
+                          </span>
+                        </label>
+                      )}
+                      <label className="label">
+                        <span className="label-text-alt">
+                          Max: 10,000 pages
+                        </span>
+                      </label>
                     </div>
                   )}
 
@@ -535,100 +864,242 @@ function LogScreen() {
                     />
                     <div className="collapse-title font-medium">
                       Advanced Options
+                      {Object.keys(errors).some((key) =>
+                        [
+                          'hours',
+                          'minutes',
+                          'time',
+                          'chars',
+                          'pages',
+                          'activity',
+                        ].includes(key)
+                      ) && (
+                        <span className="badge badge-error badge-sm ml-2">
+                          Has Errors
+                        </span>
+                      )}
                     </div>
                     <div className="collapse-content space-y-4">
-                      {/* Time Spent Input */}
-                      {(isAdvancedOptions ||
-                        ['vn', 'video', 'reading', 'audio', 'manga'].includes(
+                      {/* Time Spent Input with Enhanced Validation - Only show in advanced if not already shown */}
+                      {isAdvancedOptions &&
+                        !['vn', 'video', 'reading', 'audio', 'manga'].includes(
                           logData.type || ''
-                        )) && (
-                        <div className="form-control">
-                          <label className="label">
-                            <span className="label-text">Time Spent</span>
-                          </label>
-                          <div className="join">
-                            <label className="input input-bordered join-item w-1/2">
-                              <span className="label">Hours</span>
-                              <input
-                                type="number"
-                                min="0"
-                                placeholder="0"
-                                onChange={(e) =>
-                                  handleInputChange(
-                                    'hours',
-                                    Number(e.target.value)
-                                  )
-                                }
-                                value={logData.hours || ''}
-                                onInput={preventNegativeValues}
-                              />
+                        ) && (
+                          <div className="form-control">
+                            <label className="label">
+                              <span className="label-text font-medium">
+                                Time Spent
+                              </span>
                             </label>
-                            <label className="input input-bordered join-item w-1/2">
-                              <span className="label">Minutes</span>
-                              <input
-                                type="number"
-                                min="0"
-                                placeholder="0"
-                                onChange={(e) =>
-                                  handleInputChange(
-                                    'minutes',
-                                    Number(e.target.value)
-                                  )
-                                }
-                                value={logData.minutes || ''}
-                                onInput={preventNegativeValues}
-                              />
+                            <div className="join">
+                              <div className="form-control join-item w-1/2">
+                                <input
+                                  type="number"
+                                  min="0"
+                                  max="24"
+                                  placeholder="Hours"
+                                  className={`input input-bordered ${
+                                    errors.hours || errors.time
+                                      ? 'input-error'
+                                      : ''
+                                  }`}
+                                  onChange={(e) =>
+                                    handleFieldChange(
+                                      'hours',
+                                      Number(e.target.value)
+                                    )
+                                  }
+                                  value={logData.hours || ''}
+                                  onInput={preventNegativeValues}
+                                />
+                                <label className="label">
+                                  <span className="label-text-alt">
+                                    Hours (0-24)
+                                  </span>
+                                </label>
+                              </div>
+                              <div className="form-control join-item w-1/2">
+                                <input
+                                  type="number"
+                                  min="0"
+                                  max="59"
+                                  placeholder="Minutes"
+                                  className={`input input-bordered ${
+                                    errors.minutes || errors.time
+                                      ? 'input-error'
+                                      : ''
+                                  }`}
+                                  onChange={(e) =>
+                                    handleFieldChange(
+                                      'minutes',
+                                      Number(e.target.value)
+                                    )
+                                  }
+                                  value={logData.minutes || ''}
+                                  onInput={preventNegativeValues}
+                                />
+                                <label className="label">
+                                  <span className="label-text-alt">
+                                    Minutes (0-59)
+                                  </span>
+                                </label>
+                              </div>
+                            </div>
+                            {(errors.time ||
+                              errors.hours ||
+                              errors.minutes) && (
+                              <label className="label">
+                                <span className="label-text-alt text-error flex items-center gap-1">
+                                  <svg
+                                    className="w-4 h-4"
+                                    fill="currentColor"
+                                    viewBox="0 0 20 20"
+                                  >
+                                    <path
+                                      fillRule="evenodd"
+                                      d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
+                                      clipRule="evenodd"
+                                    />
+                                  </svg>
+                                  {errors.time ||
+                                    errors.hours ||
+                                    errors.minutes}
+                                </span>
+                              </label>
+                            )}
+                          </div>
+                        )}
+
+                      {/* Characters Read Input with Enhanced Validation - Only show in advanced if not already shown */}
+                      {isAdvancedOptions &&
+                        !['vn', 'reading', 'manga'].includes(
+                          logData.type || ''
+                        ) && (
+                          <div className="form-control">
+                            <label className="label">
+                              <span className="label-text font-medium">
+                                Characters Read
+                              </span>
+                            </label>
+                            <input
+                              type="number"
+                              min="0"
+                              max="1000000"
+                              onInput={preventNegativeValues}
+                              placeholder="Number of characters"
+                              className={`input input-bordered w-full ${
+                                errors.chars
+                                  ? 'input-error'
+                                  : touched.chars && logData.readChars > 0
+                                    ? 'input-success'
+                                    : ''
+                              }`}
+                              onChange={(e) =>
+                                handleFieldChange(
+                                  'readChars',
+                                  Number(e.target.value)
+                                )
+                              }
+                              value={logData.readChars || ''}
+                            />
+                            {errors.chars && (
+                              <label className="label">
+                                <span className="label-text-alt text-error flex items-center gap-1">
+                                  <svg
+                                    className="w-4 h-4"
+                                    fill="currentColor"
+                                    viewBox="0 0 20 20"
+                                  >
+                                    <path
+                                      fillRule="evenodd"
+                                      d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
+                                      clipRule="evenodd"
+                                    />
+                                  </svg>
+                                  {errors.chars}
+                                </span>
+                              </label>
+                            )}
+                            <label className="label">
+                              <span className="label-text-alt">
+                                Max: 1,000,000 characters
+                              </span>
                             </label>
                           </div>
-                        </div>
-                      )}
+                        )}
 
-                      {/* Characters Read Input */}
-                      {(isAdvancedOptions ||
-                        ['vn', 'reading', 'manga'].includes(
-                          logData.type || ''
-                        )) && (
+                      {/* Pages Read Input with Enhanced Validation - Only show in advanced if not already shown */}
+                      {isAdvancedOptions && logData.type !== 'manga' && (
                         <div className="form-control">
                           <label className="label">
-                            <span className="label-text">Characters Read</span>
+                            <span className="label-text font-medium">
+                              Pages Read
+                            </span>
                           </label>
                           <input
                             type="number"
                             min="0"
-                            onInput={preventNegativeValues}
-                            placeholder="Number of characters"
-                            className="input input-bordered w-full"
-                            onChange={(e) =>
-                              handleInputChange(
-                                'readChars',
-                                Number(e.target.value)
-                              )
-                            }
-                            value={logData.readChars || ''}
-                          />
-                        </div>
-                      )}
-
-                      {/* Pages Read Input */}
-                      {(isAdvancedOptions || logData.type === 'manga') && (
-                        <div className="form-control">
-                          <label className="label">
-                            <span className="label-text">Pages Read</span>
-                          </label>
-                          <input
-                            type="number"
-                            min="0"
+                            max="10000"
                             onInput={preventNegativeValues}
                             placeholder="Number of pages"
-                            className="input input-bordered w-full"
+                            className={`input input-bordered w-full ${
+                              errors.pages
+                                ? 'input-error'
+                                : touched.pages && logData.readPages > 0
+                                  ? 'input-success'
+                                  : ''
+                            }`}
                             onChange={(e) =>
-                              handleInputChange(
+                              handleFieldChange(
                                 'readPages',
                                 Number(e.target.value)
                               )
                             }
                             value={logData.readPages || ''}
                           />
+                          {errors.pages && (
+                            <label className="label">
+                              <span className="label-text-alt text-error flex items-center gap-1">
+                                <svg
+                                  className="w-4 h-4"
+                                  fill="currentColor"
+                                  viewBox="0 0 20 20"
+                                >
+                                  <path
+                                    fillRule="evenodd"
+                                    d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
+                                    clipRule="evenodd"
+                                  />
+                                </svg>
+                                {errors.pages}
+                              </span>
+                            </label>
+                          )}
+                          <label className="label">
+                            <span className="label-text-alt">
+                              Max: 10,000 pages
+                            </span>
+                          </label>
+                        </div>
+                      )}
+
+                      {/* Activity validation error message */}
+                      {errors.activity && (
+                        <div className="alert alert-error">
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            className="stroke-current shrink-0 w-6 h-6"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth="2"
+                              d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"
+                            />
+                          </svg>
+                          <span>{errors.activity}</span>
                         </div>
                       )}
 
@@ -816,12 +1287,14 @@ function LogScreen() {
                 </div>
               </div>
             )}
+
+            {/* Enhanced Submit Button */}
             {logData.type && (
               <div className="card-actions justify-center mt-6">
                 <button
-                  className="btn btn-primary"
+                  className={`btn btn-primary btn-lg ${!isFormValid ? 'btn-disabled' : ''}`}
                   type="submit"
-                  disabled={isLogCreating || !logData.mediaName}
+                  disabled={isLogCreating || !isFormValid}
                 >
                   {isLogCreating ? (
                     <>
@@ -829,7 +1302,23 @@ function LogScreen() {
                       Submitting...
                     </>
                   ) : (
-                    'Create Log'
+                    <>
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        className="h-5 w-5"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M12 4v16m8-8H4"
+                        />
+                      </svg>
+                      Create Log
+                    </>
                   )}
                 </button>
               </div>

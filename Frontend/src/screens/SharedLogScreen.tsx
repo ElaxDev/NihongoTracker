@@ -16,6 +16,7 @@ import {
   MdShare,
   MdAdd,
 } from 'react-icons/md';
+import { validateSharedLogData } from '../utils/validation';
 
 const logTypeConfig = {
   reading: {
@@ -82,6 +83,8 @@ function SharedLogScreen() {
     pages: 0,
     description: '',
   });
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [touched, setTouched] = useState<Record<string, boolean>>({});
 
   const {
     data: sharedLog,
@@ -123,6 +126,61 @@ function SharedLogScreen() {
       });
     }
   }, [sharedLog]);
+
+  // Validate form when values change
+  useEffect(() => {
+    if (Object.keys(touched).length > 0) {
+      const validation = validateSharedLogData(customValues);
+      setErrors(validation.errors);
+    }
+  }, [customValues, touched]);
+
+  const handleFieldChange = (
+    field: keyof typeof customValues,
+    value: string | number
+  ) => {
+    setTouched((prev) => ({ ...prev, [field]: true }));
+    setCustomValues({ ...customValues, [field]: value });
+  };
+
+  const handleCreateLog = () => {
+    // Mark all fields as touched
+    setTouched({
+      description: true,
+      episodes: true,
+      time: true,
+      chars: true,
+      pages: true,
+    });
+
+    const validation = validateSharedLogData(customValues);
+    setErrors(validation.errors);
+
+    if (!validation.isValid) {
+      toast.error('Please fix validation errors');
+      return;
+    }
+
+    if (!sharedLog) {
+      toast.error('Shared log data is not available');
+      return;
+    }
+
+    const logData: ICreateLog = {
+      type: sharedLog.type,
+      description: customValues.description || sharedLog.description || '',
+      episodes: customValues.episodes || undefined,
+      time: customValues.time || undefined,
+      chars: customValues.chars || undefined,
+      pages: customValues.pages || undefined,
+      private: false,
+      isAdult: sharedLog.isAdult || false,
+      date: new Date(),
+      ...(sharedLog.mediaId && { mediaId: sharedLog.mediaId }),
+    };
+
+    createLog(logData);
+  };
 
   if (!user) {
     return (
@@ -251,23 +309,6 @@ function SharedLogScreen() {
     sharedLog.media &&
     typeof sharedLog.media === 'object' &&
     sharedLog.media.contentImage;
-
-  const handleCreateLog = () => {
-    const logData: ICreateLog = {
-      type: sharedLog.type,
-      description: customValues.description || sharedLog.description || '',
-      episodes: customValues.episodes || undefined,
-      time: customValues.time || undefined,
-      chars: customValues.chars || undefined,
-      pages: customValues.pages || undefined,
-      private: false,
-      isAdult: sharedLog.isAdult || false,
-      date: new Date(),
-      ...(sharedLog.mediaId && { mediaId: sharedLog.mediaId }),
-    };
-
-    createLog(logData);
-  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-base-200 to-base-300 pt-20 pb-16 px-4">
@@ -457,16 +498,28 @@ function SharedLogScreen() {
                         </label>
                         <input
                           type="text"
-                          className="input input-bordered w-full"
+                          className={`input input-bordered w-full ${
+                            errors.description
+                              ? 'input-error'
+                              : touched.description &&
+                                  customValues.description &&
+                                  !errors.description
+                                ? 'input-success'
+                                : ''
+                          }`}
                           value={customValues.description}
                           onChange={(e) =>
-                            setCustomValues({
-                              ...customValues,
-                              description: e.target.value,
-                            })
+                            handleFieldChange('description', e.target.value)
                           }
                           placeholder="Enter your description"
                         />
+                        {errors.description && (
+                          <label className="label">
+                            <span className="label-text-alt text-error">
+                              {errors.description}
+                            </span>
+                          </label>
+                        )}
                       </div>
 
                       {/* Stats Grid */}
@@ -479,16 +532,25 @@ function SharedLogScreen() {
                             <input
                               type="number"
                               min="0"
-                              className="input input-bordered w-full"
+                              className={`input input-bordered w-full ${
+                                errors.episodes ? 'input-error' : ''
+                              }`}
                               value={customValues.episodes}
                               onChange={(e) =>
-                                setCustomValues({
-                                  ...customValues,
-                                  episodes: Number(e.target.value),
-                                })
+                                handleFieldChange(
+                                  'episodes',
+                                  Number(e.target.value)
+                                )
                               }
                               placeholder="Number of episodes"
                             />
+                            {errors.episodes && (
+                              <label className="label">
+                                <span className="label-text-alt text-error">
+                                  {errors.episodes}
+                                </span>
+                              </label>
+                            )}
                           </div>
                         )}
 
@@ -570,7 +632,7 @@ function SharedLogScreen() {
                   </button>
                   <button
                     onClick={handleCreateLog}
-                    disabled={isCreating || !customValues.description.trim()}
+                    disabled={isCreating || Object.keys(errors).length > 0}
                     className="btn btn-primary btn-lg w-full sm:w-auto"
                   >
                     {isCreating ? (

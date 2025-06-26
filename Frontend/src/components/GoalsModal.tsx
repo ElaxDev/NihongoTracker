@@ -65,6 +65,7 @@ function GoalsModal({ isOpen, onClose, goals }: GoalsModalProps) {
     isActive: true,
   });
   const [editGoal, setEditGoal] = useState<Partial<IDailyGoal>>({});
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
   const queryClient = useQueryClient();
 
@@ -123,19 +124,79 @@ function GoalsModal({ isOpen, onClose, goals }: GoalsModalProps) {
     },
   });
 
+  const validateGoal = (
+    goal: { type: string; target: number },
+    isEdit = false
+  ) => {
+    const validationErrors: Record<string, string> = {};
+
+    if (goal.target <= 0) {
+      validationErrors.target = 'Target must be greater than 0';
+    }
+
+    if (goal.type === 'time' && goal.target > 1440) {
+      validationErrors.target =
+        'Daily time target cannot exceed 24 hours (1440 minutes)';
+    }
+
+    if (goal.type === 'chars' && goal.target > 100000) {
+      validationErrors.target =
+        'Daily character target seems unreasonably high (max: 100,000)';
+    }
+
+    if (goal.type === 'episodes' && goal.target > 50) {
+      validationErrors.target =
+        'Daily episode target seems unreasonably high (max: 50)';
+    }
+
+    if (goal.type === 'pages' && goal.target > 500) {
+      validationErrors.target =
+        'Daily page target seems unreasonably high (max: 500)';
+    }
+
+    // Check for duplicate goal types when creating
+    if (!isEdit) {
+      const existingGoal = goals.find(
+        (g) => g.type === goal.type && g.isActive
+      );
+      if (existingGoal) {
+        validationErrors.duplicate = `You already have an active ${goalTypeConfig[goal.type as keyof typeof goalTypeConfig].label} goal`;
+      }
+    }
+
+    return validationErrors;
+  };
+
   const handleCreateGoal = () => {
-    if (newGoal.target <= 0) {
-      toast.error('Target must be greater than 0');
+    const validationErrors = validateGoal(newGoal);
+    setErrors(validationErrors);
+
+    if (Object.keys(validationErrors).length > 0) {
+      if (validationErrors.duplicate) {
+        toast.error(validationErrors.duplicate);
+      }
       return;
     }
+
     createGoal(newGoal);
   };
 
   const handleUpdateGoal = (goalId: string) => {
-    if (editGoal.target && editGoal.target <= 0) {
-      toast.error('Target must be greater than 0');
-      return;
+    if (editGoal.target !== undefined && editGoal.type) {
+      const validationErrors = validateGoal(
+        {
+          type: editGoal.type,
+          target: editGoal.target,
+        },
+        true
+      );
+      setErrors(validationErrors);
+
+      if (Object.keys(validationErrors).length > 0) {
+        return;
+      }
     }
+
     updateGoal({ goalId, goal: editGoal });
   };
 
@@ -196,12 +257,13 @@ function GoalsModal({ isOpen, onClose, goals }: GoalsModalProps) {
                     <select
                       className="select select-bordered w-full"
                       value={newGoal.type}
-                      onChange={(e) =>
+                      onChange={(e) => {
                         setNewGoal({
                           ...newGoal,
                           type: e.target.value as IDailyGoal['type'],
-                        })
-                      }
+                        });
+                        setErrors({});
+                      }}
                     >
                       {Object.entries(goalTypeConfig).map(([key, config]) => (
                         <option key={key} value={key}>
@@ -217,21 +279,42 @@ function GoalsModal({ isOpen, onClose, goals }: GoalsModalProps) {
                     <input
                       type="number"
                       min="1"
-                      className="input input-bordered w-full"
+                      className={`input input-bordered w-full ${errors.target ? 'input-error' : ''}`}
                       value={newGoal.target}
-                      onChange={(e) =>
+                      onChange={(e) => {
                         setNewGoal({
                           ...newGoal,
                           target: Number(e.target.value),
-                        })
-                      }
+                        });
+                        setErrors({});
+                      }}
                       placeholder="Enter target value"
                     />
+                    {errors.target && (
+                      <label className="label">
+                        <span className="label-text-alt text-error flex items-center gap-1">
+                          <svg
+                            className="w-4 h-4"
+                            fill="currentColor"
+                            viewBox="0 0 20 20"
+                          >
+                            <path
+                              fillRule="evenodd"
+                              d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
+                              clipRule="evenodd"
+                            />
+                          </svg>
+                          {errors.target}
+                        </span>
+                      </label>
+                    )}
                   </div>
                   <div className="flex items-end">
                     <button
                       onClick={handleCreateGoal}
-                      disabled={isCreatingGoal}
+                      disabled={
+                        isCreatingGoal || Object.keys(errors).length > 0
+                      }
                       className="btn btn-primary w-full"
                     >
                       {isCreatingGoal ? (
@@ -253,7 +336,7 @@ function GoalsModal({ isOpen, onClose, goals }: GoalsModalProps) {
           )}
         </div>
 
-        {/* Goals List */}
+        {/* Goals List with Enhanced Validation */}
         <div className="space-y-4">
           <h3 className="text-lg font-semibold">Your Goals</h3>
           {goals.length === 0 ? (
@@ -280,17 +363,18 @@ function GoalsModal({ isOpen, onClose, goals }: GoalsModalProps) {
                   >
                     <div className="card-body p-4">
                       {isEditing ? (
-                        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-center">
+                        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-start">
                           <div>
                             <select
                               className="select select-bordered select-sm w-full"
                               value={editGoal.type || goal.type}
-                              onChange={(e) =>
+                              onChange={(e) => {
                                 setEditGoal({
                                   ...editGoal,
                                   type: e.target.value as IDailyGoal['type'],
-                                })
-                              }
+                                });
+                                setErrors({});
+                              }}
                             >
                               {Object.entries(goalTypeConfig).map(
                                 ([key, config]) => (
@@ -305,15 +389,34 @@ function GoalsModal({ isOpen, onClose, goals }: GoalsModalProps) {
                             <input
                               type="number"
                               min="1"
-                              className="input input-bordered input-sm w-full"
+                              className={`input input-bordered input-sm w-full ${
+                                errors.target ? 'input-error' : ''
+                              }`}
                               value={editGoal.target || goal.target}
-                              onChange={(e) =>
+                              onChange={(e) => {
                                 setEditGoal({
                                   ...editGoal,
                                   target: Number(e.target.value),
-                                })
-                              }
+                                });
+                                setErrors({});
+                              }}
                             />
+                            {errors.target && (
+                              <div className="text-xs text-error mt-1 flex items-center gap-1">
+                                <svg
+                                  className="w-3 h-3"
+                                  fill="currentColor"
+                                  viewBox="0 0 20 20"
+                                >
+                                  <path
+                                    fillRule="evenodd"
+                                    d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
+                                    clipRule="evenodd"
+                                  />
+                                </svg>
+                                {errors.target}
+                              </div>
+                            )}
                           </div>
                           <div className="form-control">
                             <label className="label cursor-pointer justify-start gap-2">
@@ -334,7 +437,9 @@ function GoalsModal({ isOpen, onClose, goals }: GoalsModalProps) {
                           <div className="flex gap-2">
                             <button
                               onClick={() => handleUpdateGoal(goal._id!)}
-                              disabled={isUpdatingGoal}
+                              disabled={
+                                isUpdatingGoal || Object.keys(errors).length > 0
+                              }
                               className="btn btn-primary btn-sm"
                             >
                               <MdSave className="w-4 h-4" />

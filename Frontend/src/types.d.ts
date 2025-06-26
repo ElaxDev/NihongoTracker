@@ -74,6 +74,41 @@ export interface ILoginInput {
   password: string;
 }
 
+// Add validation interfaces
+export interface IValidationError {
+  field: string;
+  message: string;
+}
+
+export interface IFormValidation {
+  isValid: boolean;
+  errors: Record<string, string>;
+}
+
+export interface IPasswordValidation {
+  minLength: boolean;
+  hasUppercase: boolean;
+  hasLowercase: boolean;
+  hasNumber: boolean;
+  hasSpecialChar: boolean;
+}
+
+export interface IUsernameValidation {
+  minLength: boolean;
+  maxLength: boolean;
+  validCharacters: boolean;
+  notEmpty: boolean;
+}
+
+export interface ILogValidation {
+  type: boolean;
+  mediaName: boolean;
+  episodes: boolean;
+  timeSpent: boolean;
+  activity: boolean;
+  reasonableValues: boolean;
+}
+
 export type logoutResponseType = {
   message: string;
 };
@@ -140,6 +175,7 @@ export interface updateUserRequest {
   avatar?: string;
   newPassword?: string;
   newPasswordConfirm?: string;
+  blurAdultContent?: boolean;
 }
 
 export interface IEditedFields {
