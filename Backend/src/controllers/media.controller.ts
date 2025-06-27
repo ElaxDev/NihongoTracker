@@ -101,29 +101,46 @@ export async function getMedia(
       return res.status(400).json({ message: 'Invalid query parameters' });
 
     const jitenURL = process.env.JITEN_API_URL;
-    let jitenResponse;
-    if (jitenURL) {
-      const LinkType: number | null = mediaQuery.type
-        ? LinkTypeObject[mediaQuery.type as keyof typeof LinkTypeObject] ?? null
-        : null;
-      var jitenDeck = await axios.get(
-        `${jitenURL}/media-deck/by-link-id/${LinkType}/${mediaQuery.contentId}`,
-        {
-          validateStatus: (status) => status === 200 || status === 404,
-        }
-      );
+    let jitenResponse = null;
 
-      if (jitenDeck.status === 200) {
-        jitenResponse = (
-          await axios.get(
-            `${jitenURL}/media-deck/${jitenDeck.data[0]}/detail`,
+    if (jitenURL && mediaQuery.type) {
+      try {
+        const LinkType: number | null = mediaQuery.type
+          ? LinkTypeObject[mediaQuery.type as keyof typeof LinkTypeObject] ??
+            null
+          : null;
+
+        if (LinkType) {
+          const jitenDeck = await axios.get(
+            `${jitenURL}/media-deck/by-link-id/${LinkType}/${mediaQuery.contentId}`,
             {
               validateStatus: (status) => status === 200 || status === 404,
             }
-          )
-        ).data as IJitenResponse;
+          );
+
+          if (
+            jitenDeck.status === 200 &&
+            jitenDeck.data &&
+            jitenDeck.data.length > 0
+          ) {
+            const jitenDetailResponse = await axios.get(
+              `${jitenURL}/media-deck/${jitenDeck.data[0]}/detail`,
+              {
+                validateStatus: (status) => status === 200 || status === 404,
+              }
+            );
+
+            if (jitenDetailResponse.status === 200) {
+              jitenResponse = jitenDetailResponse.data as IJitenResponse;
+            }
+          }
+        }
+      } catch (jitenError) {
+        console.warn('Jiten API error:', jitenError);
+        // Continue without Jiten data
       }
     }
+
     const media = await MediaBase.findOne(mediaQuery);
     if (
       !media &&
