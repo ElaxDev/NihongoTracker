@@ -17,6 +17,7 @@ import {
   updateLogRequest,
   IDailyGoal,
   IDailyGoalsResponse,
+  IJitenResponse,
 } from '../types';
 
 const BASE_URL = '/api/';
@@ -104,7 +105,7 @@ export async function searchMediaFn(params: {
 export async function getMediaFn(
   mediaId?: string,
   mediaType?: string
-): Promise<IMediaDocument> {
+): Promise<IMediaDocument & { jiten?: IJitenResponse }> {
   const { data } = await api.get<IMediaDocument>(
     `media/${mediaType}/${mediaId}`
   );

@@ -7,6 +7,15 @@ import { numberWithCommas } from '../utils/utils';
 import LogCard from '../components/LogCard';
 import { useState } from 'react';
 
+const difficultyLevels = [
+  ['Beginner', '#4caf50'],
+  ['Easy', '#8bc34a'],
+  ['Moderate', '#ffeb3b'],
+  ['Hard', '#ff9800'],
+  ['Very Hard', '#f44336'],
+  ['Expert', '#e91e63'],
+];
+
 function MediaDetails() {
   const { mediaDocument, mediaType, username } =
     useOutletContext<OutletMediaContextType>();
@@ -27,6 +36,31 @@ function MediaDetails() {
 
   const totalXp = logs?.reduce((acc, log) => acc + log.xp, 0);
   const totalTime = logs?.reduce((acc, log) => acc + (log.time ?? 0), 0);
+
+  // Calculate reading statistics
+  const totalCharsRead =
+    logs?.reduce((acc, log) => acc + (log.chars ?? 0), 0) || 0;
+  const totalCharCount = mediaDocument?.jiten?.mainDeck.characterCount || 0;
+  const readingPercentage =
+    totalCharCount > 0
+      ? Math.min((totalCharsRead / totalCharCount) * 100, 100)
+      : 0;
+
+  // Calculate reading speed (chars per hour) and estimated time to finish
+  const readingSpeed =
+    totalTime && totalTime > 0 ? (totalCharsRead / totalTime) * 60 : 0; // chars per hour
+  const remainingChars = Math.max(totalCharCount - totalCharsRead, 0);
+  const estimatedTimeToFinish =
+    readingSpeed > 0 ? remainingChars / readingSpeed : 0; // in hours
+
+  // Get difficulty info
+  const difficultyLevel = mediaDocument?.jiten?.mainDeck.difficulty;
+  const difficultyInfo =
+    difficultyLevel !== undefined &&
+    difficultyLevel >= 0 &&
+    difficultyLevel < difficultyLevels.length
+      ? difficultyLevels[Math.floor(difficultyLevel)]
+      : null;
 
   // Sort logs by date (most recent first)
   const sortedLogs = logs
@@ -58,7 +92,7 @@ function MediaDetails() {
                 </p>
                 <p className="uppercase">{mediaType}</p>
               </div>
-              <div>
+              <div className="flex flex-col gap-2">
                 <p className="capitalize font-bold text-sm sm:text-base">
                   Links
                 </p>
@@ -75,7 +109,7 @@ function MediaDetails() {
                 {mediaDocument?.type === 'vn' ? (
                   <a
                     className="link"
-                    href={`https://vndb.org/${mediaDocument?.type === 'vn' ? mediaDocument?.contentId : ''}`}
+                    href={`https://vndb.org/${mediaDocument?.contentId}`}
                   >
                     VNDB
                   </a>
@@ -86,6 +120,14 @@ function MediaDetails() {
                     href={`https://www.youtube.com/channel/${mediaDocument?.contentId}`}
                   >
                     YouTube Channel
+                  </a>
+                ) : null}
+                {mediaDocument?.jiten ? (
+                  <a
+                    className="link"
+                    href={`https://jiten.moe/decks/media/${mediaDocument?.jiten.mainDeck.deckId}/detail`}
+                  >
+                    Jiten
                   </a>
                 ) : null}
               </div>
@@ -130,6 +172,20 @@ function MediaDetails() {
                   </div>
                 </>
               )}
+              {mediaDocument?.jiten?.mainDeck.characterCount && (
+                <>
+                  <div>
+                    <p className="capitalize font-bold text-sm sm:text-base">
+                      Character Count
+                    </p>
+                    <p>
+                      {numberWithCommas(
+                        mediaDocument?.jiten?.mainDeck.characterCount
+                      )}
+                    </p>
+                  </div>
+                </>
+              )}
             </div>
 
             {/* User Overview Card */}
@@ -137,10 +193,26 @@ function MediaDetails() {
               <p className="font-bold text-lg sm:text-xl capitalize">
                 {username}'s Overview
               </p>
+
+              {/* Difficulty Display */}
+              {difficultyInfo && (
+                <div className="flex flex-col gap-2">
+                  <p className="font-bold text-sm sm:text-base">Difficulty</p>
+                  <div className="flex items-center gap-2">
+                    <div
+                      className="w-3 h-3 rounded-full"
+                      style={{ backgroundColor: difficultyInfo[1] }}
+                    ></div>
+                    <p>{difficultyInfo[0]}</p>
+                  </div>
+                </div>
+              )}
+
               <div className="flex flex-col gap-2">
                 <p className="font-bold">Total XP</p>
-                <p>{totalXp}</p>
+                <p>{numberWithCommas(totalXp)}</p>
               </div>
+
               {totalTime && totalTime > 0 ? (
                 <div className="flex flex-col gap-2">
                   <p className="font-bold text-sm sm:text-base">Total Time</p>
@@ -154,6 +226,7 @@ function MediaDetails() {
                   </p>
                 </div>
               ) : null}
+
               {mediaDocument?.type === 'anime' && (
                 <div className="flex flex-col gap-2">
                   <p className="font-bold text-sm sm:text-base">
@@ -164,6 +237,7 @@ function MediaDetails() {
                   </p>
                 </div>
               )}
+
               {mediaDocument?.type === 'manga' && (
                 <div className="flex flex-col gap-2">
                   <p className="font-bold text-sm sm:text-base">
@@ -172,19 +246,64 @@ function MediaDetails() {
                   <p>{logs?.reduce((acc, log) => acc + (log.pages ?? 0), 0)}</p>
                 </div>
               )}
+
               {(mediaDocument?.type === 'vn' ||
                 mediaDocument?.type === 'manga' ||
                 mediaDocument?.type === 'reading') && (
-                <div className="flex flex-col gap-2">
-                  <p className="font-bold text-sm sm:text-base">
-                    Total Characters Read
-                  </p>
-                  <p>
-                    {numberWithCommas(
-                      logs?.reduce((acc, log) => acc + (log.chars ?? 0), 0)
-                    )}
-                  </p>
-                </div>
+                <>
+                  <div className="flex flex-col gap-2">
+                    <p className="font-bold text-sm sm:text-base">
+                      Total Characters Read
+                    </p>
+                    <p>{numberWithCommas(totalCharsRead)}</p>
+                  </div>
+
+                  {/* Progress Percentage */}
+                  {totalCharCount > 0 && (
+                    <div className="flex flex-col gap-2">
+                      <p className="font-bold text-sm sm:text-base">Progress</p>
+                      <div className="flex items-center gap-2">
+                        <div className="flex-1 bg-base-200 rounded-full h-2">
+                          <div
+                            className="bg-primary h-2 rounded-full transition-all duration-300"
+                            style={{
+                              width: `${Math.min(readingPercentage, 100)}%`,
+                            }}
+                          ></div>
+                        </div>
+                        <span className="text-sm font-medium">
+                          {readingPercentage.toFixed(1)}%
+                        </span>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Reading Speed */}
+                  {readingSpeed > 0 && (
+                    <div className="flex flex-col gap-2">
+                      <p className="font-bold text-sm sm:text-base">
+                        Reading Speed
+                      </p>
+                      <p>
+                        {numberWithCommas(Math.round(readingSpeed))} chars/hour
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Estimated Time to Finish */}
+                  {estimatedTimeToFinish > 0 && readingPercentage < 100 && (
+                    <div className="flex flex-col gap-2">
+                      <p className="font-bold text-sm sm:text-base">
+                        Estimated Time to Finish
+                      </p>
+                      <p>
+                        {estimatedTimeToFinish >= 1
+                          ? `${Math.round(estimatedTimeToFinish)} hours`
+                          : `${Math.round(estimatedTimeToFinish * 60)} minutes`}
+                      </p>
+                    </div>
+                  )}
+                </>
               )}
             </div>
           </div>

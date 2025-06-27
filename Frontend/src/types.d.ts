@@ -28,7 +28,7 @@ export type OutletProfileContextType = {
 };
 
 export type OutletMediaContextType = {
-  mediaDocument: IMediaDocument | undefined;
+  mediaDocument: (IMediaDocument & { jiten?: IJitenResponse }) | undefined;
   mediaType: string | undefined;
   username?: string;
 };
@@ -466,4 +466,39 @@ export interface IDailyGoalProgress {
 export interface IDailyGoalsResponse {
   goals: IDailyGoal[];
   todayProgress: IDailyGoalProgress;
+}
+
+interface IJitenDeck {
+  deckId: number;
+  creationDate: Date;
+  coverName: string;
+  mediaType: number;
+  originalTitle: string;
+  romajiTitle: string;
+  englishTitle: string;
+  characterCount: number;
+  wordCount: number;
+  uniqueWordCount: number;
+  uniqueWordUsedOnceCount: number;
+  uniqueKanjiCount: number;
+  uniqueKanjiUsedOnceCount: number;
+  difficulty: number;
+  difficultyRaw: number;
+  sentenceCount: number;
+  averageSentenceLength: number;
+  parentDeckId: number | null;
+  links: Array<{
+    linkId: number;
+    linkType: number;
+    url: string;
+  }>;
+  childrenDeckCount: number;
+  selectedWordOcurrences: number;
+  dialoguePercentage: number;
+}
+
+export interface IJitenResponse {
+  parentDeck: IJitenDeck;
+  mainDeck: IJitenDeck;
+  subDecks: IJitenDeck[];
 }
