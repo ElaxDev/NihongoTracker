@@ -1,6 +1,7 @@
 import { useOutletContext } from 'react-router-dom';
 import LogCard from '../components/LogCard';
 import ProgressBar from '../components/ProgressBar';
+import DailyGoalsCard from '../components/DailyGoalsCard';
 import React, { useState } from 'react';
 import { useInfiniteQuery } from '@tanstack/react-query';
 import { getUserLogsFn } from '../api/trackerApi';
@@ -138,6 +139,9 @@ function ProfileScreen() {
                 </div>
               </div>
             </div>
+
+            {/* Daily Goals Card */}
+            <DailyGoalsCard />
           </div>
 
           <div className="flex flex-col gap-4 md:gap-5">

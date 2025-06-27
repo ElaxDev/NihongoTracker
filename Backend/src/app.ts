@@ -13,6 +13,7 @@ import logsRoutes from './routes/logs.routes.js';
 import userRoutes from './routes/user.routes.js';
 import adminRoutes from './routes/admin.routes.js';
 import mediaRoutes from './routes/media.routes.js';
+import dailyGoalsRoutes from './routes/dailyGoals.routes.js';
 
 const app = express();
 
@@ -33,6 +34,7 @@ app.use('/api/media', mediaRoutes);
 app.use('/api/logs', logsRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/goals', dailyGoalsRoutes);
 
 app.use(
   '/api',

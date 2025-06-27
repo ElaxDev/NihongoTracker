@@ -6,6 +6,7 @@ import { toast } from 'react-toastify';
 import { AxiosError } from 'axios';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import React from 'react';
+import { validateQuickLogData } from '../utils/validation';
 
 interface QuickLogProps {
   open: boolean;
@@ -25,6 +26,7 @@ function QuickLog({ open, onClose, media }: QuickLogProps) {
   const [showTime, setShowTime] = useState<boolean>(false);
   const [isSuggestionsOpen, setIsSuggestionsOpen] = useState(false);
   const [coverImage, setCoverImage] = useState<string | undefined>(undefined);
+  const [errors, setErrors] = useState<Record<string, string>>({});
   const suggestionRef = useRef<HTMLDivElement>(null);
 
   const queryClient = useQueryClient();
@@ -52,6 +54,7 @@ function QuickLog({ open, onClose, media }: QuickLogProps) {
         predicate: (query) =>
           ['logs', 'user'].includes(query.queryKey[0] as string),
       });
+      void queryClient.invalidateQueries({ queryKey: ['dailyGoals'] });
       toast.success('Log created successfully!');
     },
     onError: (error) => {
@@ -87,8 +90,30 @@ function QuickLog({ open, onClose, media }: QuickLogProps) {
     setLogDescription(e.target.value);
   }
 
+  // Validate form before submission
+  const isFormValid = () => {
+    const validation = validateQuickLogData({
+      type: logType,
+      description: logDescription,
+      episodes,
+      chars,
+      pages,
+      hours,
+      minutes,
+    });
+
+    setErrors(validation.errors);
+    return validation.isValid;
+  };
+
   async function logSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
+
+    if (!isFormValid()) {
+      toast.error('Please fix validation errors');
+      return;
+    }
+
     const totalMinutes = hours * 60 + minutes;
 
     mutate({
@@ -359,6 +384,32 @@ function QuickLog({ open, onClose, media }: QuickLogProps) {
                     </div>
                   )}
                 </div>
+
+                {/* Show validation errors */}
+                {Object.keys(errors).length > 0 && (
+                  <div className="alert alert-error">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="stroke-current shrink-0 w-6 h-6"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"
+                      />
+                    </svg>
+                    <div>
+                      <ul className="list-disc list-inside text-sm">
+                        {Object.entries(errors).map(([field, error]) => (
+                          <li key={field}>{error}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  </div>
+                )}
 
                 {logType && (
                   <div className="card-actions justify-end mt-4">

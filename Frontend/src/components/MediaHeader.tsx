@@ -48,19 +48,15 @@ export default function MediaHeader() {
   const renderDescription = (description: string) => {
     // First check if it contains BBCode tags
     if (/\[(b|i|u|s|url|img|spoiler|quote|code|list|\*)\b/i.test(description)) {
-      // Convert BBCode to HTML
       const htmlFromBBCode = convertBBCodeToHtml(description);
 
-      // Then sanitize and render the HTML
       const sanitizedDescription = DOMPurify.sanitize(
         htmlFromBBCode.replace(/<br\s*\/?>/gi, '<br />')
       );
       return <div dangerouslySetInnerHTML={{ __html: sanitizedDescription }} />;
     }
 
-    // Check for regular HTML
     if (!/<[a-z][\s\S]*>/i.test(description)) {
-      // No HTML tags, render as plain text
       return description.split('\n').map((line, index) => (
         <p key={index}>
           {line}

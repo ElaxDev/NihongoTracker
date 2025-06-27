@@ -28,7 +28,7 @@ export type OutletProfileContextType = {
 };
 
 export type OutletMediaContextType = {
-  mediaDocument: IMediaDocument | undefined;
+  mediaDocument: (IMediaDocument & { jiten?: IJitenResponse }) | undefined;
   mediaType: string | undefined;
   username?: string;
 };
@@ -72,6 +72,41 @@ export interface IRegisterInput {
 export interface ILoginInput {
   username: string;
   password: string;
+}
+
+// Add validation interfaces
+export interface IValidationError {
+  field: string;
+  message: string;
+}
+
+export interface IFormValidation {
+  isValid: boolean;
+  errors: Record<string, string>;
+}
+
+export interface IPasswordValidation {
+  minLength: boolean;
+  hasUppercase: boolean;
+  hasLowercase: boolean;
+  hasNumber: boolean;
+  hasSpecialChar: boolean;
+}
+
+export interface IUsernameValidation {
+  minLength: boolean;
+  maxLength: boolean;
+  validCharacters: boolean;
+  notEmpty: boolean;
+}
+
+export interface ILogValidation {
+  type: boolean;
+  mediaName: boolean;
+  episodes: boolean;
+  timeSpent: boolean;
+  activity: boolean;
+  reasonableValues: boolean;
 }
 
 export type logoutResponseType = {
@@ -140,6 +175,7 @@ export interface updateUserRequest {
   avatar?: string;
   newPassword?: string;
   newPasswordConfirm?: string;
+  blurAdultContent?: boolean;
 }
 
 export interface IEditedFields {
@@ -402,4 +438,67 @@ export interface youtubeChannelInfo {
   channelTitle: string;
   channelImage?: string;
   channelDescription: string;
+}
+
+export interface IDailyGoal {
+  _id?: string;
+  type: 'time' | 'chars' | 'episodes' | 'pages';
+  target: number;
+  isActive: boolean;
+  createdAt?: Date;
+  updatedAt?: Date;
+}
+
+export interface IDailyGoalProgress {
+  date: string;
+  time: number;
+  chars: number;
+  episodes: number;
+  pages: number;
+  completed: {
+    time: boolean;
+    chars: boolean;
+    episodes: boolean;
+    pages: boolean;
+  };
+}
+
+export interface IDailyGoalsResponse {
+  goals: IDailyGoal[];
+  todayProgress: IDailyGoalProgress;
+}
+
+interface IJitenDeck {
+  deckId: number;
+  creationDate: Date;
+  coverName: string;
+  mediaType: number;
+  originalTitle: string;
+  romajiTitle: string;
+  englishTitle: string;
+  characterCount: number;
+  wordCount: number;
+  uniqueWordCount: number;
+  uniqueWordUsedOnceCount: number;
+  uniqueKanjiCount: number;
+  uniqueKanjiUsedOnceCount: number;
+  difficulty: number;
+  difficultyRaw: number;
+  sentenceCount: number;
+  averageSentenceLength: number;
+  parentDeckId: number | null;
+  links: Array<{
+    linkId: number;
+    linkType: number;
+    url: string;
+  }>;
+  childrenDeckCount: number;
+  selectedWordOcurrences: number;
+  dialoguePercentage: number;
+}
+
+export interface IJitenResponse {
+  parentDeck: IJitenDeck;
+  mainDeck: IJitenDeck;
+  subDecks: IJitenDeck[];
 }

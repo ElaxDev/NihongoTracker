@@ -58,7 +58,7 @@ export interface IMediaDocument extends Document {
   contentImage?: string;
   coverImage?: string;
   description?: string;
-  type: 'anime' | 'manga' | 'reading' | 'vn' | 'video';
+  type: 'anime' | 'manga' | 'reading' | 'vn' | 'video' | 'movie' | 'tv show';
   episodes?: number;
   episodeDuration?: number;
   chapters?: number;
@@ -230,4 +230,28 @@ export interface csvLogs {
   quantity: string;
   chars?: string;
   mediaId?: string;
+}
+
+export interface IDailyGoal extends Document {
+  _id: Types.ObjectId;
+  user: Types.ObjectId;
+  type: 'time' | 'chars' | 'episodes' | 'pages';
+  target: number;
+  isActive: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface IDailyGoalProgress {
+  date: string;
+  time: number;
+  chars: number;
+  episodes: number;
+  pages: number;
+  completed: {
+    time: boolean;
+    chars: boolean;
+    episodes: boolean;
+    pages: boolean;
+  };
 }

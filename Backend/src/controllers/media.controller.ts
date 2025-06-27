@@ -5,6 +5,7 @@ import fac from 'fast-average-color-node';
 import { searchAnilist } from '../services/searchAnilist.js';
 import { PipelineStage } from 'mongoose';
 import { IMediaDocument } from '../types.js';
+import axios from 'axios';
 
 export async function getAverageColor(
   req: Request,
@@ -30,6 +31,59 @@ export async function getAverageColor(
   }
 }
 
+const LinkTypeObject = {
+  // "Web": 1,
+  vn: 2, //VNDB
+  // "Tmdb": 3,
+  anime: 4, // Anilist
+  manga: 4, // Anilist
+  reading: 4, // Anilist
+  // "GoogleBooks": 6,
+  // "Imdb": 7,
+  // "Igdb": 8,
+  // "Syosetsu": 9
+};
+
+interface IJitenDeck {
+  deckId: number;
+  creationDate: Date;
+  coverName: string;
+  mediaType: number;
+  originalTitle: string;
+  romajiTitle: string;
+  englishTitle: string;
+  characterCount: number;
+  wordCount: number;
+  uniqueWordCount: number;
+  uniqueWordUsedOnceCount: number;
+  uniqueKanjiCount: number;
+  uniqueKanjiUsedOnceCount: number;
+  difficulty: number;
+  difficultyRaw: number;
+  sentenceCount: number;
+  averageSentenceLength: number;
+  parentDeckId: number | null;
+  links: Array<{
+    linkId: number;
+    linkType: number;
+    url: string;
+  }>;
+  childrenDeckCount: number;
+  selectedWordOcurrences: number;
+  dialoguePercentage: number;
+}
+
+interface IJitenResponse {
+  data: {
+    parentDeck: IJitenDeck;
+    mainDeck: IJitenDeck;
+    subDecks: IJitenDeck[];
+  };
+  totalItems: number;
+  pageSize: number;
+  currentOffset: number;
+}
+
 export async function getMedia(
   req: Request,
   res: Response,
@@ -42,8 +96,51 @@ export async function getMedia(
         : req.params.contentId
           ? { contentId: req.params.contentId }
           : {};
+
     if (mediaQuery.contentId === undefined)
       return res.status(400).json({ message: 'Invalid query parameters' });
+
+    const jitenURL = process.env.JITEN_API_URL;
+    let jitenResponse = null;
+
+    if (jitenURL && mediaQuery.type) {
+      try {
+        const LinkType: number | null = mediaQuery.type
+          ? LinkTypeObject[mediaQuery.type as keyof typeof LinkTypeObject] ??
+            null
+          : null;
+
+        if (LinkType) {
+          const jitenDeck = await axios.get(
+            `${jitenURL}/media-deck/by-link-id/${LinkType}/${mediaQuery.contentId}`,
+            {
+              validateStatus: (status) => status === 200 || status === 404,
+            }
+          );
+
+          if (
+            jitenDeck.status === 200 &&
+            jitenDeck.data &&
+            jitenDeck.data.length > 0
+          ) {
+            const jitenDetailResponse = await axios.get(
+              `${jitenURL}/media-deck/${jitenDeck.data[0]}/detail`,
+              {
+                validateStatus: (status) => status === 200 || status === 404,
+              }
+            );
+
+            if (jitenDetailResponse.status === 200) {
+              jitenResponse = jitenDetailResponse.data as IJitenResponse;
+            }
+          }
+        }
+      } catch (jitenError) {
+        console.warn('Jiten API error:', jitenError);
+        // Continue without Jiten data
+      }
+    }
+
     const media = await MediaBase.findOne(mediaQuery);
     if (
       !media &&
@@ -69,13 +166,19 @@ export async function getMedia(
             ordered: false,
           });
         }
-        return res.status(200).json(mediaAnilist[0]);
+        return res.status(200).json({
+          ...mediaAnilist[0].toObject(),
+          jiten: jitenResponse ? jitenResponse.data : null,
+        });
       } else {
         return res.status(404).json({ message: 'Media not found' });
       }
     }
     if (!media) return res.status(404).json({ message: 'Media not found' });
-    return res.status(200).json(media);
+    return res.status(200).json({
+      ...media.toObject(),
+      jiten: jitenResponse ? jitenResponse.data : null,
+    });
   } catch (error) {
     return next(error as customError);
   }

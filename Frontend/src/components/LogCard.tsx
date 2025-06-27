@@ -23,6 +23,7 @@ import queryClient from '../queryClient';
 import { AxiosError } from 'axios';
 import { useUserDataStore } from '../store/userData';
 import { useRef, useState } from 'react';
+import { validateUpdateLogData } from '../utils/validation';
 
 const logTypeConfig = {
   reading: {
@@ -99,6 +100,7 @@ function LogCard({ log, user: logUser }: { log: ILog; user?: string }) {
     hours: time ? Math.floor(time / 60) : 0,
     minutes: time ? time % 60 : 0,
   });
+  const [editErrors, setEditErrors] = useState<Record<string, string>>({});
 
   const typeConfig = logTypeConfig[type];
   const TypeIcon = typeConfig.icon;
@@ -142,6 +144,7 @@ function LogCard({ log, user: logUser }: { log: ILog; user?: string }) {
         predicate: (query) =>
           ['logs', 'user'].includes(query.queryKey[0] as string),
       });
+      queryClient.invalidateQueries({ queryKey: ['dailyGoals'] });
       toast.success('Log deleted successfully!');
       deleteModalRef.current?.close();
     },
@@ -161,6 +164,7 @@ function LogCard({ log, user: logUser }: { log: ILog; user?: string }) {
         predicate: (query) =>
           ['logs', 'user'].includes(query.queryKey[0] as string),
       });
+      void queryClient.invalidateQueries({ queryKey: ['dailyGoals'] });
       toast.success('Log updated successfully!');
       editModalRef.current?.close();
     },
@@ -197,6 +201,24 @@ function LogCard({ log, user: logUser }: { log: ILog; user?: string }) {
 
   function handleEditSubmit(e: React.FormEvent) {
     e.preventDefault();
+
+    const validation = validateUpdateLogData({
+      description: editData.description,
+      type: editData.type,
+      hours: editData.hours,
+      minutes: editData.minutes,
+      episodes: editData.episodes,
+      chars: editData.chars,
+      pages: editData.pages,
+    });
+
+    setEditErrors(validation.errors);
+
+    if (!validation.isValid) {
+      toast.error('Please fix validation errors');
+      return;
+    }
+
     const totalMinutes = editData.hours * 60 + editData.minutes;
 
     const updateData: updateLogRequest = {
@@ -927,12 +949,8 @@ function LogCard({ log, user: logUser }: { log: ILog; user?: string }) {
         </form>
       </dialog>
 
-      {/* Enhanced Edit Log Modal */}
-      <dialog
-        ref={editModalRef}
-        className="modal modal-bottom sm:modal-middle"
-        aria-labelledby="edit-modal-title"
-      >
+      {/* Enhanced Edit Log Modal with validation */}
+      <dialog ref={editModalRef} className="modal modal-bottom sm:modal-middle">
         <div className="modal-box max-w-2xl">
           <div className="flex justify-between items-center mb-6">
             <div className="flex items-center gap-3">
@@ -954,6 +972,35 @@ function LogCard({ log, user: logUser }: { log: ILog; user?: string }) {
           </div>
 
           <form onSubmit={handleEditSubmit} className="space-y-6">
+            {/* Show validation errors */}
+            {Object.keys(editErrors).length > 0 && (
+              <div className="alert alert-error">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="stroke-current shrink-0 w-6 h-6"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"
+                  />
+                </svg>
+                <div>
+                  <h4 className="font-bold">
+                    Please fix the following errors:
+                  </h4>
+                  <ul className="list-disc list-inside text-sm mt-1">
+                    {Object.entries(editErrors).map(([field, error]) => (
+                      <li key={field}>{error}</li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+            )}
+
             {/* Basic Information Section */}
             <div className="card bg-base-200 shadow-sm">
               <div className="card-body p-4">
@@ -1162,7 +1209,9 @@ function LogCard({ log, user: logUser }: { log: ILog; user?: string }) {
               <button
                 type="submit"
                 className="btn btn-primary w-full sm:w-auto order-2 sm:order-1"
-                disabled={loadingUpdateLog}
+                disabled={
+                  loadingUpdateLog || Object.keys(editErrors).length > 0
+                }
               >
                 {loadingUpdateLog ? (
                   <>

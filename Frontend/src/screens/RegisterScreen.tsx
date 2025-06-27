@@ -2,18 +2,122 @@ import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { registerUserFn } from '../api/trackerApi';
 import { useMutation } from '@tanstack/react-query';
-import { ILoginResponse } from '../types';
+import {
+  ILoginResponse,
+  IPasswordValidation,
+  IUsernameValidation,
+} from '../types';
 import { useUserDataStore } from '../store/userData';
 import { toast } from 'react-toastify';
 import { AxiosError } from 'axios';
 import Loader from '../components/Loader';
+import {
+  validateUsername,
+  validatePassword,
+  validatePasswordMatch,
+} from '../utils/validation';
 
 function RegisterScreen() {
   const { user, setUser } = useUserDataStore();
   const [username, setUsername] = useState(user?.username || '');
   const [password, setPassword] = useState('');
   const [passwordConfirmation, setPasswordConfirmation] = useState('');
+  const [showPasswordRequirements, setShowPasswordRequirements] =
+    useState(false);
+  const [showUsernameRequirements, setShowUsernameRequirements] =
+    useState(false);
   const navigate = useNavigate();
+
+  // Validation state
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [touched, setTouched] = useState<Record<string, boolean>>({});
+
+  // Detailed validation states
+  const [usernameValidation, setUsernameValidation] =
+    useState<IUsernameValidation>({
+      minLength: false,
+      maxLength: true,
+      validCharacters: false,
+      notEmpty: false,
+    });
+
+  const [passwordValidation, setPasswordValidation] =
+    useState<IPasswordValidation>({
+      minLength: false,
+      hasUppercase: false,
+      hasLowercase: false,
+      hasNumber: false,
+      hasSpecialChar: false,
+    });
+
+  // Update detailed validation states
+  useEffect(() => {
+    setUsernameValidation({
+      notEmpty: username.trim().length > 0,
+      minLength: username.length >= 3,
+      maxLength: username.length <= 20,
+      validCharacters: /^[a-zA-Z0-9_-]*$/.test(username),
+    });
+  }, [username]);
+
+  useEffect(() => {
+    setPasswordValidation({
+      minLength: password.length >= 8,
+      hasUppercase: /(?=.*[A-Z])/.test(password),
+      hasLowercase: /(?=.*[a-z])/.test(password),
+      hasNumber: /(?=.*\d)/.test(password),
+      hasSpecialChar: /(?=.*[!@#$%^&*(),.?":{}|<>])/.test(password),
+    });
+  }, [password]);
+
+  // Validate fields when they change and are touched
+  useEffect(() => {
+    const newErrors: Record<string, string> = {};
+
+    if (touched.username) {
+      const usernameError = validateUsername(username);
+      if (usernameError) newErrors.username = usernameError;
+    }
+
+    if (touched.password) {
+      const passwordError = validatePassword(password);
+      if (passwordError) newErrors.password = passwordError;
+    }
+
+    if (touched.passwordConfirmation) {
+      const passwordMatchError = validatePasswordMatch(
+        password,
+        passwordConfirmation
+      );
+      if (passwordMatchError)
+        newErrors.passwordConfirmation = passwordMatchError;
+    }
+
+    setErrors(newErrors);
+  }, [username, password, passwordConfirmation, touched]);
+
+  const isFormValid = () => {
+    return (
+      username.trim().length >= 3 &&
+      username.length <= 20 &&
+      /^[a-zA-Z0-9_-]+$/.test(username) &&
+      password.length >= 8 &&
+      /(?=.*[a-z])/.test(password) &&
+      /(?=.*[A-Z])/.test(password) &&
+      /(?=.*\d)/.test(password) &&
+      /(?=.*[!@#$%^&*(),.?":{}|<>])/.test(password) &&
+      password === passwordConfirmation &&
+      passwordConfirmation.length > 0
+    );
+  };
+
+  const handleFieldChange = (field: string, value: string) => {
+    setTouched((prev) => ({ ...prev, [field]: true }));
+
+    if (field === 'username') setUsername(value);
+    if (field === 'password') setPassword(value);
+    if (field === 'passwordConfirmation') setPasswordConfirmation(value);
+  };
 
   const { mutate, isPending, isSuccess } = useMutation({
     mutationFn: registerUserFn,
@@ -31,13 +135,22 @@ function RegisterScreen() {
 
   async function submitHandler(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
+
+    // Mark all fields as touched for final validation
+    setTouched({ username: true, password: true, passwordConfirmation: true });
+
+    if (!isFormValid()) {
+      toast.error('Please fix all validation errors before submitting');
+      return;
+    }
+
     mutate({ username, password, passwordConfirmation });
   }
 
   useEffect(() => {
     if (isSuccess) {
-      toast.success('Login successful');
-      navigate('/'); // Redirect to home page
+      toast.success('Registration successful');
+      navigate('/');
     }
   }, [navigate, isSuccess]);
 
@@ -46,91 +159,217 @@ function RegisterScreen() {
       <div className="h-screen flex justify-center items-center bg-base-200">
         <div className="card shrink-0 w-full max-w-sm shadow-2xl bg-base-100">
           <form className="card-body" onSubmit={submitHandler}>
+            <h2 className="text-2xl font-bold text-center mb-4">
+              Create Account
+            </h2>
+
             <div className="form-control">
               <label className="label">
                 <span className="label-text">Username</span>
               </label>
-              <label className="input input-bordered flex items-center gap-2">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 16 16"
-                  fill="currentColor"
-                  className="w-4 h-4 opacity-70"
-                >
-                  <path d="M8 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6ZM12.735 14c.618 0 1.093-.561.872-1.139a6.002 6.002 0 0 0-11.215 0c-.22.578.254 1.139.872 1.139h9.47Z" />
-                </svg>
-                <input
-                  type="text"
-                  placeholder="Username"
-                  className="grow"
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-                  required
-                />
-              </label>
+              <input
+                type="text"
+                placeholder="Username"
+                className={`input input-bordered ${
+                  errors.username
+                    ? 'input-error'
+                    : touched.username && !errors.username && username
+                      ? 'input-success'
+                      : ''
+                }`}
+                value={username}
+                onChange={(e) => handleFieldChange('username', e.target.value)}
+                onFocus={() => setShowUsernameRequirements(true)}
+                onBlur={() =>
+                  setTimeout(() => setShowUsernameRequirements(false), 150)
+                }
+                required
+              />
+              {errors.username && (
+                <label className="label">
+                  <span className="label-text-alt text-error">
+                    {errors.username}
+                  </span>
+                </label>
+              )}
+
+              {/* Username Requirements */}
+              {showUsernameRequirements && (
+                <div className="mt-2 p-3 bg-base-200 rounded-box text-xs">
+                  <p className="font-semibold mb-2 text-base-content">
+                    Username Requirements:
+                  </p>
+                  <ul className="space-y-1">
+                    <li
+                      className={`flex items-center gap-2 ${usernameValidation.notEmpty ? 'text-success' : 'text-base-content/60'}`}
+                    >
+                      <span
+                        className={`w-2 h-2 rounded-full ${usernameValidation.notEmpty ? 'bg-success' : 'bg-base-content/30'}`}
+                      ></span>
+                      Not empty
+                    </li>
+                    <li
+                      className={`flex items-center gap-2 ${usernameValidation.minLength ? 'text-success' : 'text-base-content/60'}`}
+                    >
+                      <span
+                        className={`w-2 h-2 rounded-full ${usernameValidation.minLength ? 'bg-success' : 'bg-base-content/30'}`}
+                      ></span>
+                      At least 3 characters
+                    </li>
+                    <li
+                      className={`flex items-center gap-2 ${usernameValidation.maxLength ? 'text-success' : 'text-error'}`}
+                    >
+                      <span
+                        className={`w-2 h-2 rounded-full ${usernameValidation.maxLength ? 'bg-success' : 'bg-error'}`}
+                      ></span>
+                      Maximum 20 characters
+                    </li>
+                    <li
+                      className={`flex items-center gap-2 ${usernameValidation.validCharacters ? 'text-success' : 'text-base-content/60'}`}
+                    >
+                      <span
+                        className={`w-2 h-2 rounded-full ${usernameValidation.validCharacters ? 'bg-success' : 'bg-base-content/30'}`}
+                      ></span>
+                      Only letters, numbers, hyphens, and underscores
+                    </li>
+                  </ul>
+                </div>
+              )}
             </div>
+
             <div className="form-control">
               <label className="label">
                 <span className="label-text">Password</span>
               </label>
-              <label className="input input-bordered flex items-center gap-2">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 16 16"
-                  fill="currentColor"
-                  className="w-4 h-4 opacity-70"
-                >
-                  <path
-                    fillRule="evenodd"
-                    d="M14 6a4 4 0 0 1-4.899 3.899l-1.955 1.955a.5.5 0 0 1-.353.146H5v1.5a.5.5 0 0 1-.5.5h-2a.5.5 0 0 1-.5-.5v-2.293a.5.5 0 0 1 .146-.353l3.955-3.955A4 4 0 1 1 14 6Zm-4-2a.75.75 0 0 0 0 1.5.5.5 0 0 1 .5.5.75.75 0 0 0 1.5 0 2 2 0 0 0-2-2Z"
-                    clipRule="evenodd"
-                  />
-                </svg>
-                <input
-                  type="password"
-                  placeholder="Password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="grow"
-                  required
-                />
-              </label>
+              <input
+                type="password"
+                placeholder="Password"
+                className={`input input-bordered ${
+                  errors.password
+                    ? 'input-error'
+                    : touched.password && !errors.password && password
+                      ? 'input-success'
+                      : ''
+                }`}
+                value={password}
+                onChange={(e) => handleFieldChange('password', e.target.value)}
+                onFocus={() => setShowPasswordRequirements(true)}
+                onBlur={() =>
+                  setTimeout(() => setShowPasswordRequirements(false), 150)
+                }
+                required
+              />
+              {errors.password && (
+                <label className="label">
+                  <span className="label-text-alt text-error">
+                    {errors.password}
+                  </span>
+                </label>
+              )}
+
+              {/* Password Requirements */}
+              {showPasswordRequirements && (
+                <div className="mt-2 p-3 bg-base-200 rounded-box text-xs">
+                  <p className="font-semibold mb-2 text-base-content">
+                    Password Requirements:
+                  </p>
+                  <ul className="space-y-1">
+                    <li
+                      className={`flex items-center gap-2 ${passwordValidation.minLength ? 'text-success' : 'text-base-content/60'}`}
+                    >
+                      <span
+                        className={`w-2 h-2 rounded-full ${passwordValidation.minLength ? 'bg-success' : 'bg-base-content/30'}`}
+                      ></span>
+                      At least 8 characters
+                    </li>
+                    <li
+                      className={`flex items-center gap-2 ${passwordValidation.hasUppercase ? 'text-success' : 'text-base-content/60'}`}
+                    >
+                      <span
+                        className={`w-2 h-2 rounded-full ${passwordValidation.hasUppercase ? 'bg-success' : 'bg-base-content/30'}`}
+                      ></span>
+                      One uppercase letter
+                    </li>
+                    <li
+                      className={`flex items-center gap-2 ${passwordValidation.hasLowercase ? 'text-success' : 'text-base-content/60'}`}
+                    >
+                      <span
+                        className={`w-2 h-2 rounded-full ${passwordValidation.hasLowercase ? 'bg-success' : 'bg-base-content/30'}`}
+                      ></span>
+                      One lowercase letter
+                    </li>
+                    <li
+                      className={`flex items-center gap-2 ${passwordValidation.hasNumber ? 'text-success' : 'text-base-content/60'}`}
+                    >
+                      <span
+                        className={`w-2 h-2 rounded-full ${passwordValidation.hasNumber ? 'bg-success' : 'bg-base-content/30'}`}
+                      ></span>
+                      One number
+                    </li>
+                    <li
+                      className={`flex items-center gap-2 ${passwordValidation.hasSpecialChar ? 'text-success' : 'text-base-content/60'}`}
+                    >
+                      <span
+                        className={`w-2 h-2 rounded-full ${passwordValidation.hasSpecialChar ? 'bg-success' : 'bg-base-content/30'}`}
+                      ></span>
+                      One special character (!@#$%^&*(),.?":{}|&lt;&gt;)
+                    </li>
+                  </ul>
+                </div>
+              )}
             </div>
+
             <div className="form-control">
               <label className="label">
                 <span className="label-text">Password Confirmation</span>
               </label>
-              <label className="input input-bordered flex items-center gap-2">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 16 16"
-                  fill="currentColor"
-                  className="w-4 h-4 opacity-70"
-                >
-                  <path
-                    fillRule="evenodd"
-                    d="M14 6a4 4 0 0 1-4.899 3.899l-1.955 1.955a.5.5 0 0 1-.353.146H5v1.5a.5.5 0 0 1-.5.5h-2a.5.5 0 0 1-.5-.5v-2.293a.5.5 0 0 1 .146-.353l3.955-3.955A4 4 0 1 1 14 6Zm-4-2a.75.75 0 0 0 0 1.5.5.5 0 0 1 .5.5.75.75 0 0 0 1.5 0 2 2 0 0 0-2-2Z"
-                    clipRule="evenodd"
-                  />
-                </svg>
-                <input
-                  type="password"
-                  placeholder="Password confirmation"
-                  value={passwordConfirmation}
-                  onChange={(e) => setPasswordConfirmation(e.target.value)}
-                  className="grow"
-                  required
-                />
-              </label>
+              <input
+                type="password"
+                placeholder="Confirm password"
+                className={`input input-bordered ${
+                  errors.passwordConfirmation
+                    ? 'input-error'
+                    : touched.passwordConfirmation &&
+                        !errors.passwordConfirmation &&
+                        passwordConfirmation
+                      ? 'input-success'
+                      : ''
+                }`}
+                value={passwordConfirmation}
+                onChange={(e) =>
+                  handleFieldChange('passwordConfirmation', e.target.value)
+                }
+                required
+              />
+              {errors.passwordConfirmation && (
+                <label className="label">
+                  <span className="label-text-alt text-error">
+                    {errors.passwordConfirmation}
+                  </span>
+                </label>
+              )}
+
               <label className="label">
                 <Link to="/login" className="label-text-alt link link-hover">
-                  Are you already registered?
+                  Already have an account?
                 </Link>
               </label>
             </div>
+
             <div className="form-control flex justify-center mt-6">
-              <button className="btn btn-primary" type="submit">
-                Register
+              <button
+                className="btn btn-primary"
+                type="submit"
+                disabled={!isFormValid() || isPending}
+              >
+                {isPending ? (
+                  <>
+                    <span className="loading loading-spinner loading-sm"></span>
+                    Creating Account...
+                  </>
+                ) : (
+                  'Register'
+                )}
               </button>
             </div>
           </form>
