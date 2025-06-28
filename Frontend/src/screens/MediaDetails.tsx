@@ -326,7 +326,7 @@ function MediaDetails() {
                             Total XP
                           </h3>
                           <p className="text-3xl font-bold text-primary mt-1">
-                            {numberWithCommas(totalXp)}
+                            {numberWithCommas(totalXp || 0)}
                           </p>
                         </div>
                         <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center">
@@ -383,111 +383,116 @@ function MediaDetails() {
                     </div>
                   )}
 
-                  {mediaDocument?.type === 'anime' && (
-                    <div className="card bg-base-100 shadow-lg hover:shadow-xl transition-shadow">
-                      <div className="card-body">
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <h3 className="text-sm font-medium text-base-content/70 uppercase tracking-wide">
-                              Episodes Watched
-                            </h3>
-                            <p className="text-3xl font-bold text-accent mt-1">
-                              {logs?.reduce(
-                                (acc, log) => acc + (log.episodes ?? 0),
-                                0
-                              )}
-                            </p>
-                          </div>
-                          <div className="w-12 h-12 bg-accent/10 rounded-lg flex items-center justify-center">
-                            <svg
-                              className="w-6 h-6 text-accent"
-                              fill="none"
-                              stroke="currentColor"
-                              viewBox="0 0 24 24"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth="2"
-                                d="M7 4V2a1 1 0 011-1h8a1 1 0 011 1v2"
-                              ></path>
-                            </svg>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {mediaDocument?.type === 'manga' && (
-                    <div className="card bg-base-100 shadow-lg hover:shadow-xl transition-shadow">
-                      <div className="card-body">
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <h3 className="text-sm font-medium text-base-content/70 uppercase tracking-wide">
-                              Pages Read
-                            </h3>
-                            <p className="text-3xl font-bold text-accent mt-1">
-                              {numberWithCommas(
-                                logs?.reduce(
-                                  (acc, log) => acc + (log.pages ?? 0),
+                  {mediaDocument?.type === 'anime' &&
+                    logs &&
+                    logs.some((log) => log.episodes && log.episodes > 0) && (
+                      <div className="card bg-base-100 shadow-lg hover:shadow-xl transition-shadow">
+                        <div className="card-body">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <h3 className="text-sm font-medium text-base-content/70 uppercase tracking-wide">
+                                Episodes Watched
+                              </h3>
+                              <p className="text-3xl font-bold text-accent mt-1">
+                                {logs?.reduce(
+                                  (acc, log) => acc + (log.episodes ?? 0),
                                   0
-                                )
-                              )}
-                            </p>
-                          </div>
-                          <div className="w-12 h-12 bg-accent/10 rounded-lg flex items-center justify-center">
-                            <svg
-                              className="w-6 h-6 text-accent"
-                              fill="none"
-                              stroke="currentColor"
-                              viewBox="0 0 24 24"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth="2"
-                                d="M7 4V2a1 1 0 011-1h8a1 1 0 011 1v2"
-                              ></path>
-                            </svg>
+                                )}
+                              </p>
+                            </div>
+                            <div className="w-12 h-12 bg-accent/10 rounded-lg flex items-center justify-center">
+                              <svg
+                                className="w-6 h-6 text-accent"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth="2"
+                                  d="M7 4V2a1 1 0 011-1h8a1 1 0 011 1v2"
+                                ></path>
+                              </svg>
+                            </div>
                           </div>
                         </div>
                       </div>
-                    </div>
-                  )}
+                    )}
+
+                  {mediaDocument?.type === 'manga' &&
+                    logs &&
+                    logs.some((log) => log.pages && log.pages > 0) && (
+                      <div className="card bg-base-100 shadow-lg hover:shadow-xl transition-shadow">
+                        <div className="card-body">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <h3 className="text-sm font-medium text-base-content/70 uppercase tracking-wide">
+                                Pages Read
+                              </h3>
+                              <p className="text-3xl font-bold text-accent mt-1">
+                                {numberWithCommas(
+                                  logs?.reduce(
+                                    (acc, log) => acc + (log.pages ?? 0),
+                                    0
+                                  ) || 0
+                                )}
+                              </p>
+                            </div>
+                            <div className="w-12 h-12 bg-accent/10 rounded-lg flex items-center justify-center">
+                              <svg
+                                className="w-6 h-6 text-accent"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth="2"
+                                  d="M7 4V2a1 1 0 011-1h8a1 1 0 011 1v2"
+                                ></path>
+                              </svg>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
 
                   {(mediaDocument?.type === 'vn' ||
                     mediaDocument?.type === 'manga' ||
-                    mediaDocument?.type === 'reading') && (
-                    <div className="card bg-base-100 shadow-lg hover:shadow-xl transition-shadow">
-                      <div className="card-body">
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <h3 className="text-sm font-medium text-base-content/70 uppercase tracking-wide">
-                              Characters Read
-                            </h3>
-                            <p className="text-3xl font-bold text-info mt-1">
-                              {numberWithCommas(totalCharsRead)}
-                            </p>
-                          </div>
-                          <div className="w-12 h-12 bg-info/10 rounded-lg flex items-center justify-center">
-                            <svg
-                              className="w-6 h-6 text-info"
-                              fill="none"
-                              stroke="currentColor"
-                              viewBox="0 0 24 24"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth="2"
-                                d="M7 4V2a1 1 0 011-1h8a1 1 0 011 1v2"
-                              ></path>
-                            </svg>
+                    mediaDocument?.type === 'reading') &&
+                    totalCharsRead > 0 && (
+                      <div className="card bg-base-100 shadow-lg hover:shadow-xl transition-shadow">
+                        <div className="card-body">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <h3 className="text-sm font-medium text-base-content/70 uppercase tracking-wide">
+                                Characters Read
+                              </h3>
+                              <p className="text-3xl font-bold text-info mt-1">
+                                {numberWithCommas(totalCharsRead)}
+                              </p>
+                            </div>
+                            <div className="w-12 h-12 bg-info/10 rounded-lg flex items-center justify-center">
+                              <svg
+                                className="w-6 h-6 text-info"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth="2"
+                                  d="M7 4V2a1 1 0 011-1h8a1 1 0 011 1v2"
+                                ></path>
+                              </svg>
+                            </div>
                           </div>
                         </div>
                       </div>
-                    </div>
-                  )}
+                    )}
 
                   {/* Reading Speed Card - Show for reading types when we have both chars and time */}
                   {(mediaDocument?.type === 'vn' ||
