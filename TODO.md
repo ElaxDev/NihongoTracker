@@ -2,6 +2,10 @@
 
 ## API
 
+### Prioridad
+
+- [ ] Arreglar vunerabilidad Cross-site request forgery (CSRF)
+
 ### Logs
 
 - [x] Crear logs
@@ -10,8 +14,8 @@
 - [x] Obtener logs
 - [x] Autocompletado de información de logs
   - [x] Integración con Anilist
-  - [ ] Integración con Youtube
-  - [ ] Integración con TMDB
+  - [x] Integración con Youtube
+  - [ ] Integración con TVDB
   - [x] Integración con VNDB
 - [x] Importar logs de Iniesta
 - [x] Importar logs de TMW
@@ -44,7 +48,7 @@
 - [x] Editar manga
 - [x] Eliminar manga
 - [x] Obtener manga
-- [ ] Buscar manga
+- [x] Buscar manga
 - [x] Crear novela visual
 - [x] Editar novela visual
 - [x] Eliminar novela visual
@@ -60,19 +64,19 @@
 
 ## Frontend
 
-- [ ] Página de inicio
+- [x] Página de inicio
 - [ ] Página de información sobre el sistema
 - [ ] Tour de ayuda
 - [x] Formulario de inicio de sesión
 - [x] Formulario de registro de usuario
 - [x] Página de perfil
 - [x] Página de configuración
-- [ ] Página de stats
+- [x] Página de stats
 - [x] Página de ranking
 - [ ] Feed principal
 - [x] Formulario de creación de Log
-- [ ] Formulario de edición de Log
-- [ ] Función de eliminar Log
+- [x] Formulario de edición de Log
+- [x] Función de eliminar Log
 - [ ] Admin dashboard
 - [x] Temas
 - [ ] Notificaciones

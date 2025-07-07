@@ -63,10 +63,10 @@ function RegisterScreen() {
   useEffect(() => {
     setPasswordValidation({
       minLength: password.length >= 8,
-      hasUppercase: /(?=.*[A-Z])/.test(password),
-      hasLowercase: /(?=.*[a-z])/.test(password),
-      hasNumber: /(?=.*\d)/.test(password),
-      hasSpecialChar: /(?=.*[!@#$%^&*(),.?":{}|<>])/.test(password),
+      hasUppercase: false,
+      hasLowercase: false,
+      hasNumber: false,
+      hasSpecialChar: false,
     });
   }, [password]);
 
@@ -102,10 +102,6 @@ function RegisterScreen() {
       username.length <= 20 &&
       /^[a-zA-Z0-9_-]+$/.test(username) &&
       password.length >= 8 &&
-      /(?=.*[a-z])/.test(password) &&
-      /(?=.*[A-Z])/.test(password) &&
-      /(?=.*\d)/.test(password) &&
-      /(?=.*[!@#$%^&*(),.?":{}|<>])/.test(password) &&
       password === passwordConfirmation &&
       passwordConfirmation.length > 0
     );
@@ -281,38 +277,6 @@ function RegisterScreen() {
                         className={`w-2 h-2 rounded-full ${passwordValidation.minLength ? 'bg-success' : 'bg-base-content/30'}`}
                       ></span>
                       At least 8 characters
-                    </li>
-                    <li
-                      className={`flex items-center gap-2 ${passwordValidation.hasUppercase ? 'text-success' : 'text-base-content/60'}`}
-                    >
-                      <span
-                        className={`w-2 h-2 rounded-full ${passwordValidation.hasUppercase ? 'bg-success' : 'bg-base-content/30'}`}
-                      ></span>
-                      One uppercase letter
-                    </li>
-                    <li
-                      className={`flex items-center gap-2 ${passwordValidation.hasLowercase ? 'text-success' : 'text-base-content/60'}`}
-                    >
-                      <span
-                        className={`w-2 h-2 rounded-full ${passwordValidation.hasLowercase ? 'bg-success' : 'bg-base-content/30'}`}
-                      ></span>
-                      One lowercase letter
-                    </li>
-                    <li
-                      className={`flex items-center gap-2 ${passwordValidation.hasNumber ? 'text-success' : 'text-base-content/60'}`}
-                    >
-                      <span
-                        className={`w-2 h-2 rounded-full ${passwordValidation.hasNumber ? 'bg-success' : 'bg-base-content/30'}`}
-                      ></span>
-                      One number
-                    </li>
-                    <li
-                      className={`flex items-center gap-2 ${passwordValidation.hasSpecialChar ? 'text-success' : 'text-base-content/60'}`}
-                    >
-                      <span
-                        className={`w-2 h-2 rounded-full ${passwordValidation.hasSpecialChar ? 'bg-success' : 'bg-base-content/30'}`}
-                      ></span>
-                      One special character (!@#$%^&*(),.?":{}|&lt;&gt;)
                     </li>
                   </ul>
                 </div>

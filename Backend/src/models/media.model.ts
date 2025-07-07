@@ -16,13 +16,18 @@ const MediaBaseSchema = new Schema<IMediaDocument>(
     contentId: { type: String, required: true, unique: true },
     contentImage: { type: String },
     coverImage: { type: String },
-    description: { type: String },
+    description: [
+      {
+        description: { type: String, required: true },
+        language: { type: String, enum: ['eng', 'jpn', 'spa'], required: true },
+      },
+    ],
     type: {
       type: String,
       required: true,
-      enum: ['anime', 'manga', 'reading', 'vn', 'video'],
+      enum: ['anime', 'manga', 'reading', 'vn', 'video', 'movie', 'tv show'],
     },
-    synonyms: { type: [String], default: null },
+    synonyms: { type: [String], default: [] },
     isAdult: { type: Boolean, default: false },
   },
   { discriminatorKey: 'type', collection: 'media' }
@@ -52,4 +57,10 @@ const VideoSchema = new Schema({
 
 const Video = MediaBase.discriminator('video', VideoSchema);
 
-export { MediaBase, Anime, Manga, Reading, Video };
+const MovieSchema = new Schema({
+  runtime: { type: Number, default: null },
+});
+
+const Movie = MediaBase.discriminator('movie', MovieSchema);
+
+export { MediaBase, Anime, Manga, Reading, Video, Movie };

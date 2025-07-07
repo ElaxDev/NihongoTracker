@@ -52,12 +52,17 @@ export interface IMediaTitle {
   contentTitleEnglish?: string;
 }
 
+interface MediaDescription {
+  description: string;
+  language: 'eng' | 'jpn' | 'spa';
+}
+
 export interface IMediaDocument extends Document {
   contentId: string;
   title: IMediaTitle;
   contentImage?: string;
   coverImage?: string;
-  description?: string;
+  description?: Array<MediaDescription>;
   type: 'anime' | 'manga' | 'reading' | 'vn' | 'video' | 'movie' | 'tv show';
   episodes?: number;
   episodeDuration?: number;
