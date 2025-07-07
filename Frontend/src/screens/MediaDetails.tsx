@@ -34,12 +34,17 @@ function MediaDetails() {
     staleTime: Infinity,
   });
 
-  const totalXp = logs?.reduce((acc, log) => acc + log.xp, 0);
-  const totalTime = logs?.reduce((acc, log) => acc + (log.time ?? 0), 0);
+  // Ensure logs is always an array before using array methods
+  const logsArray = Array.isArray(logs) ? logs : [];
+
+  const totalXp = logsArray.reduce((acc, log) => acc + log.xp, 0);
+  const totalTime = logsArray.reduce((acc, log) => acc + (log.time ?? 0), 0);
 
   // Calculate reading statistics
-  const totalCharsRead =
-    logs?.reduce((acc, log) => acc + (log.chars ?? 0), 0) || 0;
+  const totalCharsRead = logsArray.reduce(
+    (acc, log) => acc + (log.chars ?? 0),
+    0
+  );
   const totalCharCount = mediaDocument?.jiten?.mainDeck.characterCount || 0;
   const readingPercentage =
     totalCharCount > 0
@@ -63,11 +68,12 @@ function MediaDetails() {
       : null;
 
   // Sort logs by date (most recent first)
-  const sortedLogs = logs
-    ? [...logs].sort(
-        (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
-      )
-    : [];
+  const sortedLogs =
+    logsArray.length > 0
+      ? [...logsArray].sort(
+          (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+        )
+      : [];
 
   const visibleLogs = sortedLogs.slice(0, visibleLogsCount);
   const hasMoreLogs = sortedLogs.length > visibleLogsCount;
@@ -348,7 +354,7 @@ function MediaDetails() {
                     </div>
                   </div>
 
-                  {totalTime && totalTime > 0 && (
+                  {totalTime > 0 && (
                     <div className="card bg-base-100 shadow-lg hover:shadow-xl transition-shadow">
                       <div className="card-body">
                         <div className="flex items-center justify-between">
@@ -384,8 +390,10 @@ function MediaDetails() {
                   )}
 
                   {mediaDocument?.type === 'anime' &&
-                    logs &&
-                    logs.some((log) => log.episodes && log.episodes > 0) && (
+                    logsArray.length > 0 &&
+                    logsArray.some(
+                      (log) => log.episodes && log.episodes > 0
+                    ) && (
                       <div className="card bg-base-100 shadow-lg hover:shadow-xl transition-shadow">
                         <div className="card-body">
                           <div className="flex items-center justify-between">
@@ -394,7 +402,7 @@ function MediaDetails() {
                                 Episodes Watched
                               </h3>
                               <p className="text-3xl font-bold text-accent mt-1">
-                                {logs?.reduce(
+                                {logsArray.reduce(
                                   (acc, log) => acc + (log.episodes ?? 0),
                                   0
                                 )}
@@ -421,8 +429,8 @@ function MediaDetails() {
                     )}
 
                   {mediaDocument?.type === 'manga' &&
-                    logs &&
-                    logs.some((log) => log.pages && log.pages > 0) && (
+                    logsArray.length > 0 &&
+                    logsArray.some((log) => log.pages && log.pages > 0) && (
                       <div className="card bg-base-100 shadow-lg hover:shadow-xl transition-shadow">
                         <div className="card-body">
                           <div className="flex items-center justify-between">
@@ -432,10 +440,10 @@ function MediaDetails() {
                               </h3>
                               <p className="text-3xl font-bold text-accent mt-1">
                                 {numberWithCommas(
-                                  logs?.reduce(
+                                  logsArray.reduce(
                                     (acc, log) => acc + (log.pages ?? 0),
                                     0
-                                  ) || 0
+                                  )
                                 )}
                               </p>
                             </div>

@@ -106,7 +106,7 @@ export async function getMediaFn(
   mediaId?: string,
   mediaType?: string
 ): Promise<IMediaDocument & { jiten?: IJitenResponse }> {
-  const { data } = await api.get<IMediaDocument>(
+  const { data } = await api.get<IMediaDocument & { jiten?: IJitenResponse }>(
     `media/${mediaType}/${mediaId}`
   );
   return data;

@@ -157,7 +157,16 @@ export interface ILogsParams extends Pick<IRankingParams, 'page' | 'limit'> {
 // Add interface for MatchMedia logs (minimal required fields)
 export interface IMatchMediaLog {
   _id: string;
-  type: 'anime' | 'manga' | 'reading' | 'vn' | 'video' | 'audio' | 'other';
+  type:
+    | 'anime'
+    | 'manga'
+    | 'reading'
+    | 'vn'
+    | 'video'
+    | 'movie'
+    | 'tv show'
+    | 'audio'
+    | 'other';
   description: string;
   mediaId?: string;
   date: Date;
@@ -235,7 +244,16 @@ export interface ICreateLog
 export interface ILog {
   _id: string;
   user: string;
-  type: 'anime' | 'manga' | 'reading' | 'vn' | 'video' | 'audio' | 'other';
+  type:
+    | 'anime'
+    | 'manga'
+    | 'reading'
+    | 'vn'
+    | 'video'
+    | 'movie'
+    | 'tv show'
+    | 'audio'
+    | 'other';
   description: string;
   episodes?: number;
   pages?: number;
@@ -347,18 +365,23 @@ export interface IImmersionList {
   video: IMediaDocument[];
 }
 
-export interface IMediaDocument {
+interface MediaDescription {
+  description: string;
+  language: 'eng' | 'jpn' | 'spa';
+}
+
+export interface IMediaDocument extends Document {
   contentId: string;
   title: IMediaTitle;
   contentImage?: string;
   coverImage?: string;
-  description: string;
-  type: 'anime' | 'manga' | 'reading' | 'vn' | 'video';
+  description?: Array<MediaDescription>;
+  type: 'anime' | 'manga' | 'reading' | 'vn' | 'video' | 'movie' | 'tv show';
   episodes?: number;
   episodeDuration?: number;
   chapters?: number;
   volumes?: number;
-  synonyms?: string[];
+  synonyms?: string[] | null;
   isAdult: boolean;
 }
 

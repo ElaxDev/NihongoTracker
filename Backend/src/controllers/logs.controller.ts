@@ -1094,21 +1094,6 @@ export async function getUserStats(
       totalsMatch.type = type;
     }
 
-    // First, let's get the raw logs to see what we're working with
-    const rawLogs = await Log.find(totalsMatch).select(
-      'type chars description date'
-    );
-
-    let totalCharsFromRaw = 0;
-    rawLogs.forEach((log, index) => {
-      if (log.chars && log.chars > 0) {
-        console.log(
-          `Log ${index + 1}: type=${log.type}, chars=${log.chars}, description="${log.description}", date=${log.date}`
-        );
-        totalCharsFromRaw += log.chars;
-      }
-    });
-
     const logTypes = [
       'reading',
       'anime',
@@ -1200,13 +1185,6 @@ export async function getUserStats(
         },
       },
     ]);
-
-    console.log('Stats by type from aggregation:');
-    statsByType.forEach((stat) => {
-      console.log(
-        `  ${stat.type}: ${stat.totalChars} chars from ${stat.count} logs`
-      );
-    });
 
     // Calculate totals based on the filtered data (respects type filter)
     const filteredStatsByType =

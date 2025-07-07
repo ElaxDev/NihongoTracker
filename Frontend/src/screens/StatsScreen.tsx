@@ -385,11 +385,12 @@ function StatsScreen() {
                     ? `${currentType.charAt(0).toUpperCase() + currentType.slice(1)} entries`
                     : 'Total log entries'}
                 </p>
-                {currentType === 'all' && userStats?.totals.untrackedCount && (
-                  <span className="badge badge-warning badge-xs">
-                    {userStats.totals.untrackedCount} untracked
-                  </span>
-                )}
+                {currentType === 'all' &&
+                  (userStats?.totals.untrackedCount ?? 0) > 0 && (
+                    <span className="badge badge-warning badge-xs">
+                      {userStats?.totals.untrackedCount} untracked
+                    </span>
+                  )}
               </div>
             </div>
           </div>
