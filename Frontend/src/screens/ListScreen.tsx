@@ -579,7 +579,11 @@ function MediaListItem({
 
                 {media.description && (
                   <p className="text-sm text-base-content/70 line-clamp-2">
-                    {media.description}
+                    {
+                      media.description.filter(
+                        (desc) => desc.language === 'eng'
+                      )[0].description
+                    }
                   </p>
                 )}
               </div>

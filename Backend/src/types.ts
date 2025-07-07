@@ -62,13 +62,15 @@ export interface IMediaDocument extends Document {
   title: IMediaTitle;
   contentImage?: string;
   coverImage?: string;
-  description?: Array<MediaDescription>;
+  description?: MediaDescription[];
   type: 'anime' | 'manga' | 'reading' | 'vn' | 'video' | 'movie' | 'tv show';
   episodes?: number;
   episodeDuration?: number;
   chapters?: number;
   volumes?: number;
-  synonyms?: string[] | null;
+  seasons?: number;
+  runtime?: number;
+  synonyms?: string[];
   isAdult: boolean;
 }
 

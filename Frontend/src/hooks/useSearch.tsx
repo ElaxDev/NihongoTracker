@@ -3,7 +3,7 @@ import debounce from 'lodash/debounce';
 import { useState, useEffect } from 'react';
 import { searchAnilist } from '../api/anilistApi';
 import { searchMediaFn, searchYouTubeVideoFn } from '../api/trackerApi';
-import { IMediaDocument, youtubeChannelInfo } from '../types';
+import { IMediaDocument, MediaDescription, youtubeChannelInfo } from '../types';
 
 export default function useSearch(
   type: string,
@@ -25,6 +25,23 @@ export default function useSearch(
       debouncer.cancel();
     };
   }, [search]);
+
+  // Find the description in the preferred language order
+  const getDescription = (
+    descriptions: MediaDescription[] | undefined
+  ): string => {
+    if (!descriptions || descriptions.length === 0) return '';
+
+    // Try English first, then Japanese, then Spanish, then first available
+    const preferredLanguages = ['eng', 'jpn', 'spa'];
+
+    for (const lang of preferredLanguages) {
+      const desc = descriptions.find((d) => d.language === lang);
+      if (desc) return desc.description;
+    }
+
+    return descriptions[0].description;
+  };
 
   return useQuery<IMediaDocument[] | undefined, Error>({
     queryKey: ['searchMedia', debouncedSearch, type, page, perPage, ids],
@@ -57,7 +74,9 @@ export default function useSearch(
                 channelId: youtubeResult.channel.contentId,
                 channelTitle: youtubeResult.channel.title.contentTitleNative,
                 channelImage: youtubeResult.channel.contentImage,
-                channelDescription: youtubeResult.channel.description,
+                channelDescription: getDescription(
+                  youtubeResult.channel.description
+                ),
               },
             };
 
