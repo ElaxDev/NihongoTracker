@@ -44,7 +44,7 @@ interface YouTubeChannelData {
   };
 }
 
-async function getYouTubeVideoInfo(videoUrl: string): Promise<{
+export async function getYouTubeVideoInfo(videoUrl: string): Promise<{
   video: MediaDocument;
   channel: MediaDocument;
 } | null> {
@@ -176,7 +176,7 @@ function parseDuration(duration: string): number {
   return hours * 60 + minutes + Math.round(seconds / 60);
 }
 
-export async function searchYouTubeVideo(
+export default async function searchYouTubeVideo(
   req: Request,
   res: Response,
   next: NextFunction
