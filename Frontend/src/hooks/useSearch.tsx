@@ -120,6 +120,7 @@ export default function useSearch(
             ids
           );
         case 'vn':
+        case 'movie':
           return searchMediaFn({
             type,
             search: debouncedSearch,

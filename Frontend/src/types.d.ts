@@ -28,8 +28,8 @@ export type OutletProfileContextType = {
 };
 
 export type OutletMediaContextType = {
-  mediaDocument: (IMediaDocument & { jiten?: IJitenResponse }) | undefined;
-  mediaType: string | undefined;
+  mediaDocument?: IMediaDocument & { jiten?: IJitenResponse };
+  mediaType?: string;
   username?: string;
 };
 
@@ -151,7 +151,7 @@ export interface ILogsParams extends Pick<IRankingParams, 'page' | 'limit'> {
   search?: string;
   start?: string;
   end?: string;
-  type?: ILog['type'];
+  type?: ILog['type'] | ILog['type'][];
 }
 
 // Add interface for MatchMedia logs (minimal required fields)
@@ -231,7 +231,6 @@ export interface IContentMedia {
 
 export interface ICreateLog
   extends Omit<ILog, '_id' | 'user' | 'createdAt' | 'updatedAt' | 'xp'> {
-  createMedia?: boolean;
   mediaData?: IContentMedia & {
     // YouTube specific fields
     channelId?: string;
@@ -363,6 +362,8 @@ export interface IImmersionList {
   reading: IMediaDocument[];
   vn: IMediaDocument[];
   video: IMediaDocument[];
+  movie: IMediaDocument[];
+  'tv show': IMediaDocument[];
 }
 
 interface MediaDescription {
@@ -379,6 +380,7 @@ export interface IMediaDocument {
   type: 'anime' | 'manga' | 'reading' | 'vn' | 'video' | 'movie' | 'tv show';
   episodes?: number;
   episodeDuration?: number;
+  runtime?: number;
   chapters?: number;
   volumes?: number;
   synonyms?: string[] | null;

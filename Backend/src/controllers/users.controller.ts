@@ -366,7 +366,14 @@ export async function getImmersionList(
     if (!user) throw new customError('User not found', 404);
 
     // Define valid media types
-    type MediaType = 'anime' | 'manga' | 'reading' | 'vn' | 'video';
+    type MediaType =
+      | 'anime'
+      | 'manga'
+      | 'reading'
+      | 'vn'
+      | 'video'
+      | 'movie'
+      | 'tv show';
 
     // Update your interface definition
     interface ImmersionGroup {
@@ -378,14 +385,25 @@ export async function getImmersionList(
       { $match: { user: user._id } },
       {
         $group: {
-          _id: '$mediaId',
+          _id: { mediaId: '$mediaId', type: '$type' },
         },
       },
       {
         $lookup: {
           from: 'media',
-          localField: '_id',
-          foreignField: 'contentId',
+          let: { mediaId: '$_id.mediaId', logType: '$_id.type' },
+          pipeline: [
+            {
+              $match: {
+                $expr: {
+                  $and: [
+                    { $eq: ['$contentId', '$$mediaId'] },
+                    { $eq: ['$type', '$$logType'] },
+                  ],
+                },
+              },
+            },
+          ],
           as: 'mediaDetails',
         },
       },
@@ -408,6 +426,8 @@ export async function getImmersionList(
         reading: [],
         vn: [],
         video: [],
+        movie: [],
+        'tv show': [],
       });
     }
 
@@ -417,6 +437,8 @@ export async function getImmersionList(
       reading: [],
       vn: [],
       video: [],
+      movie: [],
+      'tv show': [],
     };
 
     immersionList.forEach((group) => {

@@ -1,5 +1,11 @@
 import { Request, Response, NextFunction } from 'express';
-import { Anime, Manga, MediaBase, Reading } from '../models/media.model.js';
+import {
+  Anime,
+  Manga,
+  MediaBase,
+  Reading,
+  Movie,
+} from '../models/media.model.js';
 import { customError } from '../middlewares/errorMiddleware.js';
 import fac from 'fast-average-color-node';
 import { searchAnilist } from '../services/searchAnilist.js';
@@ -38,6 +44,7 @@ const LinkTypeObject = {
   anime: 4, // Anilist
   manga: 4, // Anilist
   reading: 4, // Anilist
+  movie: 4, // Anilist for movies
   // "GoogleBooks": 6,
   // "Imdb": 7,
   // "Igdb": 8,
@@ -90,29 +97,30 @@ export async function getMedia(
   next: NextFunction
 ) {
   try {
-    const mediaQuery =
-      req.params.contentId && req.params.mediaType
-        ? { contentId: req.params.contentId, type: req.params.mediaType }
-        : req.params.contentId
-          ? { contentId: req.params.contentId }
-          : {};
+    const { contentId, mediaType } = req.params;
 
-    if (mediaQuery.contentId === undefined)
-      return res.status(400).json({ message: 'Invalid query parameters' });
+    if (!contentId) {
+      return res.status(400).json({ message: 'Content ID is required' });
+    }
+
+    if (!mediaType) {
+      return res.status(400).json({ message: 'Media type is required' });
+    }
+
+    const mediaQuery = { contentId, type: mediaType };
 
     const jitenURL = process.env.JITEN_API_URL;
     let jitenResponse = null;
 
-    if (jitenURL && mediaQuery.type) {
+    if (jitenURL) {
       try {
-        const LinkType: number | null = mediaQuery.type
-          ? LinkTypeObject[mediaQuery.type as keyof typeof LinkTypeObject] ??
-            null
+        const LinkType: number | null = mediaType
+          ? LinkTypeObject[mediaType as keyof typeof LinkTypeObject] ?? null
           : null;
 
         if (LinkType) {
           const jitenDeck = await axios.get(
-            `${jitenURL}/media-deck/by-link-id/${LinkType}/${mediaQuery.contentId}`,
+            `${jitenURL}/media-deck/by-link-id/${LinkType}/${contentId}`,
             {
               validateStatus: (status) => status === 200 || status === 404,
             }
@@ -144,30 +152,45 @@ export async function getMedia(
     const media = await MediaBase.findOne(mediaQuery);
     if (
       !media &&
-      mediaQuery.type &&
-      (mediaQuery.type === 'anime' ||
-        mediaQuery.type === 'manga' ||
-        mediaQuery.type === 'reading')
+      (mediaType === 'anime' ||
+        mediaType === 'manga' ||
+        mediaType === 'reading' ||
+        mediaType === 'movie')
     ) {
+      const searchType =
+        mediaType === 'movie'
+          ? 'ANIME'
+          : mediaType === 'anime'
+            ? 'ANIME'
+            : 'MANGA';
+      const searchFormat = mediaType === 'movie' ? 'MOVIE' : null;
+
       const mediaAnilist = await searchAnilist({
-        ids: [parseInt(mediaQuery.contentId)],
+        ids: [parseInt(contentId)],
+        type: searchType,
+        format: searchFormat,
       });
+
       if (mediaAnilist.length > 0) {
-        if (mediaQuery.type === 'anime') {
+        if (mediaType === 'anime') {
           await Anime.insertMany(mediaAnilist, {
             ordered: false,
           });
-        } else if (mediaQuery.type === 'manga') {
+        } else if (mediaType === 'manga') {
           await Manga.insertMany(mediaAnilist, {
             ordered: false,
           });
-        } else if (mediaQuery.type === 'reading') {
+        } else if (mediaType === 'reading') {
           await Reading.insertMany(mediaAnilist, {
+            ordered: false,
+          });
+        } else if (mediaType === 'movie') {
+          await Movie.insertMany(mediaAnilist, {
             ordered: false,
           });
         }
         return res.status(200).json({
-          ...mediaAnilist[0].toObject(),
+          ...mediaAnilist[0],
           jiten: jitenResponse ? jitenResponse.data : null,
         });
       } else {

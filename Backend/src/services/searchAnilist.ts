@@ -73,7 +73,7 @@ export async function searchAnilist(variables: {
     },
     contentImage: media.coverImage.large,
     coverImage: media.bannerImage,
-    description: media.description,
+    description: [{ description: media.description, language: 'eng' }],
     type: determineMediaType(media.type, media.format),
     ...(media.synonyms.length && {
       synonyms: media.synonyms.map((synonym) => synonym.trim()),

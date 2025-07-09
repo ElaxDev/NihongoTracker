@@ -16,7 +16,20 @@ const LogSchema = new Schema<ILog>(
   {
     user: { type: Schema.Types.ObjectId, required: true, ref: 'User' },
     mediaTitle: { type: String, required: false, trim: true },
-    type: { type: String, required: true },
+    type: {
+      type: String,
+      required: true,
+      enum: [
+        'reading',
+        'anime',
+        'vn',
+        'video',
+        'manga',
+        'audio',
+        'movie',
+        'other',
+      ],
+    },
     mediaId: {
       type: String,
       default: null,
@@ -52,6 +65,7 @@ const LogSchema = new Schema<ILog>(
           (!this.chars &&
             ((this.type === 'reading' && !this.pages) || this.type === 'vn')) ||
           this.type === 'video' ||
+          this.type === 'movie' ||
           this.type === 'audio' ||
           this.type === 'other'
         );

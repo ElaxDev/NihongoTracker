@@ -103,9 +103,12 @@ export async function searchMediaFn(params: {
 }
 
 export async function getMediaFn(
-  mediaId?: string,
-  mediaType?: string
+  mediaId: string,
+  mediaType: string
 ): Promise<IMediaDocument & { jiten?: IJitenResponse }> {
+  if (!mediaId || !mediaType) {
+    throw new Error('Both mediaId and mediaType are required');
+  }
   const { data } = await api.get<IMediaDocument & { jiten?: IJitenResponse }>(
     `media/${mediaType}/${mediaId}`
   );
@@ -262,3 +265,8 @@ export async function deleteDailyGoalFn(goalId: string) {
   const { data } = await api.delete(`goals/daily/${goalId}`);
   return data;
 }
+
+export const getLogDetailsFn = async (logId: string) => {
+  const response = await api.get(`/logs/${logId}/details`);
+  return response.data;
+};

@@ -87,14 +87,15 @@ export const validateLogData = (
   const totalMinutes = logData.hours * 60 + logData.minutes;
 
   // Time validation - only show if time fields are touched
-  if (touched.hours && logData.hours > 24) {
-    errors.hours = 'Hours cannot exceed 24';
-  }
-  if (touched.minutes && logData.minutes > 59) {
-    errors.minutes = 'Minutes cannot exceed 59';
-  }
-  if ((touched.hours || touched.minutes) && totalMinutes > 1440) {
-    errors.time = 'Total time cannot exceed 24 hours';
+  if (
+    (touched.hours || touched.minutes) &&
+    ['video', 'movie', 'audio', 'other'].includes(logData.type || '')
+  ) {
+    if (totalMinutes <= 0) {
+      errors.time = 'Please enter the time spent (must be greater than 0)';
+    } else if (totalMinutes > 1440) {
+      errors.time = 'Time seems unreasonably high (max: 24 hours)';
+    }
   }
 
   // Type-specific time requirements - only show if time is touched and type requires it

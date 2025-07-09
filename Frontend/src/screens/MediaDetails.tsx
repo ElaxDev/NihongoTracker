@@ -24,13 +24,18 @@ function MediaDetails() {
 
   const { data: logs } = useQuery({
     queryKey: [username, 'logs', 'total', mediaDocument?.contentId],
-    queryFn: () =>
-      getUserLogsFn(username ?? '', {
-        mediaId: mediaDocument?.contentId,
-        type: mediaDocument?.type,
+    queryFn: () => {
+      if (!username || !mediaDocument?.contentId || !mediaDocument?.type) {
+        throw new Error('Username, media ID and type are required');
+      }
+      return getUserLogsFn(username, {
+        mediaId: mediaDocument.contentId,
+        type: mediaDocument.type,
         limit: 0,
         page: 1,
-      }),
+      });
+    },
+    enabled: !!username && !!mediaDocument?.contentId && !!mediaDocument?.type,
     staleTime: Infinity,
   });
 

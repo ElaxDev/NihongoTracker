@@ -57,7 +57,8 @@ interface MediaDescription {
   language: 'eng' | 'jpn' | 'spa';
 }
 
-export interface IMediaDocument extends Document {
+export interface IMediaDocument {
+  _id?: Types.ObjectId;
   contentId: string;
   title: IMediaTitle;
   contentImage?: string;
@@ -162,7 +163,15 @@ export interface AnilistSearchResult {
 
 export interface ILog extends Document {
   user: Types.ObjectId;
-  type: 'reading' | 'anime' | 'vn' | 'video' | 'manga' | 'audio' | 'other';
+  type:
+    | 'reading'
+    | 'anime'
+    | 'vn'
+    | 'video'
+    | 'manga'
+    | 'audio'
+    | 'movie'
+    | 'other';
   mediaId?: string;
   mediaTitle?: string;
   xp: number;
@@ -185,11 +194,12 @@ export interface IContentMedia {
   contentTitleRomaji?: string;
   contentTitleEnglish: string;
   description?: string;
-  type: 'anime' | 'manga' | 'reading' | 'vn' | 'video';
+  type: 'anime' | 'manga' | 'reading' | 'vn' | 'video' | 'movie';
   episodes?: number;
   episodeDuration?: number;
   chapters?: number;
   volumes?: number;
+  runtime?: number;
   synonyms?: string[] | null;
   isAdult: boolean;
   date?: Date | null;
@@ -201,7 +211,6 @@ export interface IContentMedia {
 }
 
 export interface ICreateLog extends ILog {
-  createMedia?: boolean;
   mediaData?: IContentMedia;
 }
 

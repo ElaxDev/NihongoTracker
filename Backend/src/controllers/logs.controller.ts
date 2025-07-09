@@ -292,7 +292,7 @@ export async function getDashboardHours(
 
 interface IInitialMatch {
   user: Types.ObjectId;
-  type?: string;
+  type?: string | { $in: string[] };
   date?: {
     $gte?: Date;
     $lte?: Date;
@@ -322,8 +322,8 @@ export async function getUserLogs(
     : null;
   const endDate = req.query.end ? new Date(req.query.end as string) : null;
 
-  // Add type filter
-  const type = req.query.type as string;
+  // Add type filter - handle both string and array
+  const type = req.query.type;
 
   // Add search functionality
   const search = req.query.search as string;
@@ -347,9 +347,15 @@ export async function getUserLogs(
       user: userExists._id,
     };
 
-    // Add type filter early
+    // Add type filter early - handle both string and array
     if (type) {
-      initialMatch.type = type;
+      if (Array.isArray(type)) {
+        // If type is an array, use $in operator
+        initialMatch.type = { $in: type as string[] };
+      } else {
+        // If type is a string, use direct match
+        initialMatch.type = type as string;
+      }
     }
 
     // Add date filter early
@@ -371,17 +377,14 @@ export async function getUserLogs(
     }
 
     let pipeline: PipelineStage[] = [
-      // Start with the most restrictive match to reduce dataset size immediately
       {
         $match: initialMatch,
       },
-      // Sort early to ensure consistent pagination
       {
         $sort: {
           date: -1,
         },
       },
-      // Apply pagination early to limit the number of documents we process
       {
         $skip: skip,
       },
@@ -394,42 +397,22 @@ export async function getUserLogs(
       });
     }
 
-    // Now do the expensive operations (lookups) only on the paginated subset
-    pipeline.push(
-      {
-        $lookup: {
-          from: 'media',
-          localField: 'mediaId',
-          foreignField: 'contentId',
-          as: 'media',
-        },
+    // Only project log fields and mediaId/type for the list
+    pipeline.push({
+      $project: {
+        _id: 1,
+        type: 1,
+        mediaId: 1,
+        xp: 1,
+        description: 1,
+        episodes: 1,
+        pages: 1,
+        chars: 1,
+        time: 1,
+        date: 1,
+        // No media join here
       },
-      {
-        $unwind: {
-          path: '$media',
-          preserveNullAndEmptyArrays: true,
-        },
-      },
-      // Final projection to shape the output
-      {
-        $project: {
-          _id: 1,
-          type: 1,
-          mediaId: 1,
-          xp: 1,
-          description: 1,
-          episodes: 1,
-          pages: 1,
-          chars: 1,
-          time: 1,
-          date: 1,
-          'media.contentId': 1,
-          'media.title': 1,
-          'media.contentImage': 1,
-          'media.type': 1,
-        },
-      }
-    );
+    });
 
     const logs = await Log.aggregate(pipeline, {
       collation: { locale: 'en', strength: 2 },
@@ -469,8 +452,19 @@ export async function getLog(req: Request, res: Response, next: NextFunction) {
       {
         $lookup: {
           from: 'media',
-          localField: 'mediaId',
-          foreignField: 'contentId',
+          let: { mediaId: '$mediaId', type: '$type' },
+          pipeline: [
+            {
+              $match: {
+                $expr: {
+                  $and: [
+                    { $eq: ['$contentId', '$$mediaId'] },
+                    { $eq: ['$type', '$$type'] },
+                  ],
+                },
+              },
+            },
+          ],
           as: 'mediaData',
         },
       },
@@ -626,7 +620,6 @@ export async function createLog(
     date,
     chars,
     mediaData,
-    createMedia,
   } = req.body;
 
   try {
@@ -646,13 +639,15 @@ export async function createLog(
     }
 
     let logMedia;
+    let createMedia = true;
 
     if (mediaId) {
-      logMedia = await MediaBase.findOne({ contentId: mediaId });
+      logMedia = await MediaBase.findOne({ contentId: mediaId, type });
+      createMedia = false; // We already have mediaId, so no need to create new media
     }
 
     // Handle YouTube video creation for 'video' type logs
-    if (!logMedia && type === 'video' && createMedia && mediaData) {
+    if (type === 'video' && createMedia && mediaData) {
       // Create the channel media entry (using channel ID as the main media)
       const channelMedia = await MediaBase.create({
         contentId: mediaData.channelId, // Use channel ID as the content ID
@@ -662,21 +657,23 @@ export async function createLog(
         },
         contentImage: mediaData.channelImage,
         coverImage: mediaData.channelImage,
-        description: mediaData.channelDescription,
+        description: [
+          { description: mediaData.channelDescription || '', language: 'eng' },
+        ],
         type: 'video',
         isAdult: false,
       });
 
       logMedia = channelMedia;
     } else if (
-      !logMedia &&
-      type !== 'audio' &&
-      type !== 'other' &&
-      type !== 'video' &&
-      mediaId &&
-      mediaData
+      createMedia && // Media doesn't exist yet
+      type !== 'audio' && // Not audio type
+      type !== 'other' && // Not other type
+      type !== 'video' && // Not video type (handled above)
+      mediaId && // We have a mediaId
+      mediaData // We have mediaData
     ) {
-      // Existing logic for other media types (anime, manga, etc.)
+      // Create AniList media document (anime, manga, etc.)
       await MediaBase.create({
         contentId: mediaId,
         title: {
@@ -693,23 +690,25 @@ export async function createLog(
         isAdult: mediaData.isAdult,
         coverImage: mediaData.coverImage,
         type,
-        description: mediaData.description,
+        description: mediaData.description
+          ? [{ description: mediaData.description, language: 'eng' }]
+          : undefined,
       });
     }
 
-    const newLogMedia = await MediaBase.findOne({
-      contentId: mediaId,
-    });
+    if (!logMedia && createMedia) {
+      // If we couldn't find or create media, we need to handle it
+      logMedia = await MediaBase.findOne({
+        contentId: mediaId,
+        type,
+      });
+    }
 
     const user: ILog['user'] = res.locals.user._id;
     const newLog: ILog | null = new Log({
       user,
       type,
-      mediaId: logMedia
-        ? logMedia.contentId
-        : newLogMedia
-          ? newLogMedia.contentId
-          : mediaId,
+      mediaId: logMedia ? logMedia.contentId : mediaId,
       pages,
       episodes,
       xp,
@@ -952,12 +951,23 @@ export async function assignMedia(
         if (!media) {
           media = await MediaBase.create(logsData.contentMedia);
         }
+
+        // Check if we need to convert video logs to movie logs
+        const shouldConvertToMovie = media.type === 'movie';
+        const updateData: any = { mediaId: media.contentId };
+
+        if (shouldConvertToMovie) {
+          // Convert video type logs to movie type when matched to a movie
+          updateData.type = 'movie';
+        }
+
         const updatedLogs = await Log.updateMany(
           {
             _id: { $in: logsData.logsId },
           },
-          { mediaId: media.contentId }
+          updateData
         );
+
         if (!updatedLogs)
           throw new customError(
             `Log${logsData.logsId.length > 1 ? 's' : ''} not found`,
@@ -1033,7 +1043,8 @@ export async function getUserStats(
     if (!validTimeRanges.includes(timeRange)) {
       return res.status(400).json({ message: 'Invalid time range' });
     }
-    // Validate type
+
+    // Validate type - handle both string and array
     const validTypes = [
       'all',
       'anime',
@@ -1041,10 +1052,20 @@ export async function getUserStats(
       'reading',
       'audio',
       'video',
+      'movie',
       'vn',
       'other',
     ];
-    if (!validTypes.includes(type)) {
+
+    if (Array.isArray(type)) {
+      // If type is an array, validate each type in the array
+      const invalidTypes = type.filter((t) => !validTypes.includes(t));
+      if (invalidTypes.length > 0) {
+        return res.status(400).json({
+          message: `Invalid types: ${invalidTypes.join(', ')}`,
+        });
+      }
+    } else if (!validTypes.includes(type)) {
       return res.status(400).json({ message: 'Invalid type' });
     }
 
@@ -1088,10 +1109,14 @@ export async function getUserStats(
     // Build match filter for aggregation (this affects what gets aggregated)
     let aggregationMatch: any = { user: user._id, ...dateFilter };
 
-    // Build match filter for totals calculation
+    // Build match filter for totals calculation - handle array and string types
     let totalsMatch: any = { user: user._id, ...dateFilter };
     if (type !== 'all') {
-      totalsMatch.type = type;
+      if (Array.isArray(type)) {
+        totalsMatch.type = { $in: type };
+      } else {
+        totalsMatch.type = type;
+      }
     }
 
     const logTypes = [
@@ -1099,6 +1124,7 @@ export async function getUserStats(
       'anime',
       'vn',
       'video',
+      'movie',
       'manga',
       'audio',
       'other',
@@ -1190,7 +1216,9 @@ export async function getUserStats(
     const filteredStatsByType =
       type === 'all'
         ? statsByType
-        : statsByType.filter((stat) => stat.type === type);
+        : Array.isArray(type)
+          ? statsByType.filter((stat) => type.includes(stat.type))
+          : statsByType.filter((stat) => stat.type === type);
 
     const totals = filteredStatsByType.reduce(
       (acc, stat) => {
@@ -1203,7 +1231,7 @@ export async function getUserStats(
         // Separate reading and listening hours
         if (['reading', 'manga', 'vn'].includes(stat.type)) {
           acc.readingHours += stat.totalTimeHours;
-        } else if (['anime', 'video', 'audio'].includes(stat.type)) {
+        } else if (['anime', 'video', 'movie', 'audio'].includes(stat.type)) {
           acc.listeningHours += stat.totalTimeHours;
         }
 
@@ -1244,7 +1272,10 @@ export async function getUserStats(
 
     // Calculate reading speed data for reading-type logs
     const readingSpeedData =
-      type === 'all' || ['reading', 'manga', 'vn'].includes(type)
+      type === 'all' ||
+      (Array.isArray(type) &&
+        type.some((t) => ['reading', 'manga', 'vn'].includes(t))) ||
+      ['reading', 'manga', 'vn'].includes(type as string)
         ? await Log.aggregate([
             {
               $match: {
@@ -1286,7 +1317,7 @@ export async function getUserStats(
       statsByType: completeStats,
       readingSpeedData,
       timeRange,
-      selectedType: type,
+      selectedType: Array.isArray(type) ? type.join(',') : type,
     });
   } catch (error) {
     return next(error);
@@ -1362,6 +1393,7 @@ export async function recalculateXp(
             case 'manga':
             case 'vn':
             case 'video':
+            case 'movie':
             case 'audio':
               log.xp = Math.max(timeXp, pagesXp, charsXp, episodesXp, 0);
               break;
@@ -1378,7 +1410,7 @@ export async function recalculateXp(
 
           // Update user's stats totals
           if (user.stats) {
-            if (['anime', 'video', 'audio'].includes(log.type)) {
+            if (['anime', 'video', 'movie', 'audio'].includes(log.type)) {
               user.stats.listeningXp += log.xp;
             } else if (['reading', 'manga', 'vn'].includes(log.type)) {
               user.stats.readingXp += log.xp;
@@ -1409,6 +1441,107 @@ export async function recalculateXp(
       message: `Recalculated stats for ${results.processedUsers} users (${results.updatedLogs} logs updated)`,
       results,
     });
+  } catch (error) {
+    return next(error as customError);
+  }
+}
+
+// New endpoint: getLogDetails
+export async function getLogDetails(
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
+  try {
+    const logAggregation = await Log.aggregate([
+      {
+        $match: {
+          _id: new Types.ObjectId(req.params.id),
+        },
+      },
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'user',
+          foreignField: '_id',
+          as: 'user',
+        },
+      },
+      {
+        $unwind: {
+          path: '$user',
+          preserveNullAndEmptyArrays: true,
+        },
+      },
+      {
+        $lookup: {
+          from: 'media',
+          let: { mediaId: '$mediaId', type: '$type' },
+          pipeline: [
+            {
+              $match: {
+                $expr: {
+                  $and: [
+                    { $eq: ['$contentId', '$$mediaId'] },
+                    { $eq: ['$type', '$$type'] },
+                  ],
+                },
+              },
+            },
+          ],
+          as: 'mediaData',
+        },
+      },
+      {
+        $unwind: {
+          path: '$mediaData',
+          preserveNullAndEmptyArrays: true,
+        },
+      },
+      {
+        $project: {
+          _id: 1,
+          type: 1,
+          description: 1,
+          episodes: 1,
+          pages: 1,
+          chars: 1,
+          time: 1,
+          date: 1,
+          mediaId: 1,
+          xp: 1,
+          editedFields: 1,
+          private: 1,
+          user: {
+            _id: 1,
+            username: 1,
+            avatar: 1,
+            titles: 1,
+          },
+          media: {
+            _id: '$mediaData._id',
+            contentId: '$mediaData.contentId',
+            type: '$mediaData.type',
+            title: '$mediaData.title',
+            contentImage: '$mediaData.contentImage',
+            coverImage: '$mediaData.coverImage',
+            description: '$mediaData.description',
+            episodes: '$mediaData.episodes',
+            episodeDuration: '$mediaData.episodeDuration',
+            chapters: '$mediaData.chapters',
+            volumes: '$mediaData.volumes',
+            isAdult: '$mediaData.isAdult',
+            synonyms: '$mediaData.synonyms',
+          },
+        },
+      },
+    ]);
+
+    const foundLog = logAggregation[0];
+    if (!foundLog) throw new customError('Log not found', 404);
+
+    // Return all details needed for LogCard details modal
+    return res.status(200).json(foundLog);
   } catch (error) {
     return next(error as customError);
   }

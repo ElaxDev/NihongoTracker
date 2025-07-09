@@ -5,6 +5,7 @@ import VNLogs from '../components/VNLogs';
 import MangaLogs from '../components/MangaLogs';
 import ReadingLogs from '../components/ReadingLogs';
 import VideoLogs from '../components/VideoLogs';
+import MovieLogs from '../components/MovieLogs';
 
 function AssignMedia() {
   const { user } = useUserDataStore();
@@ -30,6 +31,10 @@ function AssignMedia() {
             {
               label: 'Video',
               component: <VideoLogs username={user?.username} />,
+            },
+            {
+              label: 'Movie',
+              component: <MovieLogs username={user?.username} />,
             },
           ]}
         />
