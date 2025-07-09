@@ -176,7 +176,7 @@ function parseDuration(duration: string): number {
   return hours * 60 + minutes + Math.round(seconds / 60);
 }
 
-export default async function searchYouTubeVideo(
+export async function searchYouTubeVideo(
   req: Request,
   res: Response,
   next: NextFunction
