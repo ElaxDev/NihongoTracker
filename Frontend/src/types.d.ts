@@ -371,7 +371,12 @@ interface MediaDescription {
   language: 'eng' | 'jpn' | 'spa';
 }
 
-export interface IMediaDocument {
+interface MediaDescription {
+  description: string;
+  language: 'eng' | 'jpn' | 'spa';
+}
+
+export interface IMediaDocument extends Document {
   contentId: string;
   title: IMediaTitle;
   contentImage?: string;
