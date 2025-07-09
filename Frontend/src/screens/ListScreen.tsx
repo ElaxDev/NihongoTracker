@@ -18,12 +18,22 @@ import {
   MdVideoLibrary,
   MdWarning,
   MdLink,
+  MdMovie,
+  MdOutlineTv,
 } from 'react-icons/md';
 import { useUserDataStore } from '../store/userData';
 
 type ViewMode = 'grid' | 'list';
 type SortOption = 'title' | 'type' | 'recent';
-type FilterOption = 'all' | 'anime' | 'manga' | 'reading' | 'vn' | 'video';
+type FilterOption =
+  | 'all'
+  | 'anime'
+  | 'manga'
+  | 'reading'
+  | 'vn'
+  | 'video'
+  | 'movie'
+  | 'tv show';
 
 function ListScreen() {
   const { username } = useParams<{ username: string }>();
@@ -74,6 +84,14 @@ function ListScreen() {
       ...immersionList.video.map((item) => ({
         ...item,
         category: 'video' as const,
+      })),
+      ...(immersionList.movie || []).map((item) => ({
+        ...item,
+        category: 'movie' as const,
+      })),
+      ...(immersionList['tv show'] || []).map((item) => ({
+        ...item,
+        category: 'tv show' as const,
       })),
     ];
   }, [immersionList]);
@@ -132,6 +150,8 @@ function ListScreen() {
       reading: immersionList?.reading.length || 0,
       vn: immersionList?.vn.length || 0,
       video: immersionList?.video.length || 0,
+      movie: immersionList?.movie?.length || 0,
+      'tv show': immersionList?.['tv show']?.length || 0,
     };
     return { totalCount, typeCount };
   }, [allMedia, immersionList]);
@@ -244,6 +264,8 @@ function ListScreen() {
                       { value: 'reading', label: 'Reading' },
                       { value: 'vn', label: 'Visual Novels' },
                       { value: 'video', label: 'Video' },
+                      { value: 'movie', label: 'Movies' },
+                      { value: 'tv show', label: 'TV Shows' },
                     ].map((option) => (
                       <li key={option.value}>
                         <button
@@ -425,6 +447,18 @@ function MediaCard({
       bg: 'bg-info/10',
       border: 'border-info/20',
     },
+    movie: {
+      icon: MdMovie,
+      color: 'text-error',
+      bg: 'bg-error/10',
+      border: 'border-error/20',
+    },
+    'tv show': {
+      icon: MdOutlineTv,
+      color: 'text-success',
+      bg: 'bg-success/10',
+      border: 'border-success/20',
+    },
   };
 
   const config = typeConfig[media.type as keyof typeof typeConfig];
@@ -496,7 +530,9 @@ function MediaCard({
             <TypeIcon className="w-3 h-3 mr-1" />
             {media.type === 'vn'
               ? 'VN'
-              : media.type.charAt(0).toUpperCase() + media.type.slice(1)}
+              : media.type === 'tv show'
+                ? 'TV Show'
+                : media.type.charAt(0).toUpperCase() + media.type.slice(1)}
           </span>
         </div>
       </div>
@@ -527,6 +563,12 @@ function MediaListItem({
     reading: { icon: MdBook, color: 'text-primary', bg: 'bg-primary/10' },
     vn: { icon: MdGamepad, color: 'text-accent', bg: 'bg-accent/10' },
     video: { icon: MdVideoLibrary, color: 'text-info', bg: 'bg-info/10' },
+    movie: { icon: MdMovie, color: 'text-error', bg: 'bg-error/10' },
+    'tv show': {
+      icon: MdOutlineTv,
+      color: 'text-success',
+      bg: 'bg-success/10',
+    },
   };
 
   const config = typeConfig[media.type as keyof typeof typeConfig];
@@ -577,9 +619,12 @@ function MediaListItem({
                   </p>
                 )}
 
-                {media.description && (
+                {media.description && media.description.length > 0 && (
                   <p className="text-sm text-base-content/70 line-clamp-2">
-                    {media.description}
+                    {media.description.find((desc) => desc.language === 'eng')
+                      ?.description ||
+                      media.description[0]?.description ||
+                      'No description available'}
                   </p>
                 )}
               </div>
@@ -592,7 +637,10 @@ function MediaListItem({
                   <TypeIcon className="w-3 h-3" />
                   {media.type === 'vn'
                     ? 'Visual Novel'
-                    : media.type.charAt(0).toUpperCase() + media.type.slice(1)}
+                    : media.type === 'tv show'
+                      ? 'TV Show'
+                      : media.type.charAt(0).toUpperCase() +
+                        media.type.slice(1)}
                 </div>
 
                 {/* Adult Content Badge */}

@@ -30,7 +30,13 @@ export default function MediaHeader() {
     isLoading: isLoadingMedia,
   } = useQuery({
     queryKey: ['media', mediaId, mediaType],
-    queryFn: () => getMediaFn(mediaId, mediaType),
+    queryFn: () => {
+      if (!mediaId || !mediaType) {
+        throw new Error('Media ID and type are required');
+      }
+      return getMediaFn(mediaId, mediaType);
+    },
+    enabled: !!mediaId && !!mediaType,
     refetchOnMount: 'always',
   });
 

@@ -15,6 +15,8 @@ import {
   MdMoreHoriz,
   MdShare,
   MdAdd,
+  MdMovie,
+  MdOutlineTv,
 } from 'react-icons/md';
 import { validateSharedLogData } from '../utils/validation';
 
@@ -60,6 +62,20 @@ const logTypeConfig = {
     color: 'text-success',
     bgColor: 'bg-success/10',
     borderColor: 'border-success/20',
+  },
+  movie: {
+    label: 'Movie',
+    icon: MdMovie,
+    color: 'text-indigo-600',
+    bgColor: 'bg-indigo-50',
+    borderColor: 'border-indigo-200',
+  },
+  'tv show': {
+    label: 'TV Show',
+    icon: MdOutlineTv,
+    color: 'text-green-600',
+    bgColor: 'bg-green-50',
+    borderColor: 'border-green-200',
   },
   other: {
     label: 'Other',

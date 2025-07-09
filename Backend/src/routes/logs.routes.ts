@@ -3,6 +3,7 @@ import { ICreateLog } from '../types.js';
 import { Router } from 'express';
 import {
   getLog,
+  getLogDetails,
   createLog,
   deleteLog,
   updateLog,
@@ -55,6 +56,8 @@ router.get('/recalculateStats', protect, recalculateXp);
 router.post('/manabe-webhook', importManabeLog, calculateXp, importLogs);
 
 router.get('/:id', getLog); // Make this route public for sharing functionality
+
+router.get('/:id/details', getLogDetails); // New route for detailed log information
 
 router.delete('/:id', protect, deleteLog);
 

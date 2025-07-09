@@ -63,4 +63,12 @@ const MovieSchema = new Schema({
 
 const Movie = MediaBase.discriminator('movie', MovieSchema);
 
-export { MediaBase, Anime, Manga, Reading, Video, Movie };
+const TVShowSchema = new Schema({
+  episodes: { type: Number, default: null },
+  episodeDuration: { type: Number, default: null },
+  seasons: { type: Number, default: null },
+});
+
+const TVShow = MediaBase.discriminator('tv show', TVShowSchema);
+
+export { MediaBase, Anime, Manga, Reading, Video, Movie, TVShow };

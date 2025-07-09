@@ -45,7 +45,6 @@ interface logDataType {
   date: Date | undefined;
   // YouTube specific fields
   youtubeChannelInfo: youtubeChannelInfo | null;
-  createMedia: boolean;
 }
 
 function LogScreen() {
@@ -78,7 +77,6 @@ function LogScreen() {
     cover: undefined,
     date: undefined,
     youtubeChannelInfo: null,
-    createMedia: false,
   });
 
   const [isSuggestionsOpen, setIsSuggestionsOpen] = useState(false);
@@ -141,7 +139,6 @@ function LogScreen() {
         cover: undefined,
         date: undefined,
         youtubeChannelInfo: null,
-        createMedia: false,
       });
       void queryClient.invalidateQueries({
         predicate: (query) =>
@@ -261,9 +258,6 @@ function LogScreen() {
         handleInputChange('hours', hours);
         handleInputChange('minutes', minutes);
       }
-
-      // Enable media creation
-      handleInputChange('createMedia', true);
     } else {
       // Handle regular AniList content
       handleInputChange('mediaName', group.title.contentTitleNative);
@@ -319,7 +313,6 @@ function LogScreen() {
 
     // Prepare media data based on log type
     let mediaData = undefined;
-    let createMedia = false;
 
     if (logData.type === 'video' && logData.youtubeChannelInfo) {
       // YouTube video logging
@@ -329,7 +322,6 @@ function LogScreen() {
         channelImage: logData.youtubeChannelInfo.channelImage,
         channelDescription: logData.youtubeChannelInfo.channelDescription,
       };
-      createMedia = true;
     } else if (logData.type !== 'video' && logData.type !== 'audio') {
       // Regular AniList content
       mediaData = {
@@ -347,7 +339,6 @@ function LogScreen() {
         isAdult: logData.isAdult,
         synonyms: logData.synonyms,
       };
-      createMedia = !!logData.mediaId;
     }
 
     createLog({
@@ -360,7 +351,6 @@ function LogScreen() {
       chars: logData.readChars || undefined,
       pages: logData.readPages,
       date: logData.date,
-      createMedia,
     } as ICreateLog);
   };
 

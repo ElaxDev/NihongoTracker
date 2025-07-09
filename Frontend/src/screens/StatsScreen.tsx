@@ -31,6 +31,8 @@ function StatsScreen() {
     'video',
     'manga',
     'audio',
+    'movie',
+    'tv show',
     'other',
   ];
 
@@ -51,6 +53,8 @@ function StatsScreen() {
           'rgba(75, 192, 192, 1)',
           'rgba(153, 102, 255, 1)',
           'rgba(255, 159, 64, 1)',
+          'rgba(255, 87, 34, 1)',
+          'rgba(76, 175, 80, 1)',
           'rgba(99, 99, 132, 1)',
         ],
         borderColor: [
@@ -60,6 +64,8 @@ function StatsScreen() {
           'rgba(75, 192, 192, 1)',
           'rgba(153, 102, 255, 1)',
           'rgba(255, 159, 64, 1)',
+          'rgba(255, 87, 34, 1)',
+          'rgba(76, 175, 80, 1)',
           'rgba(99, 99, 132, 1)',
         ],
         borderWidth: 1,
@@ -83,6 +89,8 @@ function StatsScreen() {
           'rgba(75, 192, 192, 1)',
           'rgba(153, 102, 255, 1)',
           'rgba(255, 159, 64, 1)',
+          'rgba(255, 87, 34, 1)',
+          'rgba(76, 175, 80, 1)',
           'rgba(99, 99, 132, 1)',
         ],
         borderColor: [
@@ -92,6 +100,8 @@ function StatsScreen() {
           'rgba(75, 192, 192, 1)',
           'rgba(153, 102, 255, 1)',
           'rgba(255, 159, 64, 1)',
+          'rgba(255, 87, 34, 1)',
+          'rgba(76, 175, 80, 1)',
           'rgba(99, 99, 132, 1)',
         ],
         borderWidth: 1,
@@ -115,6 +125,8 @@ function StatsScreen() {
           'rgba(75, 192, 192, 1)',
           'rgba(153, 102, 255, 1)',
           'rgba(255, 159, 64, 1)',
+          'rgba(255, 87, 34, 1)',
+          'rgba(76, 175, 80, 1)',
           'rgba(99, 99, 132, 1)',
         ],
         borderColor: [
@@ -124,6 +136,8 @@ function StatsScreen() {
           'rgba(75, 192, 192, 1)',
           'rgba(153, 102, 255, 1)',
           'rgba(255, 159, 64, 1)',
+          'rgba(255, 87, 34, 1)',
+          'rgba(76, 175, 80, 1)',
           'rgba(99, 99, 132, 1)',
         ],
         borderWidth: 1,
@@ -466,7 +480,7 @@ function StatsScreen() {
                   </span>
                 </p>
                 <p className="text-xs text-base-content/60 mt-1">
-                  Anime, Video, Audio
+                  Anime, Video, Audio, Movies, TV Shows
                 </p>
               </div>
             </div>

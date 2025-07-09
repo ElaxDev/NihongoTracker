@@ -44,7 +44,7 @@ interface YouTubeChannelData {
   };
 }
 
-async function getYouTubeVideoInfo(videoUrl: string): Promise<{
+export async function getYouTubeVideoInfo(videoUrl: string): Promise<{
   video: MediaDocument;
   channel: MediaDocument;
 } | null> {
@@ -121,7 +121,9 @@ async function getYouTubeVideoInfo(videoUrl: string): Promise<{
       contentImage:
         videoData.snippet.thumbnails.high?.url ||
         videoData.snippet.thumbnails.medium?.url,
-      description: videoData.snippet.description,
+      description: [
+        { description: videoData.snippet.description || '', language: 'eng' },
+      ],
       type: 'video',
       episodeDuration: duration,
       isAdult: false,
@@ -136,7 +138,9 @@ async function getYouTubeVideoInfo(videoUrl: string): Promise<{
       contentImage:
         channelData.snippet.thumbnails.high?.url ||
         channelData.snippet.thumbnails.medium?.url,
-      description: channelData.snippet.description,
+      description: [
+        { description: channelData.snippet.description || '', language: 'eng' },
+      ],
       type: 'video',
       isAdult: false,
     };
